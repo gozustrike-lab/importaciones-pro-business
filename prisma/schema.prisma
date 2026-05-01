@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MULTI-TENANT: TENANT (Empresa/Organización)
+// ============================================
+model Tenant {
+  id              String   @id @default(cuid())
+  name            String
+  ruc             String   @unique
+  ownerName       String
+  ownerEmail      String
+  plan            String   @default("free") // free / pro / enterprise
+  isActive        Boolean  @default(true)
+  maxUsers        Int      @default(5)
+  address         String   @default("")
+  city            String   @default("Lima")
+  phone           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users           User[]
+  products        Product[]
+  clients         Client[]
+  sales           Sale[]
+  nrusConfigs     NRUSConfig[]
+  monthlySales    MonthlySales[]
+}
+
+// ============================================
+// MULTI-TENANT: USER (Usuarios del sistema)
+// ============================================
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  password        String?
+  image           String?
+  role            String   @default("TENANT_USER") // SUPER_ADMIN / TENANT_ADMIN / TENANT_USER
+  tenantId        String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
+  isActive        Boolean  @default(true)
+  lastLogin       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+}
+
+// ============================================
+// NEXTAUTH: ACCOUNT (OAuth providers)
+// ============================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// ============================================
+// NEXTAUTH: SESSION
+// ============================================
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// PRODUCTOS / IMPORTACIONES DESDE EBAY
+// ============================================
+model Product {
+  id              String   @id @default(cuid())
+
+  // Identificación
+  purchaseDate    DateTime
+  orderNumber     String
+  supplier        String   @default("eBay")
+
+  // Logística
+  courier         String   @default("")
+  trackingId      String   @default("")
+  shippingStatus  String   @default("USA")
+  estimatedArrival DateTime?
+  actualArrival   DateTime?
+
+  // Producto
+  description     String
+  category        String   @default("")
+  model           String   @default("")
+  color           String   @default("")
+  capacity        String   @default("")
+  grade           String   @default("A")
+  condition       String   @default("")
+  serialNumber    String   @default("")
+  quantity        Int      @default(1)
+
+  // Control de Calidad
+  screenStatus    String   @default("")
+  batteryHealth   String   @default("")
+  batteryCycles   Int      @default(0)
+  qualityPassed   Boolean  @default(false)
+  qualityNotes    String   @default("")
+
+  // Finanzas USD
+  purchasePriceUsd  Float
+  shippingCostUsd   Float   @default(0)
+  advertisingCostUsd Float  @default(0)
+  extraCostsUsd     Float   @default(0)
+  exchangeRate      Float   @default(3.70)
+
+  // Finanzas PEN (calculados)
+  totalCostPen      Float   @default(0)
+  taxAmountPen      Float   @default(0)
+  adValoremPen      Float   @default(0)
+  igvPen            Float   @default(0)
+  perceptionPen     Float   @default(0)
+
+  // Venta
+  salePricePen      Float   @default(0)
+  suggestedPricePen Float   @default(0)
+  saleDate          DateTime?
+  saleChannel       String   @default("")
+  profitPen         Float   @default(0)
+  profitMargin      Float   @default(0)
+
+  // Otros
+  notes            String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Multi-Tenant
+  tenantId         String
+  tenant           Tenant  @relation(fields: [tenantId], references: [id])
+
+  // Relaciones
+  trackingUpdates  TrackingUpdate[]
+  qualityChecks    QualityCheck[]
+  sales            Sale[]
+}
+
+// ============================================
+// CLIENTES (CRM)
+// ============================================
+model Client {
+  id              String   @id @default(cuid())
+  fullName        String
+  dniRuc          String   @default("")
+  celular         String   @default("")
+  email           String   @default("")
+  ciudad          String   @default("")
+  direccion       String   @default("")
+  notas           String   @default("")
+  isFrequent      Boolean  @default(false)
+  totalPurchases  Int      @default(0)
+  totalSpent      Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Multi-Tenant
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  sales           Sale[]
+}
+
+// ============================================
+// VENTAS (Registro de Ventas)
+// ============================================
+model Sale {
+  id                String   @id @default(cuid())
+  saleDate          DateTime @default(now())
+  saleChannel       String   @default("")
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id])
+  clientId          String
+  client            Client   @relation(fields: [clientId], references: [id])
+  salePricePen      Float
+  costAcquisitionPen Float
+  costMarketingPen   Float
+  costOperativePen   Float
+  netProfitPen       Float
+  profitMargin       Float
+  status            String   @default("Completada")
+  paymentMethod     String   @default("")
+  warrantyMonths    Int      @default(3)
+  warrantyNotes     String   @default("")
+  deliveryStatus    String   @default("")
+  deliveryDate      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Multi-Tenant
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// ============================================
+// TRACKING DE ENVÍOS
+// ============================================
+model TrackingUpdate {
+  id          String   @id @default(cuid())
+  productId   String
+  status      String
+  location    String   @default("")
+  description String   @default("")
+  timestamp   DateTime @default(now())
+
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CHECKLIST DE CALIDAD / INSPECCIÓN
+// ============================================
+model QualityCheck {
+  id              String   @id @default(cuid())
+  productId       String
+  screenOk        Boolean @default(false)
+  touchscreenOk   Boolean @default(false)
+  buttonsOk       Boolean @default(false)
+  speakersOk      Boolean @default(false)
+  microphoneOk    Boolean @default(false)
+  cameraOk        Boolean @default(false)
+  portsOk         Boolean @default(false)
+  wifiOk          Boolean @default(false)
+  bluetoothOk     Boolean @default(false)
+  keyboardOk      Boolean @default(false)
+  trackpadOk      Boolean @default(false)
+  housingOk       Boolean @default(false)
+  batteryOk       Boolean @default(false)
+  chargerIncluded Boolean @default(false)
+  originalBox     Boolean @default(false)
+  passed          Boolean  @default(false)
+  inspector       String   @default("")
+  notes           String   @default("")
+  checkedAt       DateTime @default(now())
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CONFIGURACIÓN NRUS (Nuevo Régimen Único Simplificado)
+// ============================================
+model NRUSConfig {
+  id              String   @id @default(cuid())
+  ruc             String   @default("10762026835")
+  businessName    String   @default("Importaciones Perú")
+  cat1Threshold   Float    @default(5000)
+  cat2Threshold   Float    @default(8000)
+  igvRate         Float    @default(0.18)
+  adValoremRate   Float    @default(0.04)
+  perceptionRate  Float    @default(0.10)
+  fobExemption    Float    @default(200)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Multi-Tenant
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// ============================================
+// REGISTRO DE VENTAS MENSUALES (NRUS)
+// ============================================
+model MonthlySales {
+  id              String   @id @default(cuid())
+  month           String
+  totalSalesPen   Float    @default(0)
+  totalCostPen    Float    @default(0)
+  category        String   @default("")
+  alertLevel      String   @default("none")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Multi-Tenant
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+}
