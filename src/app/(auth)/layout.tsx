@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "ImportHub Perú — Iniciar Sesión",
-  description: "Inicia sesión en tu cuenta de ImportHub Perú",
+  title: {
+    default: "Iniciar Sesión — ImportHub Perú",
+    template: "%s — ImportHub Perú",
+  },
+  description: "Accede a tu panel de gestión de importaciones. ERP Multi-Tenant SaaS para importadores eBay a Perú.",
+  openGraph: {
+    title: "ImportHub Perú — Accede a tu ERP",
+    description: "Inicia sesión para gestionar tus importaciones, inventario, ventas y más.",
+    images: ["/og-image-landscape.png"],
+  },
 };
 
 export default function AuthLayout({
