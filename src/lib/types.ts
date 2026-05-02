@@ -277,3 +277,93 @@ export interface ProductFormData {
   exchangeRate: number;
   salePricePEN: number;
 }
+
+// ── Suppliers (Proveedores) ──
+
+export type SupplierCategory = 'general' | 'electronics' | 'accessories' | 'components' | 'peripherals' | 'cables' | 'packaging' | 'other';
+export type SupplierLinkType = 'url' | 'excel' | 'document' | 'note';
+export type SupplierLinkStatus = 'active' | 'discontinued' | 'out_of_stock';
+
+export interface Supplier {
+  id: string;
+  name: string;
+  website: string;
+  url: string;
+  contactEmail: string;
+  contactPhone: string;
+  country: string;
+  notes: string;
+  category: SupplierCategory;
+  rating: number;
+  isActive: boolean;
+  lastSyncAt: string | null;
+  totalProducts: number;
+  totalOrders: number;
+  totalSpentUsd: number;
+  createdAt: string;
+  updatedAt: string;
+  // Optional counts from list endpoint
+  linkCount?: number;
+  productCount?: number;
+}
+
+export interface SupplierDetail extends Supplier {
+  links: SupplierLink[];
+  products: {
+    id: string;
+    description: string;
+    category: string;
+    grade: string;
+    shippingStatus: string;
+    purchasePriceUsd: number;
+    salePricePen: number;
+    createdAt: string;
+  }[];
+}
+
+export interface SupplierFormData {
+  name: string;
+  website?: string;
+  url?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  country?: string;
+  notes?: string;
+  category?: SupplierCategory;
+  rating?: number;
+  isActive?: boolean;
+}
+
+export interface SupplierLink {
+  id: string;
+  title: string;
+  url: string;
+  type: SupplierLinkType;
+  priceUsd: number;
+  pricePen: number;
+  status: SupplierLinkStatus;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierLinkFormData {
+  title: string;
+  url?: string;
+  type?: SupplierLinkType;
+  priceUsd?: number;
+  pricePen?: number;
+  status?: SupplierLinkStatus;
+  notes?: string;
+}
+
+// ── eBay Account ──
+
+export interface EbayAccountStatus {
+  configured: boolean;
+  connected: boolean;
+  username?: string;
+  feedbackScore?: number;
+  feedbackPercentage?: string;
+  lastSyncAt?: string | null;
+}

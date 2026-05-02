@@ -179,7 +179,7 @@ export function ProductosTab() {
 
       const params = new URLSearchParams();
       params.set('q', ebayQuery.trim());
-      if (ebayCategory) params.set('category_id', ebayCategory);
+      if (ebayCategory && ebayCategory !== 'all') params.set('category_id', ebayCategory);
       if (ebaySort) params.set('sort', ebaySort);
       params.set('limit', '20');
 
@@ -214,7 +214,7 @@ export function ProductosTab() {
 
       const productData: ProductFormData = {
         description: item.title,
-        category: guessCategory(ebayCategory),
+        category: guessCategory(ebayCategory === 'all' ? '' : ebayCategory),
         grade: 'A',
         condition: item.condition || 'Used',
         status: 'USA',
@@ -518,7 +518,7 @@ export function ProductosTab() {
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {EBAY_CATEGORIES.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.label}

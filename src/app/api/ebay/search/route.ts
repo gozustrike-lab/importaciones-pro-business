@@ -48,7 +48,20 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("eBay search error:", error);
-    const message = error instanceof Error ? error.message : "Error al buscar en eBay";
+    let message = "Error al buscar en eBay";
+    if (error instanceof Error) {
+      // Translate known error messages to Spanish
+      const msg = error.message;
+      if (msg.includes("API keys") || msg.includes("Configura tus")) {
+        message = "Configura tus API keys de eBay en el archivo .env (EBAY_APP_ID y EBAY_CERT_ID)";
+      } else if (msg.includes("OAuth")) {
+        message = "Error de autenticación con eBay. Verifica tus API keys.";
+      } else if (msg.includes("Search failed")) {
+        message = "La búsqueda en eBay falló. Intenta de nuevo más tarde.";
+      } else {
+        message = msg;
+      }
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

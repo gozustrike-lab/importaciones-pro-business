@@ -32,6 +32,7 @@ model Tenant {
   sales           Sale[]
   nrusConfigs     NRUSConfig[]
   monthlySales    MonthlySales[]
+  suppliers       Supplier[]
 }
 
 // ============================================
@@ -157,6 +158,8 @@ model Product {
   trackingUpdates  TrackingUpdate[]
   qualityChecks    QualityCheck[]
   sales            Sale[]
+  supplierId       String?
+  supplierRef      Supplier? @relation("ProductSupplierRef", fields: [supplierId], references: [id])
 }
 
 // ============================================
@@ -277,6 +280,56 @@ model NRUSConfig {
   // Multi-Tenant
   tenantId        String
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// ============================================
+// PROVEEDORES (Suppliers)
+// ============================================
+model Supplier {
+  id              String   @id @default(cuid())
+  name            String
+  website         String   @default("")
+  url             String   @default("")          // profile URL (eBay store, AliExpress, etc.)
+  contactEmail    String   @default("")
+  contactPhone    String   @default("")
+  country         String   @default("")
+  notes           String   @default("")
+  category        String   @default("general")   // electronics, accessories, etc.
+  rating          Int      @default(0)            // 0-5 stars
+  isActive        Boolean  @default(true)
+  lastSyncAt      DateTime?
+
+  // Stats
+  totalProducts   Int      @default(0)
+  totalOrders     Int      @default(0)
+  totalSpentUsd   Float    @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  products        Product[]  @relation("ProductSupplierRef")
+  supplierLinks   SupplierLink[]
+}
+
+// ============================================
+// ENLACES DE PROVEEDORES (Supplier Links)
+// ============================================
+model SupplierLink {
+  id              String   @id @default(cuid())
+  title           String
+  url             String
+  type            String   @default("url")  // url, excel, document, note
+  priceUsd        Float    @default(0)
+  pricePen        Float    @default(0)
+  status          String   @default("active") // active, discontinued, out_of_stock
+  notes           String   @default("")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 }
 
 // ============================================

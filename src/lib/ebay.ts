@@ -26,9 +26,13 @@ export async function getAppToken(): Promise<string> {
   const appId = process.env.EBAY_APP_ID;
   const certId = process.env.EBAY_CERT_ID;
 
-  if (!appId || !certId) {
+  // Check for placeholder values (not configured)
+  const isPlaceholder = (val?: string) =>
+    !val || val.startsWith("your-") || val === "";
+
+  if (isPlaceholder(appId) || isPlaceholder(certId)) {
     throw new Error(
-      "eBay API credentials not configured. Set EBAY_APP_ID and EBAY_CERT_ID in .env"
+      "Configura tus API keys de eBay en el archivo .env (EBAY_APP_ID y EBAY_CERT_ID)"
     );
   }
 

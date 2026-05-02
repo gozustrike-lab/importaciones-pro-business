@@ -72,9 +72,9 @@ export const metadata: Metadata = {
 
   // ── Icons ─────────────────────────────────────────────
   icons: {
-    icon: "/og-image-square.png",
-    shortcut: "/og-image-square.png",
-    apple: "/og-image-square.png",
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
   },
 
   // ── Open Graph (Facebook, LinkedIn, WhatsApp, Discord) ─

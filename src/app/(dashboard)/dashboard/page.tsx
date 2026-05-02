@@ -1,22 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { Sidebar, type TabKey } from '@/components/dashboard/sidebar';
-import { DashboardTab } from '@/components/dashboard/dashboard-tab';
-import { ProductosTab } from '@/components/dashboard/productos-tab';
-import { ClientesTab } from '@/components/dashboard/clientes-tab';
-import { VentasTab } from '@/components/dashboard/ventas-tab';
-import { AnaliticaTab } from '@/components/dashboard/analitica-tab';
-import { ImpuestosTab } from '@/components/dashboard/impuestos-tab';
-import { NRUSTab } from '@/components/dashboard/nrus-tab';
-import { CalidadTab } from '@/components/dashboard/calidad-tab';
-import { TrackingTab } from '@/components/dashboard/tracking-tab';
-import { AdminTab } from '@/components/dashboard/admin-tab';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load all tab components for performance
+const DashboardTab = lazy(() => import('@/components/dashboard/dashboard-tab').then(m => ({ default: m.DashboardTab })));
+const ProveedoresTab = lazy(() => import('@/components/dashboard/proveedores-tab').then(m => ({ default: m.ProveedoresTab })));
+const ProductosTab = lazy(() => import('@/components/dashboard/productos-tab').then(m => ({ default: m.ProductosTab })));
+const ClientesTab = lazy(() => import('@/components/dashboard/clientes-tab').then(m => ({ default: m.ClientesTab })));
+const VentasTab = lazy(() => import('@/components/dashboard/ventas-tab').then(m => ({ default: m.VentasTab })));
+const AnaliticaTab = lazy(() => import('@/components/dashboard/analitica-tab').then(m => ({ default: m.AnaliticaTab })));
+const ImpuestosTab = lazy(() => import('@/components/dashboard/impuestos-tab').then(m => ({ default: m.ImpuestosTab })));
+const NRUSTab = lazy(() => import('@/components/dashboard/nrus-tab').then(m => ({ default: m.NRUSTab })));
+const CalidadTab = lazy(() => import('@/components/dashboard/calidad-tab').then(m => ({ default: m.CalidadTab })));
+const TrackingTab = lazy(() => import('@/components/dashboard/tracking-tab').then(m => ({ default: m.TrackingTab })));
+const AdminTab = lazy(() => import('@/components/dashboard/admin-tab').then(m => ({ default: m.AdminTab })));
 
 const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: string) => void }>> = {
   dashboard: DashboardTab,
+  proveedores: ProveedoresTab,
   productos: ProductosTab,
   clientes: ClientesTab,
   ventas: VentasTab,
@@ -30,6 +35,7 @@ const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: str
 
 const tabTitles: Record<TabKey, string> = {
   dashboard: 'Dashboard',
+  proveedores: 'Proveedores',
   productos: 'Inventario',
   clientes: 'CRM Clientes',
   ventas: 'Registro Ventas',
@@ -40,6 +46,29 @@ const tabTitles: Record<TabKey, string> = {
   tracking: 'Tracking',
   admin: 'Super Admin',
 };
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+      </div>
+      <Skeleton className="h-16 w-full" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-48 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -75,8 +104,10 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Tab Content */}
-          <ActiveComponent onNavigate={(tab) => setActiveTab(tab as TabKey)} />
+          {/* Tab Content - Lazy Loaded */}
+          <Suspense fallback={<TabSkeleton />}>
+            <ActiveComponent onNavigate={(tab) => setActiveTab(tab as TabKey)} />
+          </Suspense>
         </div>
       </main>
     </>

@@ -13,6 +13,12 @@ import type {
   NRUSConfig,
   QualityCheck,
   TrackingUpdate,
+  Supplier,
+  SupplierDetail,
+  SupplierFormData,
+  SupplierLink,
+  SupplierLinkFormData,
+  EbayAccountStatus,
 } from './types';
 
 const BASE = '/api';
@@ -190,4 +196,55 @@ export function addTrackingUpdate(productId: string, data: Omit<TrackingUpdate, 
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+// Suppliers (Proveedores)
+export function fetchSuppliers() {
+  return apiFetch<Supplier[]>(`${BASE}/suppliers`);
+}
+
+export function fetchSupplier(id: string) {
+  return apiFetch<SupplierDetail>(`${BASE}/suppliers/${id}`);
+}
+
+export function createSupplier(data: SupplierFormData) {
+  return apiFetch<Supplier>(`${BASE}/suppliers`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateSupplier(id: string, data: Partial<SupplierFormData>) {
+  return apiFetch<Supplier>(`${BASE}/suppliers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteSupplier(id: string) {
+  return apiFetch<{ message: string }>(`${BASE}/suppliers/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function fetchSupplierLinks(supplierId: string) {
+  return apiFetch<SupplierLink[]>(`${BASE}/suppliers/${supplierId}/links`);
+}
+
+export function createSupplierLink(supplierId: string, data: SupplierLinkFormData) {
+  return apiFetch<SupplierLink>(`${BASE}/suppliers/${supplierId}/links`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function syncSupplier(supplierId: string) {
+  return apiFetch<{ message: string; syncedAt: string }>(`${BASE}/suppliers/${supplierId}/sync`, {
+    method: 'POST',
+  });
+}
+
+// eBay Account
+export function fetchEbayAccountStatus() {
+  return apiFetch<EbayAccountStatus>(`${BASE}/ebay/account`);
 }

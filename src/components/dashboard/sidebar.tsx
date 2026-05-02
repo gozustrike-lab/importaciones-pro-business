@@ -16,13 +16,14 @@ import {
   Shield,
   LogOut,
   ChevronDown,
+  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 
-export type TabKey = 'dashboard' | 'productos' | 'clientes' | 'ventas' | 'analitica' | 'impuestos' | 'nrus' | 'calidad' | 'tracking' | 'admin';
+export type TabKey = 'dashboard' | 'proveedores' | 'productos' | 'clientes' | 'ventas' | 'analitica' | 'impuestos' | 'nrus' | 'calidad' | 'tracking' | 'admin';
 
 interface SidebarProps {
   activeTab: TabKey;
@@ -33,6 +34,7 @@ interface SidebarProps {
 
 const navItems: { key: TabKey; label: string; icon: React.ElementType; section?: string; adminOnly?: boolean }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Principal' },
+  { key: 'proveedores', label: 'Proveedores', icon: Store },
   { key: 'productos', label: 'Inventario', icon: Package },
   { key: 'clientes', label: 'CRM Clientes', icon: Users },
   { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart },
