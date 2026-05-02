@@ -64,16 +64,16 @@ function formatPEN(n: number) {
 }
 
 const statusStyles: Record<string, string> = {
-  USA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300',
-  Perú: 'bg-purple-100 text-purple-800 border-purple-300',
-  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  USA: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800',
+  Perú: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
+  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
 };
 
 const gradeStyles: Record<string, string> = {
-  A: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  B: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  C: 'bg-red-100 text-red-800 border-red-300',
+  A: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+  B: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  C: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
 };
 
 // ── eBay Category Options ──
@@ -169,13 +169,32 @@ export function ProductosTab() {
   // ── eBay Search Handler ──
   const handleEbaySearch = async () => {
     if (!ebayQuery.trim()) {
-      toast({ title: 'Campo requerido', description: 'Ingresa un término de búsqueda', variant: 'destructive' });
+      toast({ title: 'Campo requerido', description: 'Ingresa un término de búsqueda' });
       return;
     }
 
     try {
       setEbaySearching(true);
       setEbayResults([]);
+
+      // Check eBay account status first
+      try {
+        const statusRes = await fetch('/api/ebay/account');
+        const statusData = await statusRes.json();
+        if (!statusData.configured) {
+          toast({
+            title: 'eBay no configurado',
+            description: 'Configura tus API keys de eBay (EBAY_APP_ID y EBAY_CERT_ID) en el servidor para poder buscar productos.',
+          });
+          return;
+        }
+      } catch {
+        toast({
+          title: 'eBay no disponible',
+          description: 'No se pudo verificar el estado de la conexión con eBay. Revisa la configuración del servidor.',
+        });
+        return;
+      }
 
       const params = new URLSearchParams();
       params.set('q', ebayQuery.trim());
@@ -197,9 +216,8 @@ export function ProductosTab() {
     } catch (error) {
       console.error('eBay search error:', error);
       toast({
-        title: 'Error en eBay',
-        description: error instanceof Error ? error.message : 'No se pudo conectar con eBay',
-        variant: 'destructive',
+        title: 'Error en la búsqueda de eBay',
+        description: error instanceof Error ? error.message : 'No se pudo conectar con eBay. Intenta de nuevo.',
       });
     } finally {
       setEbaySearching(false);
@@ -273,7 +291,7 @@ export function ProductosTab() {
           <Button
             onClick={() => setEbayDialogOpen(true)}
             variant="outline"
-            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40"
           >
             <ShoppingBag className="h-4 w-4" />
             Buscar en eBay
@@ -310,7 +328,7 @@ export function ProductosTab() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Estado</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="USA">USA</SelectItem>
@@ -323,7 +341,7 @@ export function ProductosTab() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Grado</label>
               <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="A">Grado A</SelectItem>
@@ -437,7 +455,7 @@ export function ProductosTab() {
 
       {/* View Product Dialog */}
       <Dialog open={!!viewProduct} onOpenChange={() => setViewProduct(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Detalle del Producto</DialogTitle>
           </DialogHeader>
@@ -472,7 +490,7 @@ export function ProductosTab() {
       {/* eBay Search Dialog                                          */}
       {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={ebayDialogOpen} onOpenChange={setEbayDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[95vh] sm:max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingBag className="h-5 w-5 text-orange-600" />
@@ -499,7 +517,7 @@ export function ProductosTab() {
               <Button
                 onClick={handleEbaySearch}
                 disabled={ebaySearching}
-                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white shrink-0 min-h-[44px]"
               >
                 {ebaySearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -511,7 +529,7 @@ export function ProductosTab() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="space-y-1 sm:w-[200px]">
+              <div className="space-y-1 flex-1 sm:w-[200px]">
                 <label className="text-xs font-medium text-muted-foreground">Categoría</label>
                 <Select value={ebayCategory} onValueChange={setEbayCategory}>
                   <SelectTrigger>
@@ -527,7 +545,7 @@ export function ProductosTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1 sm:w-[180px]">
+              <div className="space-y-1 flex-1 sm:w-[180px]">
                 <label className="text-xs font-medium text-muted-foreground">Ordenar por</label>
                 <Select value={ebaySort} onValueChange={setEbaySort}>
                   <SelectTrigger>
@@ -565,8 +583,8 @@ export function ProductosTab() {
                 </p>
                 {ebayResults.map((item) => (
                   <Card key={item.itemId} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         {/* Image */}
                         <div className="w-24 h-24 bg-muted rounded-md flex-shrink-0 overflow-hidden">
                           {item.image ? (
@@ -621,12 +639,12 @@ export function ProductosTab() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex flex-col gap-2 flex-shrink-0">
+                        <div className="flex sm:flex-col gap-2 flex-shrink-0">
                           <Button
                             size="sm"
                             onClick={() => handleEbayImport(item)}
                             disabled={ebayImporting === item.itemId}
-                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-xs text-white"
+                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-xs text-white flex-1 sm:flex-initial min-h-[44px]"
                           >
                             {ebayImporting === item.itemId ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -638,7 +656,7 @@ export function ProductosTab() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="gap-1 text-xs"
+                            className="gap-1 text-xs flex-1 sm:flex-initial min-h-[44px]"
                             asChild
                           >
                             <a href={item.itemWebUrl} target="_blank" rel="noopener noreferrer">

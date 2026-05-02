@@ -313,7 +313,7 @@ export function VentasTab() {
                 <TableBody>
                   {filteredSales.map((s) => (
                     <TableRow key={s.id}>
-                      <TableCell className="text-sm whitespace-nowrap">
+                      <TableCell className="text-sm">
                         {new Date(s.saleDate).toLocaleDateString('es-PE')}
                       </TableCell>
                       <TableCell className="font-medium max-w-[180px] truncate" title={s.productDescription}>
@@ -353,7 +353,7 @@ export function VentasTab() {
 
       {/* New Sale Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[95vh] sm:max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Nueva Venta</DialogTitle>
             <DialogDescription>
@@ -387,7 +387,7 @@ export function VentasTab() {
             {/* Selected product info */}
             {selectedProduct && (
               <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div><span className="text-muted-foreground">Modelo:</span> {selectedProduct.model || selectedProduct.description}</div>
                   <div><span className="text-muted-foreground">Grado:</span> <Badge variant="outline">Grado {selectedProduct.grade}</Badge></div>
                   <div><span className="text-muted-foreground">Costo Total:</span> <span className="font-medium">{formatPEN(selectedProduct.totalCostPEN)}</span></div>
@@ -426,7 +426,7 @@ export function VentasTab() {
             </div>
 
             {/* Cost breakdown */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Costo Marketing (S/)</Label>
                 <Input
@@ -450,7 +450,7 @@ export function VentasTab() {
             </div>
 
             {/* Channel and Payment */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Canal de Venta</Label>
                 <Select value={form.saleChannel} onValueChange={(v) => setForm({ ...form, saleChannel: v as SaleChannel })}>

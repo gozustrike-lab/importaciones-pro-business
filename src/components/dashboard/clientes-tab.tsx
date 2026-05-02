@@ -281,7 +281,7 @@ export function ClientesTab() {
 
       {/* Delete Confirmation */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar Eliminación</DialogTitle>
             <DialogDescription>¿Estás seguro de que deseas eliminar este cliente? Solo se pueden eliminar clientes sin ventas registradas.</DialogDescription>
@@ -295,7 +295,7 @@ export function ClientesTab() {
 
       {/* Client Detail Dialog */}
       <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[95vh] sm:max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Ficha del Cliente
@@ -315,7 +315,7 @@ export function ClientesTab() {
           ) : selectedClient ? (
             <div className="space-y-6">
               {/* Client Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Nombre:</span>
@@ -348,7 +348,7 @@ export function ClientesTab() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-bold">{selectedClient.totalPurchases}</p>
                   <p className="text-xs text-muted-foreground">Compras Realizadas</p>
@@ -465,7 +465,7 @@ function ClientFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[95vh] sm:max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{client ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
           <DialogDescription>
@@ -477,7 +477,7 @@ function ClientFormDialog({
             <Label htmlFor="fullName">Nombre Completo *</Label>
             <Input id="fullName" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="Juan Pérez López" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dniRuc">DNI / RUC</Label>
               <Input id="dniRuc" value={formData.dniRuc} onChange={(e) => setFormData({ ...formData, dniRuc: e.target.value })} placeholder="12345678" />
@@ -491,7 +491,7 @@ function ClientFormDialog({
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="cliente@email.com" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="ciudad">Ciudad</Label>
               <Input id="ciudad" value={formData.ciudad} onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })} placeholder="Lima" />

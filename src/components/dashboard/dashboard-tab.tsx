@@ -129,7 +129,7 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
@@ -219,9 +219,9 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                 return (
                   <div key={status} className="flex items-center gap-3">
                     <div className={`h-3 w-3 rounded-full ${statusColors[status] || 'bg-zinc-400'}`} />
-                    <div className="w-24 shrink-0 text-sm font-medium">{status}</div>
-                    <div className="flex-1"><Progress value={pct} className="h-2.5" /></div>
-                    <div className="w-20 text-right text-sm text-muted-foreground">
+                    <div className="w-20 sm:w-24 shrink-0 text-sm font-medium">{status}</div>
+                    <div className="flex-1 min-w-0"><Progress value={pct} className="h-2.5" /></div>
+                    <div className="w-16 sm:w-20 text-right text-sm text-muted-foreground shrink-0">
                       {count} ({Math.round(pct)}%)
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
           </div>
 
           {/* NRUS Alert */}
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -384,10 +384,10 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                 <span className="font-medium">S/ 8,000</span>
               </div>
               <Badge variant="outline" className={
-                stats.nrus.alertLevel === 'exceeded' ? 'bg-red-100 text-red-700 border-red-300' :
-                stats.nrus.alertLevel === 'danger' ? 'bg-orange-100 text-orange-700 border-orange-300' :
-                stats.nrus.alertLevel === 'warning' ? 'bg-amber-100 text-amber-700 border-amber-300' :
-                'bg-emerald-100 text-emerald-700 border-emerald-300'
+                stats.nrus.alertLevel === 'exceeded' ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
+                stats.nrus.alertLevel === 'danger' ? 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
+                stats.nrus.alertLevel === 'warning' ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
+                'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
               }>
                 {stats.nrus.category}: {stats.nrus.percentageOfThreshold.toFixed(0)}% del límite
               </Badge>
@@ -489,11 +489,11 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    USA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300',
-    Perú: 'bg-purple-100 text-purple-800 border-purple-300',
-    Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    Vendido: 'bg-zinc-100 text-zinc-800 border-zinc-300',
+    USA: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+    'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800',
+    Perú: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
+    Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+    Vendido: 'bg-zinc-100 text-zinc-800 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
   };
   return (
     <Badge variant="outline" className={styles[status] || ''}>

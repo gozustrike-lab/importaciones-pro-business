@@ -533,7 +533,7 @@ export function ProveedoresTab() {
       {/* DELETE CONFIRMATION                     */}
       {/* ═══════════════════════════════════════ */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar Eliminación</DialogTitle>
             <DialogDescription>
@@ -551,7 +551,7 @@ export function ProveedoresTab() {
       {/* SUPPLIER DETAIL DIALOG                  */}
       {/* ═══════════════════════════════════════ */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[95vh] sm:max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {detailSupplier?.country && <span>{getCountryFlag(detailSupplier.country)}</span>}
@@ -612,7 +612,7 @@ export function ProveedoresTab() {
                   </div>
 
                   {/* Contact details */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {detailSupplier.website && (
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground" />
@@ -660,7 +660,7 @@ export function ProveedoresTab() {
                   )}
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-3 text-center rounded-lg border p-3 bg-muted/20">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center rounded-lg border p-3 bg-muted/20">
                     <div>
                       <p className="text-lg font-bold">{detailSupplier.totalProducts}</p>
                       <p className="text-xs text-muted-foreground">Productos</p>
@@ -810,7 +810,7 @@ export function ProveedoresTab() {
       {/* EBAY CONNECT DIALOG                     */}
       {/* ═══════════════════════════════════════ */}
       <Dialog open={ebayDialogOpen} onOpenChange={setEbayDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Store className="h-5 w-5 text-orange-600" />
@@ -899,7 +899,7 @@ function SupplierFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[95vh] sm:max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{supplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}</DialogTitle>
           <DialogDescription>
@@ -918,7 +918,7 @@ function SupplierFormDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="website">Website</Label>
               <Input
@@ -939,7 +939,7 @@ function SupplierFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contactEmail">Email de Contacto</Label>
               <Input
@@ -961,7 +961,7 @@ function SupplierFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>País</Label>
               <Select value={form.country} onValueChange={(v) => setForm({ ...form, country: v })}>
@@ -1055,7 +1055,7 @@ function LinkFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Agregar Enlace</DialogTitle>
           <DialogDescription>
@@ -1084,7 +1084,7 @@ function LinkFormDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Tipo</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as SupplierLinkType })}>
@@ -1109,7 +1109,7 @@ function LinkFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="priceUsd">Precio USD</Label>
               <Input

@@ -110,7 +110,7 @@ export function AnaliticaTab() {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold tracking-tight">Analítica de Utilidad Real</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}><CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
           ))}
@@ -184,7 +184,7 @@ export function AnaliticaTab() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
@@ -221,7 +221,7 @@ export function AnaliticaTab() {
             <p className="text-xl font-bold text-blue-600">{formatPEN(analytics.totalCostOperative)}</p>
           </CardContent>
         </Card>
-        <Card className={analytics.netProfit >= 0 ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'}>
+        <Card className={analytics.netProfit >= 0 ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20'}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
               {analytics.netProfit >= 0 ? (
@@ -240,9 +240,9 @@ export function AnaliticaTab() {
       </div>
 
       {/* Best / Worst Product */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         {analytics.bestProduct && (
-          <Card className="border-emerald-200">
+          <Card className="border-emerald-300 dark:border-emerald-800">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <ArrowUpRight className="h-5 w-5 text-emerald-500" />
@@ -259,7 +259,7 @@ export function AnaliticaTab() {
           </Card>
         )}
         {analytics.worstProduct && analytics.worstProduct.name !== analytics.bestProduct?.name && (
-          <Card className="border-red-200">
+          <Card className="border-red-300 dark:border-red-800">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <ArrowDownRight className="h-5 w-5 text-red-500" />
@@ -278,7 +278,7 @@ export function AnaliticaTab() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Revenue vs Costs vs Profit */}
         <Card>
           <CardHeader>
@@ -416,7 +416,7 @@ export function AnaliticaTab() {
               <TableBody>
                 {recentSalesBreakdown.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="text-sm whitespace-nowrap">{s.date}</TableCell>
+                    <TableCell className="text-sm">{s.date}</TableCell>
                     <TableCell className="text-sm max-w-[150px] truncate" title={s.product}>{s.product}</TableCell>
                     <TableCell className="text-sm">{s.client}</TableCell>
                     <TableCell className="text-right text-sm font-medium">{formatPEN(s.revenue)}</TableCell>

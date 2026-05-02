@@ -21,7 +21,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: "#10B981",
-  colorScheme: "dark",
 };
 
 export const metadata: Metadata = {
@@ -123,7 +122,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
         {/* Structured Data (JSON-LD) */}
         <script

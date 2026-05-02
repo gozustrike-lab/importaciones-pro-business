@@ -60,7 +60,7 @@ function NavItem({
     <button
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+        'flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors min-h-[44px]',
         active
           ? 'bg-emerald-600/20 text-emerald-400'
           : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -179,6 +179,13 @@ function SidebarContent({ activeTab, onTabChange, userRole, session }: SidebarPr
 }
 
 export function Sidebar({ activeTab, onTabChange, userRole = 'TENANT_USER', session }: SidebarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleTabChange = (tab: TabKey) => {
+    onTabChange(tab);
+    setMobileOpen(false); // Close mobile sidebar after click
+  };
+
   return (
     <>
       {/* Desktop sidebar */}
@@ -187,20 +194,20 @@ export function Sidebar({ activeTab, onTabChange, userRole = 'TENANT_USER', sess
       </aside>
 
       {/* Mobile sidebar */}
-      <Sheet>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="fixed top-4 left-4 z-50 lg:hidden bg-white shadow-md border"
+            className="fixed top-4 left-4 z-50 lg:hidden bg-zinc-900 shadow-md border border-zinc-700 text-zinc-200 hover:bg-zinc-800"
           >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Menú</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0 bg-zinc-900 border-zinc-800">
+        <SheetContent side="left" className="w-72 p-0 bg-zinc-900 border-zinc-800">
           <SheetTitle className="sr-only">Navegación</SheetTitle>
-          <SidebarContent activeTab={activeTab} onTabChange={onTabChange} userRole={userRole} session={session} />
+          <SidebarContent activeTab={activeTab} onTabChange={handleTabChange} userRole={userRole} session={session} />
         </SheetContent>
       </Sheet>
     </>

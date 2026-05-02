@@ -84,7 +84,7 @@ export default function DashboardPage() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole={userRole} session={session} />
 
       {/* Main Content */}
-      <main className="lg:pl-64">
+      <main className="lg:pl-64 overflow-x-hidden">
         <div className={`mx-auto max-w-7xl ${isMobile ? 'p-4 pt-16' : 'p-6'}`}>
           {/* Mobile Header */}
           {isMobile && (
