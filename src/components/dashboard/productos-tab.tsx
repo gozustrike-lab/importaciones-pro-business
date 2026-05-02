@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, ShoppingBag, Loader2, ExternalLink, DollarSign } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -36,11 +36,29 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { fetchProducts, deleteProduct, createProduct, updateProduct } from '@/lib/api';
 import type { Product, ProductFormData } from '@/lib/types';
 import { ProductDialog } from './product-dialog';
 import { useToast } from '@/hooks/use-toast';
 
+// ── eBay Types ──
+interface EbaySearchItem {
+  itemId: string;
+  title: string;
+  price: { value: string; currency: string };
+  image: string;
+  condition: string;
+  shippingCost: string;
+  itemWebUrl: string;
+  seller: {
+    username: string;
+    feedbackScore: number;
+    feedbackPercentage: string;
+  };
+}
+
+// ── Helpers ──
 function formatPEN(n: number) {
   return `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -58,6 +76,23 @@ const gradeStyles: Record<string, string> = {
   C: 'bg-red-100 text-red-800 border-red-300',
 };
 
+// ── eBay Category Options ──
+const EBAY_CATEGORIES = [
+  { id: '6000', label: 'iPads' },
+  { id: '111422', label: 'MacBooks' },
+  { id: '9355', label: 'iPhones' },
+  { id: '178893', label: 'Smartwatches' },
+  { id: '112532', label: 'AirPods / Accesorios' },
+];
+
+// ── eBay Sort Options ──
+const EBAY_SORT_OPTIONS = [
+  { value: 'price', label: 'Precio menor' },
+  { value: 'price+desc', label: 'Precio mayor' },
+  { value: 'relevance', label: 'Mejor match' },
+  { value: 'newlyListed', label: 'Más recientes' },
+];
+
 export function ProductosTab() {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
@@ -70,6 +105,15 @@ export function ProductosTab() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+
+  // ── eBay Search State ──
+  const [ebayDialogOpen, setEbayDialogOpen] = useState(false);
+  const [ebayQuery, setEbayQuery] = useState('');
+  const [ebayCategory, setEbayCategory] = useState('');
+  const [ebaySort, setEbaySort] = useState('price');
+  const [ebaySearching, setEbaySearching] = useState(false);
+  const [ebayResults, setEbayResults] = useState<EbaySearchItem[]>([]);
+  const [ebayImporting, setEbayImporting] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -122,6 +166,101 @@ export function ProductosTab() {
     }
   };
 
+  // ── eBay Search Handler ──
+  const handleEbaySearch = async () => {
+    if (!ebayQuery.trim()) {
+      toast({ title: 'Campo requerido', description: 'Ingresa un término de búsqueda', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setEbaySearching(true);
+      setEbayResults([]);
+
+      const params = new URLSearchParams();
+      params.set('q', ebayQuery.trim());
+      if (ebayCategory) params.set('category_id', ebayCategory);
+      if (ebaySort) params.set('sort', ebaySort);
+      params.set('limit', '20');
+
+      const response = await fetch(`/api/ebay/search?${params.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error en la búsqueda');
+      }
+
+      setEbayResults(data.items || []);
+      if (data.items?.length === 0) {
+        toast({ title: 'Sin resultados', description: 'No se encontraron productos en eBay' });
+      }
+    } catch (error) {
+      console.error('eBay search error:', error);
+      toast({
+        title: 'Error en eBay',
+        description: error instanceof Error ? error.message : 'No se pudo conectar con eBay',
+        variant: 'destructive',
+      });
+    } finally {
+      setEbaySearching(false);
+    }
+  };
+
+  // ── eBay Import Handler ──
+  const handleEbayImport = async (item: EbaySearchItem) => {
+    try {
+      setEbayImporting(item.itemId);
+      toast({ title: 'Importando...', description: `Importando ${item.title}` });
+
+      const productData: ProductFormData = {
+        description: item.title,
+        category: guessCategory(ebayCategory),
+        grade: 'A',
+        condition: item.condition || 'Used',
+        status: 'USA',
+        supplier: 'eBay',
+        courier: '',
+        trackingNumber: '',
+        estimatedArrival: '',
+        screenOk: false,
+        touchOk: false,
+        speakersOk: false,
+        microphoneOk: false,
+        wifiOk: false,
+        bluetoothOk: false,
+        camerasOk: false,
+        portsOk: false,
+        buttonsOk: false,
+        keyboardOk: false,
+        trackpadOk: false,
+        chassisOk: false,
+        batteryOk: false,
+        chargerIncluded: false,
+        originalBox: false,
+        batteryCycles: null,
+        purchasePriceUSD: parseFloat(item.price.value) || 0,
+        shippingCostUSD: parseFloat(item.shippingCost) || 0,
+        advertisingCostUSD: 0,
+        extraCostsUSD: 0,
+        exchangeRate: 3.7,
+        salePricePEN: 0,
+      };
+
+      await createProduct(productData);
+      toast({ title: 'Producto importado', description: `"${item.title}" se agregó al inventario.` });
+      await loadProducts();
+    } catch (error) {
+      console.error('eBay import error:', error);
+      toast({
+        title: 'Error al importar',
+        description: error instanceof Error ? error.message : 'No se pudo importar el producto',
+        variant: 'destructive',
+      });
+    } finally {
+      setEbayImporting(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -130,16 +269,26 @@ export function ProductosTab() {
           <h2 className="text-2xl font-bold tracking-tight">Productos</h2>
           <p className="text-muted-foreground">Gestión de inventario de importación</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditProduct(null);
-            setDialogOpen(true);
-          }}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo Producto
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setEbayDialogOpen(true)}
+            variant="outline"
+            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            Buscar en eBay
+          </Button>
+          <Button
+            onClick={() => {
+              setEditProduct(null);
+              setDialogOpen(true);
+            }}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -318,8 +467,209 @@ export function ProductosTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* eBay Search Dialog                                          */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <Dialog open={ebayDialogOpen} onOpenChange={setEbayDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5 text-orange-600" />
+              Buscar en eBay
+            </DialogTitle>
+            <DialogDescription>
+              Busca productos en eBay para importar a tu inventario
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search Controls */}
+          <div className="space-y-4 border-b pb-4">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar iPhone, iPad, MacBook..."
+                  value={ebayQuery}
+                  onChange={(e) => setEbayQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEbaySearch()}
+                  className="pl-9"
+                />
+              </div>
+              <Button
+                onClick={handleEbaySearch}
+                disabled={ebaySearching}
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+              >
+                {ebaySearching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Buscar
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="space-y-1 sm:w-[200px]">
+                <label className="text-xs font-medium text-muted-foreground">Categoría</label>
+                <Select value={ebayCategory} onValueChange={setEbayCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas</SelectItem>
+                    {EBAY_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 sm:w-[180px]">
+                <label className="text-xs font-medium text-muted-foreground">Ordenar por</label>
+                <Select value={ebaySort} onValueChange={setEbaySort}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EBAY_SORT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Results */}
+          <ScrollArea className="flex-1 min-h-0">
+            {ebaySearching ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                <p className="text-sm text-muted-foreground">Buscando en eBay...</p>
+              </div>
+            ) : ebayResults.length === 0 && !ebaySearching ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <ShoppingBag className="h-12 w-12 mb-4 opacity-30" />
+                <p className="text-lg font-medium">Busca productos en eBay</p>
+                <p className="text-sm">Ingresa un término y haz clic en &quot;Buscar&quot;</p>
+              </div>
+            ) : (
+              <div className="space-y-3 pr-3">
+                <p className="text-sm text-muted-foreground">
+                  {ebayResults.length} resultado{ebayResults.length !== 1 ? 's' : ''} encontrado{ebayResults.length !== 1 ? 's' : ''}
+                </p>
+                {ebayResults.map((item) => (
+                  <Card key={item.itemId} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        {/* Image */}
+                        <div className="w-24 h-24 bg-muted rounded-md flex-shrink-0 overflow-hidden">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingBag className="h-6 w-6 text-muted-foreground/50" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium line-clamp-2 mb-1.5">
+                            {item.title}
+                          </h4>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <DollarSign className="h-3 w-3" />
+                              {parseFloat(item.price.value).toLocaleString('en-US', {
+                                style: 'currency',
+                                currency: item.price.currency,
+                                minimumFractionDigits: 2,
+                              })}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {item.condition}
+                            </Badge>
+                            {parseFloat(item.shippingCost) > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{parseFloat(item.shippingCost).toLocaleString('en-US', {
+                                  style: 'currency',
+                                  currency: item.price.currency,
+                                })} envío
+                              </Badge>
+                            )}
+                            {parseFloat(item.shippingCost) === 0 && (
+                              <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                                Envío gratis
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>{item.seller.username}</span>
+                            <span>•</span>
+                            <span>{item.seller.feedbackPercentage} positivo</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            onClick={() => handleEbayImport(item)}
+                            disabled={ebayImporting === item.itemId}
+                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-xs text-white"
+                          >
+                            {ebayImporting === item.itemId ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <ShoppingBag className="h-3 w-3" />
+                            )}
+                            Importar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="gap-1 text-xs"
+                            asChild
+                          >
+                            <a href={item.itemWebUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3" />
+                              Ver en eBay
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+// ── Utility: Guess product category from eBay category ID ──
+function guessCategory(ebayCategoryId: string): ProductFormData['category'] {
+  const map: Record<string, ProductFormData['category']> = {
+    '6000': 'iPad',
+    '111422': 'Laptop',
+    '9355': 'iPhone',
+    '178893': 'Smartwatch',
+    '112532': 'Accesorio',
+  };
+  return map[ebayCategoryId] || 'Otro';
 }
 
 // Simple inline package icon for empty state
