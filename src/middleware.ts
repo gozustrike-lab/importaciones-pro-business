@@ -6,11 +6,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/register", "/api/auth"];
+  const publicRoutes = ["/login", "/register", "/api/auth", "/api/og"];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   // Static files and API routes (except protected ones)
-  const isStaticFile = pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.includes(".");
+  const isStaticFile =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/og-image") ||
+    pathname.startsWith("/logo") ||
+    pathname.startsWith("/robots") ||
+    pathname.startsWith("/sitemap") ||
+    pathname === "/";
   const isApiRoute = pathname.startsWith("/api");
 
   // Allow public routes, static files, and auth API routes
@@ -23,11 +30,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get the JWT token
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  // Get the JWT token (with fallback for missing NEXTAUTH_SECRET)
+  let token = null;
+  try {
+    token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+  } catch (error) {
+    console.error("Middleware auth error:", error);
+  }
 
   // If no token and not a public route, redirect to login
   if (!token) {
