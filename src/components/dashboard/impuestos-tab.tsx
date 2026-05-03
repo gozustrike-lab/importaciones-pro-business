@@ -141,7 +141,7 @@ export function ImpuestosTab() {
                 <h4 className="font-semibold text-sm">Resultado</h4>
                 {result.exempt ? (
                   <div className="text-center py-4">
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 px-4 py-1.5 text-sm">
+                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 px-4 py-1.5 text-sm dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
                       ✓ EXENTO DE IMPUESTOS
                     </Badge>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -211,7 +211,7 @@ export function ImpuestosTab() {
               <CardDescription>Normativa vigente para importaciones a Perú</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className="bg-emerald-600">Regla 1</Badge>
                   <span className="font-semibold text-sm">FOB {'>'} $200 USD</span>
@@ -222,7 +222,7 @@ export function ImpuestosTab() {
                   <li>• Aplicar 10% de Percepción sobre (FOB + Ad/Valorem + IGV)</li>
                 </ul>
               </div>
-              <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4">
+              <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className="bg-sky-600">Regla 2</Badge>
                   <span className="font-semibold text-sm">FOB ≤ $200 USD</span>

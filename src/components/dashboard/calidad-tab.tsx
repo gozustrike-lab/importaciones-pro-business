@@ -335,7 +335,7 @@ export function CalidadTab() {
                             })}
                           </p>
                         </div>
-                        <Badge variant="outline" className={allPassed ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300'}>
+                        <Badge variant="outline" className={allPassed ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}>
                           {allPassed ? '✓ Aprobado' : '⚠ Parcial'}
                         </Badge>
                       </div>

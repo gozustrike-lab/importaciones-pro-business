@@ -60,16 +60,16 @@ function formatPEN(n: number) {
 }
 
 const channelColors: Record<string, string> = {
-  MercadoLibre: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  Tienda: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  WhatsApp: 'bg-green-100 text-green-800 border-green-300',
-  Facebook: 'bg-blue-100 text-blue-800 border-blue-300',
+  MercadoLibre: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  Tienda: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+  WhatsApp: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+  Facebook: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
 };
 
 const deliveryColors: Record<string, string> = {
-  Pendiente: 'bg-amber-100 text-amber-800 border-amber-300',
-  'En camino': 'bg-sky-100 text-sky-800 border-sky-300',
-  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  Pendiente: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+  'En camino': 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800',
+  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
 };
 
 export function VentasTab() {

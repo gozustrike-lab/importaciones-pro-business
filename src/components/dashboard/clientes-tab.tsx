@@ -233,7 +233,7 @@ export function ClientesTab() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{c.fullName}</span>
                           {c.isFrequent && (
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5">
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
                               <Star className="h-3 w-3 mr-0.5" /> VIP
                             </Badge>
                           )}
@@ -300,7 +300,7 @@ export function ClientesTab() {
             <DialogTitle className="flex items-center gap-2">
               Ficha del Cliente
               {selectedClient?.isFrequent && (
-                <Badge className="bg-amber-100 text-amber-700 border-amber-300">
+                <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
                   <Star className="h-3 w-3 mr-1" /> Cliente Frecuente
                 </Badge>
               )}

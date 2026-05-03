@@ -90,16 +90,16 @@ const COUNTRIES = [
 ];
 
 const LINK_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  url: { label: 'URL', icon: Globe, color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  excel: { label: 'Excel', icon: FileSpreadsheet, color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-  document: { label: 'Documento', icon: FileText, color: 'bg-orange-100 text-orange-700 border-orange-300' },
-  note: { label: 'Nota', icon: StickyNote, color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  url: { label: 'URL', icon: Globe, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' },
+  excel: { label: 'Excel', icon: FileSpreadsheet, color: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' },
+  document: { label: 'Documento', icon: FileText, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' },
+  note: { label: 'Nota', icon: StickyNote, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
 };
 
 const LINK_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  active: { label: 'Activo', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-  discontinued: { label: 'Descatalogado', color: 'bg-red-100 text-red-700 border-red-300' },
-  out_of_stock: { label: 'Sin Stock', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  active: { label: 'Activo', color: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' },
+  discontinued: { label: 'Descatalogado', color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  out_of_stock: { label: 'Sin Stock', color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
 };
 
 // ── Helper: Stars ──
@@ -121,7 +121,7 @@ function RatingStars({ rating, onRate, size = 'sm' }: { rating: number; onRate?:
           >
             <Star
               className={`${size === 'sm' ? 'h-3.5 w-3.5' : 'h-5 w-5'} ${
-                filled ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-300'
+                filled ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'
               }`}
             />
           </button>
@@ -163,6 +163,12 @@ export function ProveedoresTab() {
   // eBay status
   const [ebayStatus, setEbayStatus] = useState<EbayAccountStatus | null>(null);
   const [ebayDialogOpen, setEbayDialogOpen] = useState(false);
+  const [ebayCardDismissed, setEbayCardDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ebay-card-dismissed') === 'true';
+    }
+    return false;
+  });
 
   // Load suppliers
   const loadSuppliers = useCallback(async () => {
@@ -311,6 +317,7 @@ export function ProveedoresTab() {
       </div>
 
       {/* eBay Connection Card */}
+      {!ebayCardDismissed && (
       <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 dark:border-orange-900">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -330,6 +337,7 @@ export function ProveedoresTab() {
               </div>
             </div>
             <div className="flex gap-2">
+              <div className="flex items-center gap-2">
               {ebayStatus?.connected ? (
                 <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
                   ✓ Conectado
@@ -345,10 +353,23 @@ export function ProveedoresTab() {
                   Conectar cuenta eBay
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setEbayCardDismissed(true);
+                  localStorage.setItem('ebay-card-dismissed', 'true');
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Filters */}
       <Card>
@@ -416,7 +437,7 @@ export function ProveedoresTab() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {!supplier.isActive && (
-                      <Badge variant="outline" className="text-[10px] text-zinc-400 border-zinc-300">
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
                         Inactivo
                       </Badge>
                     )}

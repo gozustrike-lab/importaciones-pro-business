@@ -103,14 +103,14 @@ function RoleBadge({ role }: { role: string }) {
   switch (role) {
     case 'SUPER_ADMIN':
       return (
-        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200">
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/50">
           <Shield className="h-3 w-3 mr-1" />
           SUPER_ADMIN
         </Badge>
       );
     case 'TENANT_ADMIN':
       return (
-        <Badge className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200">
+        <Badge className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50">
           <Shield className="h-3 w-3 mr-1" />
           TENANT_ADMIN
         </Badge>
@@ -125,9 +125,9 @@ function RoleBadge({ role }: { role: string }) {
 
 function PlanBadge({ plan }: { plan: string }) {
   const planStyles: Record<string, string> = {
-    free: 'bg-gray-100 text-gray-700 border-gray-300',
-    pro: 'bg-amber-100 text-amber-700 border-amber-300',
-    enterprise: 'bg-purple-100 text-purple-700 border-purple-300',
+    free: 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+    pro: 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+    enterprise: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
   };
   return (
     <Badge className={planStyles[plan] ?? planStyles.free}>
@@ -719,8 +719,8 @@ export function AdminTab({ onNavigate }: AdminTabProps) {
                           size="sm"
                           className={`h-8 gap-1.5 text-xs ${
                             t.isActive
-                              ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                              ? 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30'
+                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                           }`}
                           onClick={() =>
                             handleToggleTenant(t.id, t.isActive)
@@ -809,8 +809,8 @@ export function AdminTab({ onNavigate }: AdminTabProps) {
                           size="sm"
                           className={`h-8 gap-1.5 text-xs ${
                             u.isActive
-                              ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                              ? 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30'
+                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                           }`}
                           onClick={() =>
                             handleToggleUser(u.id, u.isActive)

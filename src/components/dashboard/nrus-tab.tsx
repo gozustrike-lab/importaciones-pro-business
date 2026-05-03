@@ -32,9 +32,9 @@ const alertColors: Record<string, string> = {
 };
 
 const catBadgeStyles: Record<string, string> = {
-  'Cat 1': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  'Cat 2': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  Excedido: 'bg-red-100 text-red-800 border-red-300',
+  'Cat 1': 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+  'Cat 2': 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  Excedido: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
 };
 
 export function NRUSTab() {
@@ -266,26 +266,26 @@ export function NRUSTab() {
                   <td className="py-3 pr-4 font-medium">Cat 1</td>
                   <td className="py-3 pr-4">{config ? formatPEN(config.category1Limit) : 'S/ 5,000'}</td>
                   <td className="py-3 pr-4">
-                    <Badge className="bg-yellow-100 text-yellow-800">80% ({config ? formatPEN(config.category1Limit * 0.8) : 'S/ 4,000'})</Badge>
+                    <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">80% ({config ? formatPEN(config.category1Limit * 0.8) : 'S/ 4,000'})</Badge>
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge className="bg-orange-100 text-orange-800">90% ({config ? formatPEN(config.category1Limit * 0.9) : 'S/ 4,500'})</Badge>
+                    <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">90% ({config ? formatPEN(config.category1Limit * 0.9) : 'S/ 4,500'})</Badge>
                   </td>
                   <td className="py-3">
-                    <Badge className="bg-red-100 text-red-800">100% ({config ? formatPEN(config.category1Limit) : 'S/ 5,000'})</Badge>
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">100% ({config ? formatPEN(config.category1Limit) : 'S/ 5,000'})</Badge>
                   </td>
                 </tr>
                 <tr>
                   <td className="py-3 pr-4 font-medium">Cat 2</td>
                   <td className="py-3 pr-4">{config ? formatPEN(config.category2Limit) : 'S/ 8,000'}</td>
                   <td className="py-3 pr-4">
-                    <Badge className="bg-yellow-100 text-yellow-800">80% ({config ? formatPEN(config.category2Limit * 0.8) : 'S/ 6,400'})</Badge>
+                    <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">80% ({config ? formatPEN(config.category2Limit * 0.8) : 'S/ 6,400'})</Badge>
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge className="bg-orange-100 text-orange-800">90% ({config ? formatPEN(config.category2Limit * 0.9) : 'S/ 7,200'})</Badge>
+                    <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">90% ({config ? formatPEN(config.category2Limit * 0.9) : 'S/ 7,200'})</Badge>
                   </td>
                   <td className="py-3">
-                    <Badge className="bg-red-100 text-red-800">100% ({config ? formatPEN(config.category2Limit) : 'S/ 8,000'})</Badge>
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">100% ({config ? formatPEN(config.category2Limit) : 'S/ 8,000'})</Badge>
                   </td>
                 </tr>
               </tbody>

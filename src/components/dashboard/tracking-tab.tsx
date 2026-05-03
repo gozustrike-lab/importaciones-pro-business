@@ -26,10 +26,10 @@ import type { Product, TrackingUpdate } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const statusStyles: Record<string, string> = {
-  USA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300',
-  Perú: 'bg-purple-100 text-purple-800 border-purple-300',
-  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  USA: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800',
+  Perú: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
+  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
 };
 
 export function TrackingTab() {
@@ -175,8 +175,8 @@ export function TrackingTab() {
                                       isFirst
                                         ? 'bg-emerald-500 border-emerald-500'
                                         : isLast
-                                        ? 'bg-zinc-300 border-zinc-400'
-                                        : 'bg-white border-zinc-400'
+                                        ? 'bg-muted-foreground/30 border-muted-foreground/40'
+                                        : 'bg-background border-muted-foreground/40'
                                     }`}
                                   />
                                 </div>

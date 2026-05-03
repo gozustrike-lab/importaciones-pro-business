@@ -6,10 +6,28 @@ import { getToken } from "next-auth/jwt";
  * Used in API routes for tenant isolation.
  */
 export async function getCurrentUser() {
+  // First try: read from middleware-injected headers
   const reqHeaders = await headers();
-  const userId = reqHeaders.get("x-user-id");
-  const userRole = reqHeaders.get("x-user-role");
-  const tenantId = reqHeaders.get("x-tenant-id");
+  let userId = reqHeaders.get("x-user-id");
+  let userRole = reqHeaders.get("x-user-role");
+  let tenantId = reqHeaders.get("x-tenant-id");
+
+  // Fallback: decode JWT directly (for Vercel edge compatibility)
+  if (!userId && !userRole) {
+    try {
+      const token = await getToken({
+        secret: process.env.NEXTAUTH_SECRET,
+        secureCookie: process.env.NODE_ENV === "production",
+      });
+      if (token) {
+        userId = token.sub || "";
+        userRole = (token.role as string) || "TENANT_USER";
+        tenantId = (token.tenantId as string) || "";
+      }
+    } catch {
+      // Token decode failed, continue with empty values
+    }
+  }
 
   return {
     userId: userId || null,
