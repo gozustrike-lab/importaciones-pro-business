@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Search, Eye, Pencil, Trash2, Store, ExternalLink, Star,
   Globe, Mail, Phone, Link2, FileSpreadsheet, FileText, StickyNote,
-  RefreshCw, Package, DollarSign, Upload, Loader2, X,
+  RefreshCw, Package, DollarSign, Upload, Loader2, X, Unplug, CheckCircle2,
 } from 'lucide-react';
 import {
   Card,
@@ -47,6 +47,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   fetchSuppliers, fetchSupplier, createSupplier, updateSupplier,
   deleteSupplier, createSupplierLink, syncSupplier, fetchEbayAccountStatus,
+  fetchEbayAuthUrl, disconnectEbayAccount, fetchEbayUser,
 } from '@/lib/api';
 import type {
   Supplier, SupplierDetail, SupplierFormData, SupplierLink,
@@ -169,6 +170,8 @@ export function ProveedoresTab() {
     }
     return false;
   });
+  const [ebayConnecting, setEbayConnecting] = useState(false);
+  const [ebayDisconnecting, setEbayDisconnecting] = useState(false);
 
   // Load suppliers
   const loadSuppliers = useCallback(async () => {
@@ -196,7 +199,21 @@ export function ProveedoresTab() {
   useEffect(() => {
     loadSuppliers();
     loadEbayStatus();
-  }, [loadSuppliers, loadEbayStatus]);
+
+    // Check if redirected back from eBay OAuth callback
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ebayResult = params.get('ebay');
+      if (ebayResult === 'connected') {
+        toast({ title: 'eBay conectado', description: 'Tu cuenta de eBay se conectó correctamente.' });
+        // Clean URL
+        window.history.replaceState({}, '', '/dashboard?tab=proveedores');
+      } else if (ebayResult === 'error') {
+        toast({ title: 'Error de conexión', description: 'No se pudo conectar la cuenta eBay. Intenta de nuevo.', variant: 'destructive' });
+        window.history.replaceState({}, '', '/dashboard?tab=proveedores');
+      }
+    }
+  }, [loadSuppliers, loadEbayStatus, toast]);
 
   // Filter suppliers
   const filteredSuppliers = suppliers.filter((s) => {
@@ -286,6 +303,42 @@ export function ProveedoresTab() {
     }
   };
 
+  // Connect eBay account
+  const handleConnectEbay = async () => {
+    try {
+      setEbayConnecting(true);
+      const { url } = await fetchEbayAuthUrl();
+      // Redirect to eBay authorization page
+      window.location.href = url;
+    } catch (err) {
+      toast({
+        title: 'Error al conectar eBay',
+        description: err instanceof Error ? err.message : 'No se pudo iniciar la conexión con eBay.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEbayConnecting(false);
+    }
+  };
+
+  // Disconnect eBay account
+  const handleDisconnectEbay = async () => {
+    try {
+      setEbayDisconnecting(true);
+      await disconnectEbayAccount();
+      toast({ title: 'eBay desconectado', description: 'Tu cuenta de eBay se desconectó correctamente.' });
+      await loadEbayStatus();
+    } catch (err) {
+      toast({
+        title: 'Error al desconectar',
+        description: err instanceof Error ? err.message : 'No se pudo desconectar la cuenta eBay.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEbayDisconnecting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -318,38 +371,52 @@ export function ProveedoresTab() {
 
       {/* eBay Connection Card */}
       {!ebayCardDismissed && (
-      <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 dark:border-orange-900">
+      <Card className={`border-2 ${ebayStatus?.connected ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 dark:border-emerald-900' : 'border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 dark:border-orange-900'}`}>
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-600">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${ebayStatus?.connected ? 'bg-emerald-600' : 'bg-orange-600'}`}>
                 <Store className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold">eBay — Conexión de Cuenta</h3>
+                <h3 className="text-sm font-semibold">eBay — {ebayStatus?.connected ? 'Cuenta Conectada' : 'Conexión de Cuenta'}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {ebayStatus?.configured
-                    ? ebayStatus.connected
-                      ? `Conectado como ${ebayStatus.username}`
-                      : 'API configurada. Conecta tu cuenta para ver compras y calificaciones.'
-                    : 'API no configurada. Configura tus API keys de eBay.'}
+                  {!ebayStatus?.configured
+                    ? 'API no configurada. Configura tus API keys de eBay en .env'
+                    : ebayStatus.connected
+                      ? `Conectado como ${ebayStatus.username || 'usuario eBay'}`
+                      : 'API configurada. Conecta tu cuenta para ver compras y calificaciones.'}
                 </p>
               </div>
             </div>
             <div className="flex gap-2">
               <div className="flex items-center gap-2">
               {ebayStatus?.connected ? (
-                <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
-                  ✓ Conectado
-                </Badge>
+                <>
+                  <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Conectado
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                    onClick={handleDisconnectEbay}
+                    disabled={ebayDisconnecting}
+                  >
+                    {ebayDisconnecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
+                    Desconectar
+                  </Button>
+                </>
               ) : (
                 <Button
                   size="sm"
                   variant="outline"
                   className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40"
-                  onClick={() => setEbayDialogOpen(true)}
+                  onClick={handleConnectEbay}
+                  disabled={ebayConnecting}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  {ebayConnecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
                   Conectar cuenta eBay
                 </Button>
               )}
@@ -843,23 +910,30 @@ export function ProveedoresTab() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="rounded-lg border p-4 bg-muted/30 space-y-3">
-              <h4 className="text-sm font-semibold">¿Cómo funciona?</h4>
-              <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Configura tus API keys de eBay en el archivo <code className="bg-muted px-1 rounded">.env</code> (<code className="bg-muted px-1 rounded">EBAY_APP_ID</code> y <code className="bg-muted px-1 rounded">EBAY_CERT_ID</code>)</li>
-                <li>Registra tu aplicación en el eBay Developer Program</li>
-                <li>Habilita el OAuth de eBay para autorizar el acceso a tu cuenta</li>
-                <li>Una vez conectado, podrás ver tus compras y calificaciones</li>
-              </ol>
+              <h4 className="text-sm font-semibold">¿Qué obtienes al conectar?</h4>
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Acceso a tu perfil de eBay y calificaciones</li>
+                <li>Historial de compras y órdenes</li>
+                <li>Información de vendedores y productos</li>
+                <li>Gestión integrada de proveedores</li>
+              </ul>
             </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900">
-              <span className="text-sm">⚠️</span>
-              <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                Esta función requiere configuración adicional del servidor. Contacta al administrador si necesitas habilitarla.
+            <div className="rounded-lg border border-blue-200 p-3 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
+              <p className="text-xs text-blue-700 dark:text-blue-400">
+                🔒 Serás redirigido a eBay para autorizar el acceso. Tus credenciales nunca se almacenan en nuestros servidores — solo guardamos un token de acceso seguro.
               </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEbayDialogOpen(false)}>Cerrar</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEbayDialogOpen(false)}>Cancelar</Button>
+            <Button
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              onClick={handleConnectEbay}
+              disabled={ebayConnecting}
+            >
+              {ebayConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+              Conectar con eBay
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

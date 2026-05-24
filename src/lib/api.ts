@@ -248,3 +248,31 @@ export function syncSupplier(supplierId: string) {
 export function fetchEbayAccountStatus() {
   return apiFetch<EbayAccountStatus>(`${BASE}/ebay/account`);
 }
+
+export function fetchEbayAuthUrl() {
+  return apiFetch<{ url: string }>(`${BASE}/ebay/auth`);
+}
+
+export function disconnectEbayAccount() {
+  return apiFetch<{ message: string }>(`${BASE}/ebay/account`, {
+    method: 'DELETE',
+  });
+}
+
+export function fetchEbayUser() {
+  return apiFetch<{
+    userId?: string;
+    username?: string;
+    email?: string;
+    accountType?: string;
+    registrationDate?: string;
+    feedbackRatingStar?: string;
+    feedbackScore?: number;
+    feedbackPercentage?: number;
+    businessAccount?: boolean;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    country?: string;
+  }>(`${BASE}/ebay/user`);
+}
