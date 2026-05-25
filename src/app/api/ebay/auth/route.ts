@@ -28,6 +28,7 @@ export async function GET() {
 
     const appId = process.env.EBAY_APP_ID;
     const certId = process.env.EBAY_CERT_ID;
+    const ruName = process.env.EBAY_RU_NAME;
 
     if (isPlaceholder(appId) || isPlaceholder(certId)) {
       return NextResponse.json(
@@ -36,9 +37,14 @@ export async function GET() {
       );
     }
 
+    if (!ruName) {
+      return NextResponse.json(
+        { error: "EBAY_RU_NAME no configurado. Agrega esta variable en Vercel con el RuName de eBay Developer Program." },
+        { status: 400 }
+      );
+    }
+
     const { authorize } = getEbayUrls();
-    const baseUrl = process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app";
-    const redirectUri = `${baseUrl}/api/ebay/callback`;
 
     // Generate CSRF state parameter
     const state = randomUUID();
@@ -49,7 +55,7 @@ export async function GET() {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 600, // 10 minutes
+      maxAge: 600,
       path: "/",
     });
     cookieStore.set("ebay_oauth_userId", currentUser.userId, {
@@ -65,18 +71,21 @@ export async function GET() {
       "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
     ].join(" ");
 
+    // eBay OAuth: redirect_uri must be the RuName (not the actual HTTPS URL)
+    // eBay internally maps the RuName to the configured HTTPS redirect URL
     const authUrl = new URL(authorize);
     authUrl.searchParams.set("client_id", appId!);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("redirect_uri", ruName);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("state", state);
 
     return NextResponse.json({
       url: authUrl.toString(),
       debug: {
-        clientId: appId ? `${appId.substring(0, 10)}...` : "NOT SET",
-        redirectUri,
+        clientId: appId ? `${appId.substring(0, 15)}...` : "NOT SET",
+        redirectUri: ruName,
+        ruName: ruName ? `${ruName.substring(0, 15)}...` : "NOT SET",
         authorizeUrl: authorize,
       },
     });

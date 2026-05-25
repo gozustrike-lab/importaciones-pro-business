@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { token: tokenUrl } = getEbayUrls();
-    const baseUrl = process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app";
-    const redirectUri = `${baseUrl}/api/ebay/callback`;
+    // Token exchange also uses RuName as redirect_uri
+    const ruName = process.env.EBAY_RU_NAME || "";
 
     const credentials = Buffer.from(`${appId}:${certId}`).toString("base64");
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: ruName,
       }).toString(),
     });
 
@@ -101,19 +101,16 @@ export async function GET(request: NextRequest) {
     };
 
     // Decode the access token to get the eBay user ID
-    // eBay JWT access tokens contain the user ID in the payload
     let providerAccountId = "";
     try {
       const tokenParts = tokenData.access_token.split(".");
       if (tokenParts.length === 3) {
-        // Decode the JWT payload (base64url)
         const payload = JSON.parse(
           Buffer.from(tokenParts[1], "base64url").toString("utf-8")
         );
         providerAccountId = payload.sub || payload.username || "";
       }
     } catch {
-      // If we can't decode, we'll use a placeholder
       console.warn("Could not decode eBay access token for user ID");
     }
 
@@ -137,7 +134,6 @@ export async function GET(request: NextRequest) {
           providerAccountId = userData.userId || userData.username || "unknown";
         }
       } catch {
-        // Use timestamp as fallback
         providerAccountId = `ebay_${Date.now()}`;
       }
     }
@@ -146,7 +142,6 @@ export async function GET(request: NextRequest) {
     const expiresAt = Math.floor(Date.now() / 1000) + tokenData.expires_in;
 
     // Upsert the Account record in Prisma
-    // First, check if an eBay account already exists for this user
     const existingAccount = await db.account.findFirst({
       where: {
         userId,
@@ -155,7 +150,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (existingAccount) {
-      // Update existing account
       await db.account.update({
         where: { id: existingAccount.id },
         data: {
@@ -169,7 +163,6 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      // Create new account
       await db.account.create({
         data: {
           userId,
