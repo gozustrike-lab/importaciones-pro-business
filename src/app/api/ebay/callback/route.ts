@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { token: tokenUrl } = getEbayUrls();
-    const ruName = process.env.EBAY_RU_NAME || "";
-    const redirectUri = ruName;
+    const baseUrl = process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app";
+    const redirectUri = `${baseUrl}/api/ebay/callback`;
 
     const credentials = Buffer.from(`${appId}:${certId}`).toString("base64");
 

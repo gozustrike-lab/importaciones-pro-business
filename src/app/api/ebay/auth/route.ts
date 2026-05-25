@@ -28,23 +28,17 @@ export async function GET() {
 
     const appId = process.env.EBAY_APP_ID;
     const certId = process.env.EBAY_CERT_ID;
-    const ruName = process.env.EBAY_RU_NAME;
 
     if (isPlaceholder(appId) || isPlaceholder(certId)) {
       return NextResponse.json(
-        { error: "API keys de eBay no configuradas. Configura EBAY_APP_ID y EBAY_CERT_ID en .env" },
-        { status: 400 }
-      );
-    }
-
-    if (!ruName) {
-      return NextResponse.json(
-        { error: "EBAY_RU_NAME no configurado. Configura el RuName de eBay Developer en .env" },
+        { error: "API keys de eBay no configuradas. Configura EBAY_APP_ID y EBAY_CERT_ID en Vercel" },
         { status: 400 }
       );
     }
 
     const { authorize } = getEbayUrls();
+    const baseUrl = process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app";
+    const redirectUri = `${baseUrl}/api/ebay/callback`;
 
     // Generate CSRF state parameter
     const state = randomUUID();
@@ -68,19 +62,24 @@ export async function GET() {
 
     const scopes = [
       "https://api.ebay.com/oauth/api_scope",
-      "https://api.ebay.com/oauth/api_scope/buy.order.readonly",
-      "https://api.ebay.com/oauth/api_scope/sell.marketing.readonly",
       "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
     ].join(" ");
 
     const authUrl = new URL(authorize);
-    authUrl.searchParams.set("client_id", appId);
+    authUrl.searchParams.set("client_id", appId!);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("redirect_uri", ruName);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("state", state);
 
-    return NextResponse.json({ url: authUrl.toString() });
+    return NextResponse.json({
+      url: authUrl.toString(),
+      debug: {
+        clientId: appId ? `${appId.substring(0, 10)}...` : "NOT SET",
+        redirectUri,
+        authorizeUrl: authorize,
+      },
+    });
   } catch (error: unknown) {
     console.error("eBay auth URL generation error:", error);
     const message = error instanceof Error ? error.message : "Error al generar URL de autorización";
