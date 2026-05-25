@@ -28,10 +28,18 @@ export async function GET() {
 
     const appId = process.env.EBAY_APP_ID;
     const certId = process.env.EBAY_CERT_ID;
+    const ruName = process.env.EBAY_RU_NAME;
 
     if (isPlaceholder(appId) || isPlaceholder(certId)) {
       return NextResponse.json(
         { error: "API keys de eBay no configuradas. Configura EBAY_APP_ID y EBAY_CERT_ID en .env" },
+        { status: 400 }
+      );
+    }
+
+    if (!ruName) {
+      return NextResponse.json(
+        { error: "EBAY_RU_NAME no configurado. Configura el RuName de eBay Developer en .env" },
         { status: 400 }
       );
     }
@@ -58,7 +66,8 @@ export async function GET() {
       path: "/",
     });
 
-    const redirectUri = `${process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app"}/api/ebay/callback`;
+    // eBay OAuth uses the RuName as redirect_uri parameter
+    const redirectUri = ruName;
 
     const scopes = [
       "https://api.ebay.com/oauth/api_scope",
@@ -73,8 +82,10 @@ export async function GET() {
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("state", state);
+    // eBay OAuth requires the RuName in the URL path
+    const appUrl = `${authUrl.toString()}&ruName=${encodeURIComponent(ruName)}`;
 
-    return NextResponse.json({ url: authUrl.toString() });
+    return NextResponse.json({ url: appUrl });
   } catch (error: unknown) {
     console.error("eBay auth URL generation error:", error);
     const message = error instanceof Error ? error.message : "Error al generar URL de autorización";
