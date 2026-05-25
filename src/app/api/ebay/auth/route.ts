@@ -66,9 +66,6 @@ export async function GET() {
       path: "/",
     });
 
-    // eBay OAuth uses the RuName as redirect_uri parameter
-    const redirectUri = ruName;
-
     const scopes = [
       "https://api.ebay.com/oauth/api_scope",
       "https://api.ebay.com/oauth/api_scope/buy.order.readonly",
@@ -79,13 +76,11 @@ export async function GET() {
     const authUrl = new URL(authorize);
     authUrl.searchParams.set("client_id", appId);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("redirect_uri", ruName);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("state", state);
-    // eBay OAuth requires the RuName in the URL path
-    const appUrl = `${authUrl.toString()}&ruName=${encodeURIComponent(ruName)}`;
 
-    return NextResponse.json({ url: appUrl });
+    return NextResponse.json({ url: authUrl.toString() });
   } catch (error: unknown) {
     console.error("eBay auth URL generation error:", error);
     const message = error instanceof Error ? error.message : "Error al generar URL de autorización";
