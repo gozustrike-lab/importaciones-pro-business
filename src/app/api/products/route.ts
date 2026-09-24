@@ -14,8 +14,17 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "";
     const grade = searchParams.get("grade") || "";
     const available = searchParams.get("available") === "true";
+    // archived=true returns only archived, archived=false returns only active, default=all
+    const archivedParam = searchParams.get("archived");
 
     const where: Record<string, unknown> = { ...tenantFilter };
+
+    if (archivedParam === "true") {
+      where.isArchived = true;
+    } else if (archivedParam === "false") {
+      where.isArchived = false;
+    }
+    // if archivedParam is null/undefined → return all (no filter)
 
     if (available) {
       where.shippingStatus = { in: ["Entregado", "Perú"] };
@@ -46,52 +55,83 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const mapped = products.map((p) => ({
-      id: p.id,
-      orderNumber: p.orderNumber,
-      description: p.description,
-      category: p.category,
-      model: p.model,
-      color: p.color,
-      capacity: p.capacity,
-      grade: p.grade,
-      serialNumber: p.serialNumber,
-      quantity: p.quantity,
-      condition: p.condition,
-      status: p.shippingStatus,
-      supplier: p.supplier,
-      courier: p.courier,
-      trackingNumber: p.trackingId,
-      estimatedArrival: p.estimatedArrival?.toISOString() || "",
-      screenOk: p.qualityChecks[0]?.screenOk ?? false,
-      touchOk: p.qualityChecks[0]?.touchscreenOk ?? false,
-      speakersOk: p.qualityChecks[0]?.speakersOk ?? false,
-      microphoneOk: p.qualityChecks[0]?.microphoneOk ?? false,
-      wifiOk: p.qualityChecks[0]?.wifiOk ?? false,
-      bluetoothOk: p.qualityChecks[0]?.bluetoothOk ?? false,
-      camerasOk: p.qualityChecks[0]?.cameraOk ?? false,
-      portsOk: p.qualityChecks[0]?.portsOk ?? false,
-      buttonsOk: p.qualityChecks[0]?.buttonsOk ?? false,
-      keyboardOk: p.qualityChecks[0]?.keyboardOk ?? false,
-      trackpadOk: p.qualityChecks[0]?.trackpadOk ?? false,
-      chassisOk: p.qualityChecks[0]?.housingOk ?? false,
-      batteryOk: p.qualityChecks[0]?.batteryOk ?? false,
-      chargerIncluded: p.qualityChecks[0]?.chargerIncluded ?? false,
-      originalBox: p.qualityChecks[0]?.originalBox ?? false,
-      batteryCycles: p.batteryCycles,
-      purchasePriceUSD: p.purchasePriceUsd,
-      shippingCostUSD: p.shippingCostUsd,
-      advertisingCostUSD: p.advertisingCostUsd,
-      extraCostsUSD: p.extraCostsUsd,
-      exchangeRate: p.exchangeRate,
-      totalCostPEN: p.totalCostPen,
-      taxesPEN: p.taxAmountPen,
-      salePricePEN: p.salePricePen,
-      suggestedPricePEN: p.suggestedPricePen,
-      profitPEN: p.profitPen,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
-    }));
+    const mapped = products.map((p) => {
+      // Extract ItemID if present in notes or description
+      const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
+      const itemId = itemMatch ? itemMatch[1] : undefined;
+
+      let itemUrl: string | undefined = undefined;
+      let orderUrl: string | undefined = undefined;
+      if (p.orderNumber && p.orderNumber.includes('-')) {
+        orderUrl = `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`;
+      }
+      if (itemId) {
+        itemUrl = `https://www.ebay.com/itm/${itemId}`;
+      } else if (orderUrl) {
+        itemUrl = orderUrl;
+      }
+
+      return {
+        id: p.id,
+        orderNumber: p.orderNumber,
+        description: p.description,
+        category: p.category,
+        model: p.model,
+        color: p.color,
+        capacity: p.capacity,
+        grade: p.grade,
+        serialNumber: p.serialNumber,
+        quantity: p.quantity,
+        condition: p.condition,
+        status: p.shippingStatus,
+        supplier: p.supplier,
+        courier: p.courier,
+        trackingNumber: p.trackingId,
+        estimatedArrival: p.estimatedArrival?.toISOString() || "",
+        actualArrival: p.actualArrival?.toISOString() || "",
+        actualDeliveryDate: p.actualArrival?.toISOString() || "",
+        estimatedDeliveryDate: p.estimatedArrival?.toISOString() || "",
+        purchaseDate: p.purchaseDate ? p.purchaseDate.toISOString() : p.createdAt.toISOString(),
+        importerProfile: p.importerProfile || 'fabio',
+        recipientName: p.recipientName || '',
+        ebayAccount: p.ebayAccount || 'gozustrike@gmail.com',
+        notes: p.notes || '',
+        isArchived: p.isArchived,
+        itemId,
+        itemUrl,
+        orderUrl,
+        // Order Total = item price + shipping (total real pagado a eBay)
+        orderTotalUSD: p.purchasePriceUsd + p.shippingCostUsd,
+        screenOk: p.qualityChecks[0]?.screenOk ?? false,
+        touchOk: p.qualityChecks[0]?.touchscreenOk ?? false,
+        speakersOk: p.qualityChecks[0]?.speakersOk ?? false,
+        microphoneOk: p.qualityChecks[0]?.microphoneOk ?? false,
+        wifiOk: p.qualityChecks[0]?.wifiOk ?? false,
+        bluetoothOk: p.qualityChecks[0]?.bluetoothOk ?? false,
+        camerasOk: p.qualityChecks[0]?.cameraOk ?? false,
+        portsOk: p.qualityChecks[0]?.portsOk ?? false,
+        buttonsOk: p.qualityChecks[0]?.buttonsOk ?? false,
+        keyboardOk: p.qualityChecks[0]?.keyboardOk ?? false,
+        trackpadOk: p.qualityChecks[0]?.trackpadOk ?? false,
+        chassisOk: p.qualityChecks[0]?.housingOk ?? false,
+        batteryOk: p.qualityChecks[0]?.batteryOk ?? false,
+        chargerIncluded: p.qualityChecks[0]?.chargerIncluded ?? false,
+        originalBox: p.qualityChecks[0]?.originalBox ?? false,
+        batteryCycles: p.batteryCycles,
+        purchasePriceUSD: p.purchasePriceUsd,
+        shippingCostUSD: p.shippingCostUsd,
+        advertisingCostUSD: p.advertisingCostUsd,
+        extraCostsUSD: p.extraCostsUsd,
+        exchangeRate: p.exchangeRate,
+        totalCostPEN: p.totalCostPen,
+        taxesPEN: p.taxAmountPen,
+        salePricePEN: p.salePricePen,
+        suggestedPricePEN: p.suggestedPricePen,
+        profitPEN: p.profitPen,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json(mapped);
   } catch (error: unknown) {

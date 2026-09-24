@@ -45,11 +45,12 @@ export function seedData() {
 }
 
 // Products
-export function fetchProducts(params?: { status?: string; search?: string; grade?: string }) {
+export function fetchProducts(params?: { status?: string; search?: string; grade?: string; archived?: 'true' | 'false' }) {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.search) query.set('search', params.search);
   if (params?.grade) query.set('grade', params.grade);
+  if (params?.archived) query.set('archived', params.archived);
   const qs = query.toString();
   return apiFetch<Product[]>(`${BASE}/products${qs ? `?${qs}` : ''}`);
 }
@@ -69,6 +70,13 @@ export function updateProduct(id: string, data: Partial<ProductFormData>) {
   return apiFetch<Product>(`${BASE}/products/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
+  });
+}
+
+export function archiveProduct(id: string, isArchived: boolean) {
+  return apiFetch<{ id: string; isArchived: boolean }>(`${BASE}/products/${id}/archive`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isArchived }),
   });
 }
 
@@ -152,8 +160,9 @@ export function calculateTax(data: { fobUSD: number; shippingUSD: number; exchan
 }
 
 // NRUS
-export function fetchNRUSStatus() {
-  return apiFetch<NRUSStatus>(`${BASE}/nrus/status`);
+export function fetchNRUSStatus(month?: string) {
+  const query = month ? `?month=${month}` : '';
+  return apiFetch<NRUSStatus>(`${BASE}/nrus/status${query}`);
 }
 
 export function fetchNRUSConfig() {

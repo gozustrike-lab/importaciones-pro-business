@@ -17,6 +17,7 @@ const ImpuestosTab = lazy(() => import('@/components/dashboard/impuestos-tab').t
 const NRUSTab = lazy(() => import('@/components/dashboard/nrus-tab').then(m => ({ default: m.NRUSTab })));
 const CalidadTab = lazy(() => import('@/components/dashboard/calidad-tab').then(m => ({ default: m.CalidadTab })));
 const TrackingTab = lazy(() => import('@/components/dashboard/tracking-tab').then(m => ({ default: m.TrackingTab })));
+const ShipperTab = lazy(() => import('@/components/dashboard/shipper-tab').then(m => ({ default: m.ShipperTab })));
 const AdminTab = lazy(() => import('@/components/dashboard/admin-tab').then(m => ({ default: m.AdminTab })));
 
 const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: string) => void }>> = {
@@ -28,6 +29,7 @@ const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: str
   analitica: AnaliticaTab,
   impuestos: ImpuestosTab,
   nrus: NRUSTab,
+  shipper: ShipperTab,
   calidad: CalidadTab,
   tracking: TrackingTab,
   admin: AdminTab,
@@ -42,6 +44,7 @@ const tabTitles: Record<TabKey, string> = {
   analitica: 'Analítica Utilidad',
   impuestos: 'Impuestos',
   nrus: 'NRUS / SUNAT',
+  shipper: 'Despacho Shipper',
   calidad: 'Calidad',
   tracking: 'Tracking',
   admin: 'Super Admin',
@@ -72,7 +75,7 @@ function TabSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabKey>('shipper');
   const isMobile = useIsMobile();
 
   const userRole = (session?.user as { role?: string })?.role || 'TENANT_USER';
@@ -85,7 +88,7 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="lg:pl-64 overflow-x-hidden">
-        <div className={`mx-auto max-w-7xl ${isMobile ? 'p-4 pt-16' : 'p-6'}`}>
+        <div className={`w-full max-w-[1800px] mx-auto ${isMobile ? 'p-3 pt-16' : 'p-6 sm:p-8'}`}>
           {/* Mobile Header */}
           {isMobile && (
             <div className="mb-4 flex items-center gap-3">

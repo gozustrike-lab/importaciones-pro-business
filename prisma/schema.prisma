@@ -33,6 +33,7 @@ model Tenant {
   nrusConfigs     NRUSConfig[]
   monthlySales    MonthlySales[]
   suppliers       Supplier[]
+  shipments       Shipment[]
 }
 
 // ============================================
@@ -145,8 +146,14 @@ model Product {
   profitPen         Float   @default(0)
   profitMargin      Float   @default(0)
 
+  // Importador & Casillero SUNAT (Bi-RUC Fabio / Peggy)
+  importerProfile   String   @default("fabio") // "fabio" | "peggy"
+  recipientName     String   @default("")      // "SHIPER FABIO CESAR HERRERA BONILLA" | "SHIPER PEGGY LILIANA BONILLA ORDUNA"
+  ebayAccount       String   @default("gozustrike@gmail.com") // Cuenta de eBay utilizada
+
   // Otros
   notes            String   @default("")
+  isArchived       Boolean  @default(false)  // true = embarcado a Perú (oculto en eBay)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -160,6 +167,8 @@ model Product {
   sales            Sale[]
   supplierId       String?
   supplierRef      Supplier? @relation("ProductSupplierRef", fields: [supplierId], references: [id])
+  shipmentId       String?
+  shipment         Shipment? @relation(fields: [shipmentId], references: [id])
 }
 
 // ============================================
@@ -350,3 +359,41 @@ model MonthlySales {
   tenantId        String
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
 }
+
+// ============================================
+// EMBARQUES / EXPEDIENTES SHIPPER (Logística)
+// ============================================
+model Shipment {
+  id              String   @id @default(cuid())
+  code            String   @unique // ej. EMB-2026-09-14-FABIO-01
+  flightDate      DateTime
+  flightDayLabel  String   // "LUNES 14 09 2026", "MIERCOLES 16 09 2026", etc.
+  importerProfile String   // "fabio" | "peggy"
+  consigneeName   String   // FABIO CESAR HERRERA BONILLA / BONILLA ORDUÑA PEGGY LILIANA
+  consigneeRuc    String   // 10762026835 / 10091870911
+  courierName     String   @default("Shipper")
+  awbNumber       String   @default("") // Guía AWB que entrega Shipper por WhatsApp
+
+  // Estado del Embarque: ENVIADO | CONFIRMADO_AWB | EN_VUELO | EN_ADUANAS | EN_LIMA | RECIBIDO
+  status          String   @default("ENVIADO")
+
+  totalItems      Int      @default(0)
+  totalFobUsd     Float    @default(0)
+  isUnder200      Boolean  @default(true)
+
+  emailSentAt     DateTime @default(now())
+  confirmedAt     DateTime?
+  arrivedLimaAt   DateTime?
+  deliveredAt     DateTime?
+
+  notes           String   @default("")
+  whatsappNotes   String   @default("") // Notas del chat de WhatsApp con Shipper
+
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  products        Product[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+

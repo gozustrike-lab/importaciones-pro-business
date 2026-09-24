@@ -41,6 +41,23 @@ export async function getCurrentUser() {
     }
   }
 
+  // ── Layer 3: local development fallback ──
+  if (!userId && process.env.NODE_ENV === "development") {
+    try {
+      const { db } = await import("@/lib/db");
+      const defaultUser = await db.user.findFirst({
+        where: { email: "gozustrike@gmail.com" },
+      });
+      if (defaultUser) {
+        userId = defaultUser.id;
+        userRole = defaultUser.role;
+        tenantId = defaultUser.tenantId;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   return {
     userId: userId || null,
     role: userRole || "TENANT_USER",

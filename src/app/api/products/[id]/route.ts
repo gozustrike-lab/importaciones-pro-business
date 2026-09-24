@@ -109,7 +109,7 @@ export async function PUT(
       (exchangeRate !== undefined && exchangeRate !== existing.exchangeRate) ||
       (salePricePen !== undefined && salePricePen !== existing.salePricePen);
 
-    let financials = null;
+    let financials: any = null;
 
     if (financialFieldsChanged) {
       const nrusConfig = await db.nRUSConfig.findFirst();

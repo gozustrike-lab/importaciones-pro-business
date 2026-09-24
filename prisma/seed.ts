@@ -50,6 +50,24 @@ async function main() {
   });
   console.log(`   ✅ Admin: ${adminUser.email} (${adminUser.role})\n`);
 
+  const gozuUser = await db.user.upsert({
+    where: { email: "gozustrike@gmail.com" },
+    update: {
+      tenantId: tenant.id,
+      role: "TENANT_ADMIN",
+      name: "Fabio César Herrera Bonilla",
+    },
+    create: {
+      email: "gozustrike@gmail.com",
+      name: "Fabio César Herrera Bonilla",
+      password: adminPassword,
+      role: "TENANT_ADMIN",
+      tenantId: tenant.id,
+      isActive: true,
+    },
+  });
+  console.log(`   ✅ Gozustrike Admin: ${gozuUser.email} (${gozuUser.role})\n`);
+
   // ── 3. Create SUPER_ADMIN user ──
   console.log("🔐 Creating super admin...");
   const superAdminPassword = await hashPassword("SuperAdmin123");

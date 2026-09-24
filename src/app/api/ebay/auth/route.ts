@@ -68,6 +68,7 @@ export async function GET() {
 
     const scopes = [
       "https://api.ebay.com/oauth/api_scope",
+      "https://api.ebay.com/oauth/api_scope/buy.order.readonly",
       "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
     ].join(" ");
 

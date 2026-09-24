@@ -297,56 +297,123 @@ export function VentasTab() {
               <p className="text-sm">Registra tu primera venta para comenzar</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Producto</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Canal</TableHead>
-                    <TableHead>Entrega</TableHead>
-                    <TableHead className="text-right">Precio Venta</TableHead>
-                    <TableHead className="text-right">Ganancia</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSales.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="text-sm">
-                        {new Date(s.saleDate).toLocaleDateString('es-PE')}
-                      </TableCell>
-                      <TableCell className="font-medium max-w-[180px] truncate" title={s.productDescription}>
-                        {s.productDescription}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium">{s.clientName}</p>
-                          <p className="text-xs text-muted-foreground">{s.clientDniRuc || s.clientCelular}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={channelColors[s.saleChannel] || ''}>
-                          {s.saleChannel || '-'}
+            <>
+              {/* Mobile Cards View */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredSales.map((s) => (
+                  <div key={s.id} className="p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] ${
+                            s.importerProfile === 'peggy'
+                              ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300'
+                              : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300'
+                          }`}
+                        >
+                          {s.importerProfile === 'peggy' ? 'Peggy' : 'Fabio'}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={deliveryColors[s.deliveryStatus] || ''}>
+                        <Badge variant="outline" className={`text-[10px] ${channelColors[s.saleChannel] || ''}`}>
+                          {s.saleChannel || 'Directa'}
+                        </Badge>
+                        <Badge variant="outline" className={`text-[10px] ${deliveryColors[s.deliveryStatus] || ''}`}>
                           {s.deliveryStatus}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatPEN(s.salePricePen)}
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${s.netProfitPen >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {formatPEN(s.netProfitPen)}
-                        <span className="text-xs text-muted-foreground ml-1">({s.profitMargin.toFixed(1)}%)</span>
-                      </TableCell>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {new Date(s.saleDate).toLocaleDateString('es-PE')}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-foreground line-clamp-1">{s.productDescription}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Cliente: <strong className="text-foreground">{s.clientName}</strong> {s.clientDniRuc ? `(${s.clientDniRuc})` : ''}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border/40 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Venta: </span>
+                        <span className="font-bold text-foreground text-sm font-mono">{formatPEN(s.salePricePen)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Ganancia: </span>
+                        <span className={`font-bold font-mono ${s.netProfitPen >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatPEN(s.netProfitPen)} ({s.profitMargin.toFixed(0)}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Titular SUNAT</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Canal</TableHead>
+                      <TableHead>Entrega</TableHead>
+                      <TableHead className="text-right">Precio Venta</TableHead>
+                      <TableHead className="text-right">Ganancia</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSales.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-sm">
+                          {new Date(s.saleDate).toLocaleDateString('es-PE')}
+                        </TableCell>
+                        <TableCell className="font-medium max-w-[180px] truncate" title={s.productDescription}>
+                          {s.productDescription}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              s.importerProfile === 'peggy'
+                                ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300'
+                                : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300'
+                            }`}
+                          >
+                            {s.importerProfile === 'peggy' ? 'Peggy' : 'Fabio'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm font-medium">{s.clientName}</p>
+                            <p className="text-xs text-muted-foreground">{s.clientDniRuc || s.clientCelular}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={channelColors[s.saleChannel] || ''}>
+                            {s.saleChannel || '-'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={deliveryColors[s.deliveryStatus] || ''}>
+                            {s.deliveryStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatPEN(s.salePricePen)}
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${s.netProfitPen >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatPEN(s.netProfitPen)}
+                          <span className="text-xs text-muted-foreground ml-1">({s.profitMargin.toFixed(1)}%)</span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -386,12 +453,35 @@ export function VentasTab() {
 
             {/* Selected product info */}
             {selectedProduct && (
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div><span className="text-muted-foreground">Modelo:</span> {selectedProduct.model || selectedProduct.description}</div>
-                  <div><span className="text-muted-foreground">Grado:</span> <Badge variant="outline">Grado {selectedProduct.grade}</Badge></div>
-                  <div><span className="text-muted-foreground">Costo Total:</span> <span className="font-medium">{formatPEN(selectedProduct.totalCostPEN)}</span></div>
-                  <div><span className="text-muted-foreground">Impuestos:</span> {formatPEN(selectedProduct.taxesPEN)}</div>
+                  <div>
+                    <span className="text-muted-foreground block">Titular SUNAT:</span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] font-bold mt-0.5 ${
+                        selectedProduct.importerProfile === 'peggy'
+                          ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300'
+                          : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300'
+                      }`}
+                    >
+                      {selectedProduct.importerProfile === 'peggy' ? '👤 Peggy Liliana (10091870911)' : '👤 Fabio César (10762026835)'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Grado / Condición:</span>
+                    <span className="font-semibold text-foreground">Grado {selectedProduct.grade} • {selectedProduct.condition || 'Usado'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Costo de Importación:</span>
+                    <span className="font-bold text-foreground font-mono">{formatPEN(selectedProduct.totalCostPEN)} (${selectedProduct.purchasePriceUSD.toFixed(2)} USD)</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Ganancia Proyectada:</span>
+                    <span className={`font-bold font-mono ${form.salePricePen - selectedProduct.totalCostPEN >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatPEN(form.salePricePen - selectedProduct.totalCostPEN)}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

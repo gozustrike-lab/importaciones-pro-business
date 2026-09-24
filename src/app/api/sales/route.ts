@@ -40,7 +40,9 @@ export async function GET(request: NextRequest) {
       profitMargin: s.profitMargin, status: s.status,
       paymentMethod: s.paymentMethod, warrantyMonths: s.warrantyMonths,
       warrantyNotes: s.warrantyNotes, deliveryStatus: s.deliveryStatus,
-      deliveryDate: s.deliveryDate?.toISOString() || "", createdAt: s.createdAt.toISOString(),
+      deliveryDate: s.deliveryDate?.toISOString() || "",
+      importerProfile: s.product?.importerProfile || 'fabio',
+      createdAt: s.createdAt.toISOString(),
     })));
   } catch (error: unknown) {
     console.error("Error fetching sales:", error);

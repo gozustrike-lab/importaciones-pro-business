@@ -1,8 +1,8 @@
 // ── Domain Types for ImportHub Perú ──
 
-export type ProductStatus = 'USA' | 'En Tránsito' | 'Perú' | 'Entregado' | 'Vendido';
+export type ProductStatus = 'USA' | 'TRANSITO_USA' | 'En Tránsito' | 'Perú' | 'Entregado' | 'Vendido';
 export type ProductGrade = 'A' | 'B' | 'C';
-export type ProductCategory = 'iPad' | 'Laptop' | 'iPhone' | 'Smartwatch' | 'Accesorio' | 'Otro';
+export type ProductCategory = 'iPad' | 'Laptop' | 'iPhone' | 'Smartphone' | 'Smartwatch' | 'Accesorio' | 'Otro';
 export type SaleChannel = 'MercadoLibre' | 'Tienda' | 'WhatsApp' | 'Facebook';
 export type PaymentMethod = 'Efectivo' | 'Yape' | 'Transferencia' | 'MercadoPago';
 export type SaleStatus = 'Completada' | 'Pendiente' | 'Cancelada';
@@ -27,6 +27,21 @@ export interface Product {
   courier: string;
   trackingNumber: string;
   estimatedArrival: string;
+
+  // Real purchase details & eBay
+  purchaseDate?: string;
+  importerProfile?: 'fabio' | 'peggy' | string;
+  recipientName?: string;
+  ebayAccount?: string;
+  notes?: string;
+  itemId?: string;
+  itemUrl?: string;
+  orderUrl?: string;
+  actualDeliveryDate?: string;
+  estimatedDeliveryDate?: string;
+  isArchived?: boolean;
+  // Order total = purchasePriceUSD + shippingCostUSD (total real pagado en eBay)
+  orderTotalUSD?: number;
 
   // Quality
   screenOk: boolean;
@@ -113,6 +128,7 @@ export interface Sale {
   warrantyNotes: string;
   deliveryStatus: DeliveryStatus;
   deliveryDate: string;
+  importerProfile?: string;
   createdAt: string;
 }
 
@@ -128,6 +144,24 @@ export interface SaleFormData {
   warrantyNotes?: string;
 }
 
+export interface PurchasesStats {
+  today: { count: number; investedUsd: number; investedPen: number };
+  thisWeek: { count: number; investedUsd: number; investedPen: number };
+  thisMonth: { count: number; investedUsd: number; investedPen: number };
+  total: { count: number; investedUsd: number; investedPen: number };
+  byImporter: {
+    fabio: { count: number; investedUsd: number; investedPen: number };
+    peggy: { count: number; investedUsd: number; investedPen: number };
+  };
+  timeline: Array<{
+    date: string;
+    label: string;
+    count: number;
+    investedPen: number;
+    investedUsd: number;
+  }>;
+}
+
 export interface DashboardStats {
   totalInvested: number;
   totalRevenue: number;
@@ -138,6 +172,7 @@ export interface DashboardStats {
   avgTicket: number;
   productsByStatus: {
     USA: number;
+    TRANSITO_USA?: number;
     'En Tránsito': number;
     Perú: number;
     Entregado: number;
@@ -153,6 +188,8 @@ export interface DashboardStats {
   salesByChannel: { channel: string; count: number; revenue: number }[];
   recentSales: Sale[];
   recentProducts: Product[];
+  nrus?: NRUSStatus;
+  purchases?: PurchasesStats;
 }
 
 export interface ProfitAnalytics {
@@ -184,17 +221,79 @@ export interface TaxCalculation {
   exempt: boolean;
 }
 
+export interface NRUSRecommendation {
+  target: 'fabio' | 'peggy' | 'none';
+  targetName: string;
+  targetRuc: string;
+  severity: 'normal' | 'warning' | 'critical';
+  title: string;
+  description: string;
+  actionBanner: string;
+  fabioAvailablePen: number;
+  fabioAvailableUsd: number;
+  fabioConsumedPct: number;
+  peggyAvailablePen: number;
+  peggyAvailableUsd: number;
+  peggyConsumedPct: number;
+}
+
+export interface NRUSProfileStatus {
+  importerKey: 'fabio' | 'peggy';
+  name: string;
+  ruc: string;
+  monthlyPurchasesPen: number;
+  monthlyPurchasesUsd: number;
+  purchasesCount: number;
+  monthlySalesPen: number;
+  salesCount: number;
+  maxAmountPen: number;
+  category: 'Cat 1' | 'Cat 2' | 'Excedido';
+  monthlyQuotaPen: number;
+  percentageOfLimit: number;
+  alertLevel: 'normal' | 'yellow' | 'orange' | 'red';
+  statusMessage: string;
+  availablePurchasesPen?: number;
+  availablePurchasesUsd?: number;
+  availableSalesPen?: number;
+  isNearLimit?: boolean;
+  isExceeded?: boolean;
+  guiaPagoFacil: {
+    ruc: string;
+    periodo: string;
+    rectificatoria: boolean;
+    ingresosBrutosPen: number;
+    adquisicionesPen: number;
+    categoria: number;
+    importePagarPen: number;
+  };
+}
+
 export interface NRUSStatus {
+  totalMonthlySalesPen?: number;
+  percentageOfThreshold?: number;
+  category?: string;
+  alertLevel: 'normal' | 'warning' | 'danger' | 'exceeded' | 'yellow' | 'orange' | 'red';
   currentMonth: string;
   currentYear: number;
+  periodoSunat?: string;
   monthlySales: number;
+  monthlyPurchases?: number;
+  monthlyPurchasesUsd?: number;
+  purchasesCount?: number;
+  salesCount?: number;
   category1Limit: number;
   category2Limit: number;
   currentCategory: 'Cat 1' | 'Cat 2' | 'Excedido';
-  alertLevel: 'normal' | 'yellow' | 'orange' | 'red';
+  message?: string;
   igvRate: number;
   adValoremRate: number;
   percepcionRate: number;
+  exchangeRate?: number;
+  byImporter?: {
+    fabio: NRUSProfileStatus;
+    peggy: NRUSProfileStatus;
+  };
+  recommendation?: NRUSRecommendation;
 }
 
 export interface NRUSConfig {

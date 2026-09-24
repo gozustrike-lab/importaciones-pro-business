@@ -154,7 +154,7 @@ export function ProductDialog({ open, onOpenChange, product, onSave, loading }: 
           {/* Información de Compra */}
           <Section title="Información de Compra">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Orden #" value={form.orderNumber} onChange={(v) => setField('orderNumber', v)} />
+              <Field label="Orden #" value={form.orderNumber || ''} onChange={(v) => setField('orderNumber', v)} />
               <Field label="Fecha de Compra" value={form.estimatedArrival} onChange={(v) => setField('estimatedArrival', v)} type="date" />
               <Field label="Proveedor" value={form.supplier} onChange={(v) => setField('supplier', v)} />
             </div>
@@ -176,13 +176,16 @@ export function ProductDialog({ open, onOpenChange, product, onSave, loading }: 
               </div>
               <Field label="Tracking" value={form.trackingNumber} onChange={(v) => setField('trackingNumber', v)} />
               <div className="space-y-2">
-                <Label>Estado</Label>
+                <Label>Estado Logístico</Label>
                 <Select value={form.status} onValueChange={(v) => setField('status', v as ProductStatus)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(['USA', 'En Tránsito', 'Perú', 'Entregado'] as ProductStatus[]).map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
+                    <SelectItem value="TRANSITO_USA">🚚 En Tránsito a Miami</SelectItem>
+                    <SelectItem value="USA">🏢 En Almacén Miami</SelectItem>
+                    <SelectItem value="En Tránsito">✈️ En Vuelo a Lima</SelectItem>
+                    <SelectItem value="Perú">🇵🇪 Stock en Lima</SelectItem>
+                    <SelectItem value="Entregado">🇵🇪 Entregado en Lima</SelectItem>
+                    <SelectItem value="Vendido">🤝 Vendido</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

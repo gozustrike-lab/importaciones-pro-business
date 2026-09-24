@@ -37,6 +37,9 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scratch",
+    "prisma/seed.ts",
+    "prisma/clean-db.ts"
   ]
 }

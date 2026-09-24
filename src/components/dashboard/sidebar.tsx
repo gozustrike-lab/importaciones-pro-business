@@ -19,6 +19,7 @@ import {
   Store,
   Sun,
   Moon,
+  Plane,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -26,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 
-export type TabKey = 'dashboard' | 'proveedores' | 'productos' | 'clientes' | 'ventas' | 'analitica' | 'impuestos' | 'nrus' | 'calidad' | 'tracking' | 'admin';
+export type TabKey = 'dashboard' | 'proveedores' | 'productos' | 'clientes' | 'ventas' | 'analitica' | 'impuestos' | 'nrus' | 'calidad' | 'tracking' | 'shipper' | 'admin';
 
 interface SidebarProps {
   activeTab: TabKey;
@@ -36,16 +37,17 @@ interface SidebarProps {
 }
 
 const navItems: { key: TabKey; label: string; icon: React.ElementType; section?: string; adminOnly?: boolean }[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Principal' },
-  { key: 'proveedores', label: 'Proveedores', icon: Store },
-  { key: 'productos', label: 'Inventario', icon: Package },
-  { key: 'clientes', label: 'CRM Clientes', icon: Users },
-  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart },
-  { key: 'analitica', label: 'Analítica Utilidad', icon: BarChart3 },
+  { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Logística & Ventas' },
+  { key: 'productos', label: 'Inventario & Importaciones', icon: Package, section: 'Logística & Ventas' },
+  { key: 'clientes', label: 'CRM Clientes', icon: Users, section: 'Logística & Ventas' },
+  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Logística & Ventas' },
+  { key: 'dashboard', label: 'Panel General', icon: LayoutDashboard, section: 'Logística & Ventas' },
+  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Fiscal' },
   { key: 'impuestos', label: 'Impuestos', icon: Receipt, section: 'Fiscal' },
-  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp },
-  { key: 'calidad', label: 'Calidad', icon: CheckSquare, section: 'Operaciones' },
-  { key: 'tracking', label: 'Tracking', icon: Truck },
+  { key: 'tracking', label: 'Tracking USA', icon: Truck, section: 'Herramientas' },
+  { key: 'calidad', label: 'Control Calidad', icon: CheckSquare, section: 'Herramientas' },
+  { key: 'analitica', label: 'Analítica Utilidad', icon: BarChart3, section: 'Herramientas' },
+  { key: 'proveedores', label: 'Proveedores', icon: Store, section: 'Herramientas' },
   { key: 'admin', label: 'Super Admin', icon: Shield, section: 'Admin', adminOnly: true },
 ];
 
@@ -124,9 +126,9 @@ function SidebarContent({ activeTab, onTabChange, userRole, session }: SidebarPr
   );
 
   // Group items by section
-  const mainItems = filteredItems.filter(i => i.section === 'Principal' || (!i.section && !i.adminOnly));
+  const mainItems = filteredItems.filter(i => i.section === 'Logística & Ventas' || (!i.section && !i.adminOnly));
   const fiscalItems = filteredItems.filter(i => i.section === 'Fiscal');
-  const opsItems = filteredItems.filter(i => i.section === 'Operaciones');
+  const toolsItems = filteredItems.filter(i => i.section === 'Herramientas');
   const adminItems = filteredItems.filter(i => i.section === 'Admin');
 
   return (
@@ -155,18 +157,18 @@ function SidebarContent({ activeTab, onTabChange, userRole, session }: SidebarPr
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-3 mb-2">Principal</p>
+        <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 px-3 mb-2">Logística & Ventas</p>
         {mainItems.map((item) => (
           <NavItem key={item.key} item={item} active={activeTab === item.key} onClick={() => onTabChange(item.key)} />
         ))}
 
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-3 mt-4 mb-2">Fiscal</p>
+        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3 mt-4 mb-2">Fiscal & SUNAT</p>
         {fiscalItems.map((item) => (
           <NavItem key={item.key} item={item} active={activeTab === item.key} onClick={() => onTabChange(item.key)} />
         ))}
 
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-3 mt-4 mb-2">Operaciones</p>
-        {opsItems.map((item) => (
+        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3 mt-4 mb-2">Herramientas</p>
+        {toolsItems.map((item) => (
           <NavItem key={item.key} item={item} active={activeTab === item.key} onClick={() => onTabChange(item.key)} />
         ))}
 

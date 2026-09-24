@@ -1,7 +1,31 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Eye, Pencil, Trash2, ShoppingBag, Loader2, ExternalLink, DollarSign } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  ShoppingBag,
+  Loader2,
+  ExternalLink,
+  DollarSign,
+  Copy,
+  Check,
+  Calendar,
+  Truck,
+  Package,
+  Layers,
+  Sparkles,
+  Plane,
+  Building2,
+  Tag,
+  ShieldCheck,
+  AlertTriangle,
+  Archive,
+  ArchiveRestore,
+  ShoppingCart,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -37,8 +61,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { fetchProducts, deleteProduct, createProduct, updateProduct } from '@/lib/api';
-import type { Product, ProductFormData } from '@/lib/types';
+import { fetchProducts, deleteProduct, createProduct, updateProduct, fetchNRUSStatus, archiveProduct } from '@/lib/api';
+import type { Product, ProductFormData, NRUSStatus } from '@/lib/types';
 import { ProductDialog } from './product-dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -63,18 +87,92 @@ function formatPEN(n: number) {
   return `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const statusStyles: Record<string, string> = {
-  USA: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
-  'En Tránsito': 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800',
-  Perú: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
-  Entregado: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+function formatPurchaseDate(dateStr?: string) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getTrackingUrl(courier: string, trackingNumber: string) {
+  if (!trackingNumber) return null;
+  const c = (courier || '').toUpperCase();
+  if (c.includes('USPS')) return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+  if (c.includes('UPS')) return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+  if (c.includes('FEDEX')) return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+  if (c.includes('DHL')) return `https://www.dhtml.com/en/express/tracking.html?AWB=${trackingNumber}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(`${courier} tracking ${trackingNumber}`)}`;
+}
+
+const statusConfig: Record<string, { label: string; badge: string; dot: string }> = {
+  TRANSITO_USA: {
+    label: '🚚 En Tránsito a Miami',
+    badge: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800',
+    dot: 'bg-sky-500',
+  },
+  USA: {
+    label: '🏢 En Almacén Miami',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
+    dot: 'bg-emerald-500',
+  },
+  'En Tránsito': {
+    label: '✈️ En Vuelo a Lima',
+    badge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
+    dot: 'bg-amber-500',
+  },
+  Perú: {
+    label: '🇵🇪 Stock en Lima',
+    badge: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800',
+    dot: 'bg-purple-500',
+  },
+  Entregado: {
+    label: '🇵🇪 Stock en Lima',
+    badge: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800',
+    dot: 'bg-purple-500',
+  },
+  Vendido: {
+    label: '🤝 Vendido',
+    badge: 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
+    dot: 'bg-zinc-500',
+  },
 };
 
-const gradeStyles: Record<string, string> = {
-  A: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
-  B: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
-  C: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
-};
+function getImporterInfo(prod: Product) {
+  const isPeggy =
+    (prod.importerProfile || '').toLowerCase() === 'peggy' ||
+    (prod.recipientName || '').toLowerCase().includes('peggy') ||
+    (prod.recipientName || '').toLowerCase().includes('orduña');
+
+  if (isPeggy) {
+    return {
+      key: 'peggy',
+      name: 'Peggy Liliana',
+      ruc: '10091870911',
+      badge: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800',
+    };
+  }
+  return {
+    key: 'fabio',
+    name: 'Fabio César',
+    ruc: '10762026835',
+    badge: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800',
+  };
+}
+
+function getCourierBadge(courier: string) {
+  const c = (courier || '').toUpperCase();
+  if (c.includes('USPS')) return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400';
+  if (c.includes('UPS')) return 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400';
+  if (c.includes('FEDEX')) return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400';
+  return 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300';
+}
 
 // ── eBay Category Options ──
 const EBAY_CATEGORIES = [
@@ -96,15 +194,18 @@ const EBAY_SORT_OPTIONS = [
 export function ProductosTab() {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
+  const [archivedProducts, setArchivedProducts] = useState<Product[]>([]);
+  const [activeView, setActiveView] = useState<'active' | 'archived'>('active');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [gradeFilter, setGradeFilter] = useState<string>('all');
+  const [importerFilter, setImporterFilter] = useState<string>('all');
+  const [courierFilter, setCourierFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // ── eBay Search State ──
   const [ebayDialogOpen, setEbayDialogOpen] = useState(false);
@@ -114,26 +215,91 @@ export function ProductosTab() {
   const [ebaySearching, setEbaySearching] = useState(false);
   const [ebayResults, setEbayResults] = useState<EbaySearchItem[]>([]);
   const [ebayImporting, setEbayImporting] = useState<string | null>(null);
+  const [nrusStatus, setNrusStatus] = useState<NRUSStatus | null>(null);
 
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchProducts({
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        search: search || undefined,
-        grade: gradeFilter !== 'all' ? gradeFilter : undefined,
-      });
-      setProducts(data);
+      const [activeData, archivedData, nrus] = await Promise.all([
+        fetchProducts({ archived: 'false' }),
+        fetchProducts({ archived: 'true' }),
+        fetchNRUSStatus().catch(() => null),
+      ]);
+      setProducts(activeData);
+      setArchivedProducts(archivedData);
+      if (nrus) setNrusStatus(nrus);
     } catch {
       toast({ title: 'Error', description: 'No se pudieron cargar los productos', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, gradeFilter, toast]);
+  }, [toast]);
 
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  const handleCopy = (text: string, id: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
+    toast({ title: `${label} copiado`, description: text });
+  };
+
+  // Status counts for navigation pills
+  const counts = useMemo(() => {
+    return {
+      all: products.length,
+      transitoUsa: products.filter((p) => p.status === 'TRANSITO_USA').length,
+      usa: products.filter((p) => p.status === 'USA').length,
+      transito: products.filter((p) => p.status === 'En Tránsito').length,
+      lima: products.filter((p) => p.status === 'Perú' || p.status === 'Entregado').length,
+      vendido: products.filter((p) => p.status === 'Vendido').length,
+      archived: archivedProducts.length,
+    };
+  }, [products, archivedProducts]);
+
+  // Filtered products list
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // Status filter
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'Lima') {
+          if (p.status !== 'Perú' && p.status !== 'Entregado') return false;
+        } else if (p.status !== statusFilter) {
+          return false;
+        }
+      }
+      // Importer filter
+      if (importerFilter !== 'all') {
+        const isPeggy =
+          (p.importerProfile || '').toLowerCase() === 'peggy' ||
+          (p.recipientName || '').toLowerCase().includes('peggy') ||
+          (p.recipientName || '').toLowerCase().includes('orduña');
+        if (importerFilter === 'peggy' && !isPeggy) return false;
+        if (importerFilter === 'fabio' && isPeggy) return false;
+      }
+      // Courier filter
+      if (courierFilter !== 'all') {
+        const c = (p.courier || '').toUpperCase();
+        if (!c.includes(courierFilter.toUpperCase())) return false;
+      }
+      // Search
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const match =
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.orderNumber || '').toLowerCase().includes(q) ||
+          (p.trackingNumber || '').toLowerCase().includes(q) ||
+          (p.courier || '').toLowerCase().includes(q) ||
+          (p.supplier || '').toLowerCase().includes(q) ||
+          (p.recipientName || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [products, statusFilter, importerFilter, courierFilter, search]);
 
   const handleSave = async (data: ProductFormData) => {
     try {
@@ -155,14 +321,18 @@ export function ProductosTab() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleArchive = async (id: string, archive: boolean) => {
     try {
-      await deleteProduct(id);
-      toast({ title: 'Producto eliminado', description: 'El producto se eliminó correctamente.' });
-      setDeleteConfirm(null);
+      await archiveProduct(id, archive);
+      toast({
+        title: archive ? '📦 Producto Archivado' : '✅ Producto Restaurado',
+        description: archive
+          ? 'El producto se archivó como embarcado a Perú.'
+          : 'El producto volvió al inventario activo.',
+      });
       await loadProducts();
     } catch {
-      toast({ title: 'Error', description: 'No se pudo eliminar el producto', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo actualizar el estado del producto', variant: 'destructive' });
     }
   };
 
@@ -176,25 +346,6 @@ export function ProductosTab() {
     try {
       setEbaySearching(true);
       setEbayResults([]);
-
-      // Check eBay account status first
-      try {
-        const statusRes = await fetch('/api/ebay/account');
-        const statusData = await statusRes.json();
-        if (!statusData.configured) {
-          toast({
-            title: 'eBay no configurado',
-            description: 'Configura tus API keys de eBay (EBAY_APP_ID y EBAY_CERT_ID) en el servidor para poder buscar productos.',
-          });
-          return;
-        }
-      } catch {
-        toast({
-          title: 'eBay no disponible',
-          description: 'No se pudo verificar el estado de la conexión con eBay. Revisa la configuración del servidor.',
-        });
-        return;
-      }
 
       const params = new URLSearchParams();
       params.set('q', ebayQuery.trim());
@@ -216,8 +367,8 @@ export function ProductosTab() {
     } catch (error) {
       console.error('eBay search error:', error);
       toast({
-        title: 'Error en la búsqueda de eBay',
-        description: error instanceof Error ? error.message : 'No se pudo conectar con eBay. Intenta de nuevo.',
+        title: 'Búsqueda de eBay',
+        description: error instanceof Error ? error.message : 'No se pudo conectar con eBay.',
       });
     } finally {
       setEbaySearching(false);
@@ -260,7 +411,7 @@ export function ProductosTab() {
         shippingCostUSD: parseFloat(item.shippingCost) || 0,
         advertisingCostUSD: 0,
         extraCostsUSD: 0,
-        exchangeRate: 3.7,
+        exchangeRate: 3.4,
         salePricePEN: 0,
       };
 
@@ -284,16 +435,57 @@ export function ProductosTab() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Productos</h2>
-          <p className="text-muted-foreground">Gestión de inventario de importación</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">Inventario & Importaciones</h2>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400">
+              Live eBay
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Trazabilidad de compras eBay, casillero Miami de Shipper y stock disponible en Lima
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* View Toggle: Active / Archived */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setActiveView('active')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
+                activeView === 'active'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-card text-muted-foreground hover:bg-accent'
+              }`}
+            >
+              <Package className="h-3.5 w-3.5" />
+              Activos
+              <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'active' ? 'bg-white/25' : 'bg-muted'}`}>
+                {counts.all}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveView('archived')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-l border-border transition-colors ${
+                activeView === 'archived'
+                  ? 'bg-slate-600 text-white'
+                  : 'bg-card text-muted-foreground hover:bg-accent'
+              }`}
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archivados
+              {counts.archived > 0 && (
+                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'archived' ? 'bg-white/25' : 'bg-amber-100 text-amber-800'}`}>
+                  {counts.archived}
+                </span>
+              )}
+            </button>
+          </div>
+
           <Button
             onClick={() => setEbayDialogOpen(true)}
             variant="outline"
-            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40"
+            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40 min-h-[40px]"
           >
-            <ShoppingBag className="h-4 w-4" />
+            <ShoppingBag className="h-4 w-4 text-orange-600" />
             Buscar en eBay
           </Button>
           <Button
@@ -301,7 +493,7 @@ export function ProductosTab() {
               setEditProduct(null);
               setDialogOpen(true);
             }}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white min-h-[40px]"
           >
             <Plus className="h-4 w-4" />
             Nuevo Producto
@@ -309,44 +501,221 @@ export function ProductosTab() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-2">
-              <label className="text-sm font-medium">Buscar</label>
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* SUNAT NRUS PURCHASE LIMIT ALERT & RECOMMENDATION BANNER       */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {nrusStatus?.recommendation && (
+        <Card
+          className={`border overflow-hidden shadow-sm transition-all ${
+            nrusStatus.recommendation.severity === 'critical'
+              ? 'border-red-300 dark:border-red-800 bg-red-50/70 dark:bg-red-950/25'
+              : nrusStatus.recommendation.severity === 'warning'
+              ? 'border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/25'
+              : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20'
+          }`}
+        >
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                    nrusStatus.recommendation.severity === 'critical'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
+                      : nrusStatus.recommendation.severity === 'warning'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'
+                  }`}
+                >
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-sm sm:text-base text-foreground">
+                      {nrusStatus.recommendation.title}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] font-semibold ${
+                        nrusStatus.recommendation.severity === 'critical'
+                          ? 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300'
+                          : nrusStatus.recommendation.severity === 'warning'
+                          ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300'
+                      }`}
+                    >
+                      Límite RUS: S/ 8,000 / mes
+                    </Badge>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {nrusStatus.recommendation.description}
+                  </p>
+                  <p className="text-xs sm:text-sm font-semibold text-foreground pt-0.5">
+                    👉 {nrusStatus.recommendation.actionBanner}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Button: Copy Recommended RUC */}
+              {nrusStatus.recommendation.targetRuc && (
+                <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
+                  <Button
+                    onClick={() => {
+                      if (!nrusStatus.recommendation) return;
+                      navigator.clipboard.writeText(nrusStatus.recommendation.targetRuc);
+                      toast({
+                        title: 'RUC Copiado para Compras',
+                        description: `RUC ${nrusStatus.recommendation.targetRuc} (${nrusStatus.recommendation.targetName}) listo para usar en eBay/Shipper.`,
+                      });
+                    }}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 shadow-sm"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copiar RUC {nrusStatus.recommendation.target === 'fabio' ? 'Fabio' : 'Peggy'} ({nrusStatus.recommendation.targetRuc})
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Status Navigation Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          onClick={() => setStatusFilter('all')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'all'
+              ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span>Todos</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'all' ? 'bg-white/20 text-white dark:bg-zinc-900/20 dark:text-zinc-900' : 'bg-muted text-foreground'}`}>
+            {counts.all}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('TRANSITO_USA')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'TRANSITO_USA'
+              ? 'bg-sky-600 text-white border-sky-600'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-sky-400 shrink-0" />
+          <span>🚚 En Tránsito a Miami</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'TRANSITO_USA' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+            {counts.transitoUsa}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('USA')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'USA'
+              ? 'bg-emerald-600 text-white border-emerald-600'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+          <span>🏢 En Almacén Miami</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'USA' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+            {counts.usa}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('En Tránsito')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'En Tránsito'
+              ? 'bg-amber-600 text-white border-amber-600'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+          <span>✈️ En Vuelo a Lima</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'En Tránsito' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+            {counts.transito}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('Lima')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'Lima'
+              ? 'bg-purple-600 text-white border-purple-600'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-purple-400 shrink-0" />
+          <span>🇵🇪 Stock en Lima</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'Lima' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+            {counts.lima}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setStatusFilter('Vendido')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors shrink-0 ${
+            statusFilter === 'Vendido'
+              ? 'bg-zinc-700 text-white border-zinc-700'
+              : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-zinc-400 shrink-0" />
+          <span>🤝 Vendidos</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${statusFilter === 'Vendido' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+            {counts.vendido}
+          </span>
+        </button>
+      </div>
+
+      {/* Filter Controls Card */}
+      <Card className="border-border/60 shadow-sm">
+        <CardContent className="pt-5 pb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Search */}
+            <div className="space-y-1.5 lg:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Buscar compra / producto</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por descripción, proveedor, tracking..."
+                  placeholder="Buscar por descripción, orden #, tracking, courier..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-9 text-sm"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Estado</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
+
+            {/* Importer Filter */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Titular SUNAT</label>
+              <Select value={importerFilter} onValueChange={setImporterFilter}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Todos los titulares" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="USA">USA</SelectItem>
-                  <SelectItem value="En Tránsito">En Tránsito</SelectItem>
-                  <SelectItem value="Perú">Perú</SelectItem>
-                  <SelectItem value="Entregado">Entregado</SelectItem>
+                  <SelectItem value="all">Todos los Titulares</SelectItem>
+                  <SelectItem value="fabio">Fabio César (10762026835)</SelectItem>
+                  <SelectItem value="peggy">Peggy Liliana (10091870911)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Grado</label>
-              <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
+
+            {/* Courier Filter */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Courier USA</label>
+              <Select value={courierFilter} onValueChange={setCourierFilter}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Todos los couriers" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="A">Grado A</SelectItem>
-                  <SelectItem value="B">Grado B</SelectItem>
-                  <SelectItem value="C">Grado C</SelectItem>
+                  <SelectItem value="all">Todos los Couriers</SelectItem>
+                  <SelectItem value="USPS">USPS</SelectItem>
+                  <SelectItem value="UPS">UPS</SelectItem>
+                  <SelectItem value="FEDEX">FedEx</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -354,72 +723,558 @@ export function ProductosTab() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card>
+      {/* ─── MOBILE ARCHIVED BANNER ─── */}
+      {activeView === 'archived' && (
+        <div className="block md:hidden p-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 space-y-1">
+          <div className="flex items-center gap-2">
+            <Archive className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+              📦 Ocultos / Archivados (Embarcados a Perú)
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Productos archivados en eBay porque ya se embarcaron hacia Lima ({counts.archived} total).
+          </p>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* MOBILE-FIRST CARDS VIEW (Dispositivos Móviles < md)           */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4 space-y-3">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-12 w-full" />
+            </Card>
+          ))
+        ) : (activeView === 'active' ? filteredProducts : archivedProducts).length === 0 ? (
+          <Card className="p-8 text-center text-muted-foreground">
+            {activeView === 'archived' ? (
+              <>
+                <Archive className="h-10 w-10 mx-auto mb-2 opacity-30 text-slate-500" />
+                <p className="font-medium text-sm">Sin productos archivados</p>
+                <p className="text-xs text-muted-foreground mt-1">Los productos embarcados a Perú aparecerán aquí</p>
+              </>
+            ) : (
+              <>
+                <Package className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="font-medium text-sm">No se encontraron productos</p>
+                <p className="text-xs text-muted-foreground mt-1">Intenta ajustar los filtros de búsqueda</p>
+              </>
+            )}
+          </Card>
+        ) : (
+          (activeView === 'active' ? filteredProducts : archivedProducts).map((p) => {
+            const imp = getImporterInfo(p);
+            const st = statusConfig[p.status] || statusConfig.USA;
+            const trackUrl = getTrackingUrl(p.courier, p.trackingNumber);
+            const ebayItemUrl =
+              p.itemUrl ||
+              (p.itemId ? `https://www.ebay.com/itm/${p.itemId}` : null);
+            const ebayOrderUrl =
+              p.orderUrl ||
+              (p.orderNumber ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}` : null);
+            const ebayPrimaryUrl = ebayItemUrl || ebayOrderUrl;
+            const orderTotal = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
+            const orderTotalPEN = orderTotal * 3.40;
+
+            return (
+              <Card key={p.id} className={`border-border/70 shadow-sm overflow-hidden ${p.isArchived ? 'bg-slate-50/50 dark:bg-slate-950/30 border-slate-300 dark:border-slate-700' : ''}`}>
+                <CardContent className="p-4 space-y-3">
+                  {/* Top Badges & eBay Links */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className={`gap-1 text-[11px] font-medium ${st.badge}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                        {st.label}
+                      </Badge>
+                      <Badge variant="outline" className={`text-[11px] font-medium ${imp.badge}`}>
+                        {imp.name}
+                      </Badge>
+                      {p.isArchived && (
+                        <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
+                          Archivado
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ebayPrimaryUrl && (
+                        <a
+                          href={ebayPrimaryUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 dark:bg-orange-950/40 px-2 py-1 rounded-md border border-orange-200 dark:border-orange-800 transition-colors"
+                          title="Abrir publicación en eBay"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          eBay
+                        </a>
+                      )}
+                      {ebayOrderUrl && ebayItemUrl && (
+                        <a
+                          href={ebayOrderUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-[10px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 px-1.5 py-1 rounded border border-border/60 transition-colors"
+                          title="Ver recibo de orden en eBay"
+                        >
+                          Recibo
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Title & Order Total */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                      {p.description}
+                    </h3>
+
+                    {/* Order Total Badge */}
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-xs font-semibold">
+                      <ShoppingCart className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>Order Total: ${orderTotal.toFixed(2)} USD</span>
+                      <span className="text-emerald-500/60 font-normal">•</span>
+                      <span>{formatPEN(orderTotalPEN)}</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-2">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                        <span>Comprado: {formatPurchaseDate(p.purchaseDate || p.createdAt)}</span>
+                      </div>
+                      {p.status === 'USA' && p.actualDeliveryDate && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
+                          <Check className="h-3 w-3" />
+                          Entregado en Miami: {formatPurchaseDate(p.actualDeliveryDate)}
+                        </span>
+                      )}
+                      {p.status === 'TRANSITO_USA' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800">
+                          <Truck className="h-3 w-3" />
+                          Rumbo a Miami
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Order & Tracking Grid */}
+                  <div className="grid grid-cols-1 gap-2 p-2.5 rounded-lg bg-muted/40 border border-border/50 text-xs">
+                    {/* Order # */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Orden:</span>
+                      <div className="flex items-center gap-1.5 font-mono font-medium">
+                        <span>{p.orderNumber || '-'}</span>
+                        {p.orderNumber && (
+                          <button
+                            onClick={() => handleCopy(p.orderNumber, `ord-${p.id}`, 'N° de Orden')}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                            title="Copiar orden"
+                          >
+                            {copiedId === `ord-${p.id}` ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tracking */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className={`text-[10px] px-1 py-0 ${getCourierBadge(p.courier)}`}>
+                          {p.courier || 'Courier'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-mono font-medium">
+                        {p.trackingNumber ? (
+                          <>
+                            {trackUrl ? (
+                              <a
+                                href={trackUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                {p.trackingNumber}
+                                <ExternalLink className="h-2.5 w-2.5 opacity-70" />
+                              </a>
+                            ) : (
+                              <span>{p.trackingNumber}</span>
+                            )}
+                            <button
+                              onClick={() => handleCopy(p.trackingNumber, `tr-${p.id}`, 'Tracking')}
+                              className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                              title="Copiar tracking"
+                            >
+                              {copiedId === `tr-${p.id}` ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">Sin tracking</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price & Actions Row */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">Order Total:</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-base font-bold text-foreground">
+                          ${orderTotal.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-medium">
+                          ({formatPEN(orderTotalPEN)})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => setViewProduct(p)}
+                        title="Ver detalle"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setEditProduct(p);
+                          setDialogOpen(true);
+                        }}
+                        title="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      {p.isArchived ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => handleArchive(p.id, false)}
+                          title="Restaurar al inventario activo"
+                        >
+                          <ArchiveRestore className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                          onClick={() => handleArchive(p.id, true)}
+                          title="Archivar (embarcado a Perú)"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* DESKTOP TABLE VIEW (Pantallas Grandes >= md)                   */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+
+      {/* ─── ARCHIVED PANEL BANNER ─── */}
+      {activeView === 'archived' && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40">
+          <div className="p-2.5 rounded-lg bg-slate-200 dark:bg-slate-800 shrink-0">
+            <Archive className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+          </div>
+          <div>
+            <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
+              📦 Productos Archivados — Ya Embarcados a Perú
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Estos productos fueron archivados en eBay (Show hidden) porque ya se embarcaron a Lima. Puedes restaurarlos si es necesario.
+            </p>
+          </div>
+          <Badge variant="outline" className="ml-auto shrink-0 bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
+            {counts.archived} productos
+          </Badge>
+        </div>
+      )}
+
+      <Card className={`hidden md:block border-border/60 shadow-sm overflow-hidden ${activeView === 'archived' ? 'border-slate-300 dark:border-slate-700' : ''}`}>
         <CardContent className="p-0">
           {loading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
-          ) : products.length === 0 ? (
+          ) : (activeView === 'active' ? filteredProducts : archivedProducts).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Package className="h-12 w-12 mb-4 opacity-40" />
-              <p className="text-lg font-medium">No hay productos</p>
-              <p className="text-sm">Agrega tu primer producto para comenzar</p>
+              {activeView === 'archived' ? (
+                <>
+                  <Archive className="h-12 w-12 mb-3 opacity-30" />
+                  <p className="text-base font-semibold">Sin productos archivados</p>
+                  <p className="text-xs text-muted-foreground">Los productos embarcados a Perú aparecerán aquí</p>
+                </>
+              ) : (
+                <>
+                  <Package className="h-12 w-12 mb-3 opacity-30" />
+                  <p className="text-base font-semibold">No se encontraron productos</p>
+                  <p className="text-xs text-muted-foreground">Intenta ajustar los filtros de búsqueda o estado</p>
+                </>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+            <div className="overflow-x-auto w-full">
+              <Table className="w-full">
+                <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Grado</TableHead>
-                    <TableHead className="text-right">Precio Compra</TableHead>
-                    <TableHead className="text-right">Precio Venta</TableHead>
-                    <TableHead className="text-right">Ganancia</TableHead>
-                    <TableHead>Courier</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead className="w-[40%] min-w-[320px]">Artículo / Compra eBay</TableHead>
+                    <TableHead className="w-[18%] min-w-[180px]">Courier & Tracking USA</TableHead>
+                    <TableHead className="w-[14%] min-w-[140px]">Titular SUNAT</TableHead>
+                    <TableHead className="w-[12%] min-w-[120px]">Ubicación</TableHead>
+                    <TableHead className="w-[10%] text-right min-w-[120px]">
+                      <span className="flex items-center justify-end gap-1">
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                        Order Total
+                      </span>
+                    </TableHead>
+                    <TableHead className="w-[6%] text-right min-w-[90px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate" title={p.description}>
-                        {p.description}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusStyles[p.status] || ''}>{p.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={gradeStyles[p.grade] || ''}>Grado {p.grade}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">${p.purchasePriceUSD.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{formatPEN(p.salePricePEN)}</TableCell>
-                      <TableCell className={`text-right font-medium ${p.profitPEN >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {formatPEN(p.profitPEN)}
-                      </TableCell>
-                      <TableCell className="text-sm">{p.courier}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewProduct(p)} title="Ver">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                            setEditProduct(p);
-                            setDialogOpen(true);
-                          }} title="Editar">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => setDeleteConfirm(p.id)} title="Eliminar">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {(activeView === 'active' ? filteredProducts : archivedProducts).map((p) => {
+                    const imp = getImporterInfo(p);
+                    const st = statusConfig[p.status] || statusConfig.USA;
+                    const trackUrl = getTrackingUrl(p.courier, p.trackingNumber);
+                    const ebayItemUrl =
+                      p.itemUrl ||
+                      (p.itemId ? `https://www.ebay.com/itm/${p.itemId}` : null);
+                    const ebayOrderUrl =
+                      p.orderUrl ||
+                      (p.orderNumber ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}` : null);
+                    const ebayPrimaryUrl = ebayItemUrl || ebayOrderUrl;
+                    // Order Total = item + shipping (what was actually paid to eBay)
+                    const orderTotal = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
+                    const orderTotalPEN = orderTotal * 3.40;
+
+                    return (
+                      <TableRow key={p.id} className={`hover:bg-muted/30 transition-colors ${p.isArchived ? 'opacity-75 bg-slate-50/50 dark:bg-slate-950/30' : ''}`}>
+                        {/* Title & Order & Date & Real eBay Price */}
+                        <TableCell className="align-top py-3">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-semibold text-foreground text-sm line-clamp-2 leading-snug" title={p.description}>
+                                {p.description}
+                              </span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {ebayPrimaryUrl && (
+                                  <a
+                                    href={ebayPrimaryUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 dark:hover:bg-orange-900/40 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-800 transition-colors"
+                                    title="Ver publicación original en eBay (fotos y detalles)"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    eBay
+                                  </a>
+                                )}
+                                {ebayOrderUrl && ebayItemUrl && (
+                                  <a
+                                    href={ebayOrderUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center text-[10px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-1.5 py-0.5 rounded border border-border/60 transition-colors"
+                                    title="Ver recibo de orden en eBay"
+                                  >
+                                    Recibo
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Badge Order Total eBay + Order # + Fecha */}
+                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                              {/* Order Total Badge */}
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-xs font-semibold">
+                                <ShoppingCart className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>Order Total: ${orderTotal.toFixed(2)} USD</span>
+                                <span className="text-emerald-500/60 font-normal">|</span>
+                                <span>{formatPEN(orderTotalPEN)}</span>
+                              </div>
+
+                              {/* Order Number */}
+                              {p.orderNumber && (
+                                <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/40">
+                                  <span className="text-[11px] text-muted-foreground/70">Ord:</span>
+                                  <span className="font-medium text-foreground">{p.orderNumber}</span>
+                                  <button
+                                    onClick={() => handleCopy(p.orderNumber, `ord-d-${p.id}`, 'N° de Orden')}
+                                    className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                                    title="Copiar orden"
+                                  >
+                                    {copiedId === `ord-d-${p.id}` ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Purchase Date */}
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                                <span>{formatPurchaseDate(p.purchaseDate || p.createdAt)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        {/* Courier & Tracking */}
+                        <TableCell className="align-top py-3">
+                          <div className="space-y-1">
+                            <Badge variant="outline" className={`text-xs px-2 py-0.5 ${getCourierBadge(p.courier)}`}>
+                              {p.courier || 'USPS'}
+                            </Badge>
+
+                            {p.trackingNumber ? (
+                              <div className="flex items-center gap-1.5 font-mono text-xs pt-0.5">
+                                {trackUrl ? (
+                                  <a
+                                    href={trackUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline flex items-center gap-1 font-medium truncate max-w-[150px]"
+                                    title={`Rastrear en ${p.courier}`}
+                                  >
+                                    {p.trackingNumber}
+                                    <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-70" />
+                                  </a>
+                                ) : (
+                                  <span className="font-medium truncate max-w-[150px]">{p.trackingNumber}</span>
+                                )}
+                                <button
+                                  onClick={() => handleCopy(p.trackingNumber, `tr-d-${p.id}`, 'Tracking')}
+                                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0"
+                                  title="Copiar tracking"
+                                >
+                                  {copiedId === `tr-d-${p.id}` ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic pt-0.5">Sin tracking</p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Importer Profile */}
+                        <TableCell className="align-top py-3">
+                          <div className="space-y-0.5">
+                            <Badge variant="outline" className={`text-xs font-semibold ${imp.badge}`}>
+                              {imp.name}
+                            </Badge>
+                            <p className="text-[11px] font-mono text-muted-foreground pt-0.5">
+                              RUC: {imp.ruc}
+                            </p>
+                          </div>
+                        </TableCell>
+
+                        {/* Status */}
+                        <TableCell className="align-top py-3">
+                          <div className="space-y-1">
+                            <Badge variant="outline" className={`gap-1.5 text-xs font-medium ${st.badge}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                              {st.label}
+                            </Badge>
+                            {p.status === 'USA' && p.actualDeliveryDate && (
+                              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                <Check className="h-3 w-3" />
+                                {formatPurchaseDate(p.actualDeliveryDate)}
+                              </p>
+                            )}
+                            {p.status === 'TRANSITO_USA' && (
+                              <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium flex items-center gap-1">
+                                <Truck className="h-3 w-3" />
+                                En camino a Miami
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Order Total USD & PEN */}
+                        <TableCell className="align-top py-3 text-right">
+                          <div>
+                            <p className="font-bold text-sm text-foreground">
+                              ${orderTotal.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatPEN(orderTotalPEN)}
+                            </p>
+                            {p.shippingCostUSD > 0 && (
+                              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                Ítem ${p.purchasePriceUSD.toFixed(2)} + Env ${p.shippingCostUSD.toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Actions */}
+                        <TableCell className="align-top py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => setViewProduct(p)}
+                              title="Ver Detalle"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                setEditProduct(p);
+                                setDialogOpen(true);
+                              }}
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {p.isArchived ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => handleArchive(p.id, false)}
+                                title="Restaurar al inventario activo"
+                              >
+                                <ArchiveRestore className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                                onClick={() => handleArchive(p.id, true)}
+                                title="Archivar (marcar como embarcado a Perú)"
+                              >
+                                <Archive className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -427,7 +1282,7 @@ export function ProductosTab() {
         </CardContent>
       </Card>
 
-      {/* Product Dialog */}
+      {/* Product Edit / Create Dialog */}
       <ProductDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -439,47 +1294,127 @@ export function ProductosTab() {
         loading={saving}
       />
 
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
-            <DialogDescription>¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* View Product Dialog */}
       <Dialog open={!!viewProduct} onOpenChange={() => setViewProduct(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Detalle del Producto</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span>Detalle de la Compra</span>
+              {viewProduct && (
+                <Badge variant="outline" className={statusConfig[viewProduct.status]?.badge || ''}>
+                  {statusConfig[viewProduct.status]?.label || viewProduct.status}
+                </Badge>
+              )}
+            </DialogTitle>
           </DialogHeader>
           {viewProduct && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-muted-foreground">Orden:</span> <span className="font-medium">{viewProduct.orderNumber}</span></div>
-                <div><span className="text-muted-foreground">Categoría:</span> <span className="font-medium">{viewProduct.category}</span></div>
-                <div><span className="text-muted-foreground">Grado:</span> <Badge variant="outline" className={gradeStyles[viewProduct.grade]}>{viewProduct.grade}</Badge></div>
-                <div><span className="text-muted-foreground">Estado:</span> <Badge variant="outline" className={statusStyles[viewProduct.status]}>{viewProduct.status}</Badge></div>
-                <div><span className="text-muted-foreground">Proveedor:</span> <span className="font-medium">{viewProduct.supplier}</span></div>
-                <div><span className="text-muted-foreground">Courier:</span> <span className="font-medium">{viewProduct.courier}</span></div>
-                <div><span className="text-muted-foreground">Tracking:</span> <span className="font-medium">{viewProduct.trackingNumber}</span></div>
-                <div><span className="text-muted-foreground">Condición:</span> <span className="font-medium">{viewProduct.condition}</span></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm rounded-lg border p-4 bg-muted/30">
-                <div><span className="text-muted-foreground">Precio Compra:</span> <span className="font-medium">${viewProduct.purchasePriceUSD.toFixed(2)}</span></div>
-                <div><span className="text-muted-foreground">Precio Venta:</span> <span className="font-medium">{formatPEN(viewProduct.salePricePEN)}</span></div>
-                <div><span className="text-muted-foreground">Costo Total:</span> <span className="font-medium">{formatPEN(viewProduct.totalCostPEN)}</span></div>
-                <div><span className="text-muted-foreground">Ganancia:</span> <span className={`font-medium ${viewProduct.profitPEN >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatPEN(viewProduct.profitPEN)}</span></div>
-              </div>
               <div>
-                <span className="text-sm text-muted-foreground">Descripción:</span>
-                <p className="text-sm font-medium mt-1">{viewProduct.description}</p>
+                <p className="text-xs text-muted-foreground font-medium">Descripción:</p>
+                <p className="text-sm font-semibold mt-1">{viewProduct.description}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {(viewProduct.itemUrl || viewProduct.itemId) && (
+                    <a
+                      href={viewProduct.itemUrl || `https://www.ebay.com/itm/${viewProduct.itemId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-semibold bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 border border-orange-200 dark:border-orange-800 px-2.5 py-1 rounded-md transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ver publicación en eBay
+                    </a>
+                  )}
+                  {viewProduct.orderNumber && (
+                    <a
+                      href={viewProduct.orderUrl || `https://order.ebay.com/ord/show?orderId=${viewProduct.orderNumber}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium bg-muted/60 hover:bg-muted border border-border/60 px-2.5 py-1 rounded-md transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Recibo de orden
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm p-3.5 rounded-lg border bg-muted/30">
+                <div>
+                  <span className="text-xs text-muted-foreground block">N° de Orden eBay:</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="font-mono font-medium text-xs">{viewProduct.orderNumber || '-'}</span>
+                    {viewProduct.orderNumber && (
+                      <button
+                        onClick={() => handleCopy(viewProduct.orderNumber, 'view-ord', 'Orden')}
+                        className="p-1 hover:bg-muted rounded"
+                      >
+                        {copiedId === 'view-ord' ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs text-muted-foreground block">Fecha de Compra:</span>
+                  <span className="font-medium text-xs mt-0.5 block">
+                    {formatPurchaseDate(viewProduct.purchaseDate || viewProduct.createdAt)}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-xs text-muted-foreground block">Courier USA:</span>
+                  <span className="font-medium text-xs mt-0.5 block">{viewProduct.courier || 'USPS'}</span>
+                </div>
+
+                <div>
+                  <span className="text-xs text-muted-foreground block">N° de Tracking USA:</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="font-mono font-medium text-xs truncate max-w-[120px]">{viewProduct.trackingNumber || '-'}</span>
+                    {viewProduct.trackingNumber && (
+                      <button
+                        onClick={() => handleCopy(viewProduct.trackingNumber, 'view-tr', 'Tracking')}
+                        className="p-1 hover:bg-muted rounded"
+                      >
+                        {copiedId === 'view-tr' ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs text-muted-foreground block">Titular Asignado:</span>
+                  <span className="font-medium text-xs mt-0.5 block">
+                    {getImporterInfo(viewProduct).name}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-xs text-muted-foreground block">RUC SUNAT:</span>
+                  <span className="font-mono font-medium text-xs mt-0.5 block">
+                    {getImporterInfo(viewProduct).ruc}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm rounded-lg border p-3.5 bg-muted/20">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Order Total USD (Compra + Envío):</span>
+                  <span className="text-base font-bold text-foreground block mt-0.5">
+                    ${(viewProduct.orderTotalUSD ?? (viewProduct.purchasePriceUSD + (viewProduct.shippingCostUSD || 0))).toFixed(2)}
+                  </span>
+                  {viewProduct.shippingCostUSD > 0 && (
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">
+                      (Ítem: ${viewProduct.purchasePriceUSD.toFixed(2)} + Envío: ${viewProduct.shippingCostUSD.toFixed(2)})
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Total en Soles (T.C. 3.40):</span>
+                  <span className="text-base font-bold text-emerald-600 block mt-0.5">
+                    {formatPEN((viewProduct.orderTotalUSD ?? (viewProduct.purchasePriceUSD + (viewProduct.shippingCostUSD || 0))) * 3.40)}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -688,13 +1623,4 @@ function guessCategory(ebayCategoryId: string): ProductFormData['category'] {
     '112532': 'Accesorio',
   };
   return map[ebayCategoryId] || 'Otro';
-}
-
-// Simple inline package icon for empty state
-function Package({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/>
-    </svg>
-  );
 }

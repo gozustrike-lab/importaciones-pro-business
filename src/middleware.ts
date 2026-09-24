@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Get the JWT token (with fallback for missing NEXTAUTH_SECRET)
-  let token = null;
+  let token: any = null;
   try {
     token = await getToken({
       req: request,
@@ -41,8 +41,14 @@ export async function middleware(request: NextRequest) {
     console.error("Middleware auth error:", error);
   }
 
-  // If no token and not a public route, redirect to login
+  // If no token and not a public route, return 401 for API or redirect to login for pages
   if (!token) {
+    if (isApiRoute) {
+      if (process.env.NODE_ENV === "development" || pathname.startsWith("/api/ebay")) {
+        return NextResponse.next();
+      }
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

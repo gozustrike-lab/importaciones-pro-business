@@ -83,46 +83,59 @@ export const authOptions: NextAuthOptions = {
     },
 
     async signIn({ user, account, profile }) {
-      // For Google OAuth: link or create user
+      // For Google OAuth: link or auto-create user
       if (account?.provider === "google") {
-        const existingUser = await db.user.findUnique({
+        let existingUser = await db.user.findUnique({
           where: { email: user.email! },
         });
 
-        if (existingUser) {
-          // Link Google account to existing user
-          await db.account.upsert({
-            where: {
-              provider_providerAccountId: {
-                provider: "google",
-                providerAccountId: account.providerAccountId,
-              },
-            },
-            create: {
-              userId: existingUser.id,
-              type: account.type,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-              access_token: account.access_token,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-            },
-            update: {
-              access_token: account.access_token,
-              id_token: account.id_token,
-            },
+        if (!existingUser) {
+          // Auto-link to the main tenant
+          const defaultTenant = await db.tenant.findFirst({
+            where: { ruc: "10762026835" },
           });
 
-          // Update user metadata
-          (user as { role?: string }).role = existingUser.role;
-          (user as { tenantId?: string }).tenantId = existingUser.tenantId || undefined;
-          return true;
+          existingUser = await db.user.create({
+            data: {
+              email: user.email!,
+              name: user.name || "Fabio César Herrera Bonilla",
+              image: user.image,
+              role: user.email === "gozustrike@gmail.com" ? "TENANT_ADMIN" : "TENANT_USER",
+              tenantId: defaultTenant?.id || null,
+              isActive: true,
+            },
+          });
         }
 
-        // New user from Google - require registration first
-        // Redirect to register page with pre-filled email
-        return false;
+        // Link Google account to user
+        await db.account.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: "google",
+              providerAccountId: account.providerAccountId,
+            },
+          },
+          create: {
+            userId: existingUser.id,
+            type: account.type,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            access_token: account.access_token,
+            token_type: account.token_type,
+            scope: account.scope,
+            id_token: account.id_token,
+          },
+          update: {
+            access_token: account.access_token,
+            id_token: account.id_token,
+          },
+        });
+
+        // Update user metadata
+        (user as { id?: string }).id = existingUser.id;
+        (user as { role?: string }).role = existingUser.role;
+        (user as { tenantId?: string }).tenantId = existingUser.tenantId || undefined;
+        return true;
       }
 
       return true;

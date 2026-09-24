@@ -145,13 +145,45 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* 1-Click Fast Login for Local Development */}
+          <div className="mt-4 pt-3 border-t border-zinc-800 space-y-2">
+            <p className="text-[11px] font-semibold text-zinc-400 text-center uppercase tracking-wider">
+              Acceso Rápido Directo (Sin escribir contraseña):
+            </p>
+            <Button
+              type="button"
+              onClick={async () => {
+                setEmail('gozustrike@gmail.com');
+                setPassword('Admin1234');
+                setIsLoading(true);
+                setError('');
+                const result = await signIn('credentials', {
+                  email: 'gozustrike@gmail.com',
+                  password: 'Admin1234',
+                  redirect: false,
+                });
+                if (result?.error) {
+                  setError(result.error);
+                  setIsLoading(false);
+                } else {
+                  router.push('/dashboard');
+                  router.refresh();
+                }
+              }}
+              className="w-full bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-xs font-semibold h-9 transition-colors gap-2"
+              disabled={isLoading}
+            >
+              👤 Entrar como Fabio (gozustrike@gmail.com)
+            </Button>
+          </div>
+
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-zinc-700" />
+              <span className="w-full border-t border-zinc-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-zinc-900 px-2 text-zinc-500">o</span>
+              <span className="bg-zinc-900 px-2 text-zinc-500">o con Google</span>
             </div>
           </div>
 
@@ -183,6 +215,9 @@ export default function LoginPage() {
             </svg>
             Continuar con Google
           </Button>
+          <p className="text-[10px] text-zinc-500 text-center mt-1.5">
+            Nota: Requiere configurar GOOGLE_CLIENT_ID en .env desde Google Cloud Console.
+          </p>
 
           {/* Register link */}
           <p className="mt-6 text-center text-sm text-zinc-500">

@@ -30,7 +30,14 @@ export async function GET() {
     const productsByStatusRaw = await db.product.groupBy({
       by: ["shippingStatus"], _count: { id: true }, where: tenantFilter,
     });
-    const productsByStatus: Record<string, number> = { USA: 0, "En Tránsito": 0, Perú: 0, Entregado: 0, Vendido: 0 };
+    const productsByStatus: Record<string, number> = {
+      USA: 0,
+      TRANSITO_USA: 0,
+      "En Tránsito": 0,
+      Perú: 0,
+      Entregado: 0,
+      Vendido: 0,
+    };
     for (const item of productsByStatusRaw) {
       if (item.shippingStatus in productsByStatus) productsByStatus[item.shippingStatus] = item._count.id;
     }
@@ -113,9 +120,134 @@ export async function GET() {
       createdAt: s.createdAt.toISOString(),
     }));
 
+    const allProducts = await db.product.findMany({
+      where: tenantFilter,
+      select: {
+        id: true,
+        purchaseDate: true,
+        createdAt: true,
+        purchasePriceUsd: true,
+        totalCostPen: true,
+        importerProfile: true,
+        recipientName: true,
+        shippingStatus: true,
+      },
+    });
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = (now.getDay() + 6) % 7;
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+    const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const purchasesStats = {
+      today: { count: 0, investedUsd: 0, investedPen: 0 },
+      thisWeek: { count: 0, investedUsd: 0, investedPen: 0 },
+      thisMonth: { count: 0, investedUsd: 0, investedPen: 0 },
+      total: { count: allProducts.length, investedUsd: 0, investedPen: 0 },
+      byImporter: {
+        fabio: { count: 0, investedUsd: 0, investedPen: 0 },
+        peggy: { count: 0, investedUsd: 0, investedPen: 0 },
+      },
+      timeline: [] as Array<{ date: string; label: string; count: number; investedPen: number; investedUsd: number }>,
+    };
+
+    const dailyMap: Record<string, { label: string; count: number; investedPen: number; investedUsd: number }> = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+      dailyMap[key] = { label, count: 0, investedPen: 0, investedUsd: 0 };
+    }
+
+    for (const prod of allProducts) {
+      const pDate = prod.purchaseDate || prod.createdAt;
+      const usd = prod.purchasePriceUsd || 0;
+      const pen = prod.totalCostPen || Math.round(usd * 3.40 * 100) / 100;
+
+      purchasesStats.total.investedUsd += usd;
+      purchasesStats.total.investedPen += pen;
+
+      if (pDate >= startOfToday) {
+        purchasesStats.today.count += 1;
+        purchasesStats.today.investedUsd += usd;
+        purchasesStats.today.investedPen += pen;
+      }
+
+      if (pDate >= startOfWeek) {
+        purchasesStats.thisWeek.count += 1;
+        purchasesStats.thisWeek.investedUsd += usd;
+        purchasesStats.thisWeek.investedPen += pen;
+      }
+
+      if (pDate >= startOfMonthDate) {
+        purchasesStats.thisMonth.count += 1;
+        purchasesStats.thisMonth.investedUsd += usd;
+        purchasesStats.thisMonth.investedPen += pen;
+      }
+
+      const isPeggy = (prod.importerProfile || '').toLowerCase() === 'peggy' ||
+        (prod.recipientName || '').toLowerCase().includes('peggy') ||
+        (prod.recipientName || '').toLowerCase().includes('orduña');
+
+      if (isPeggy) {
+        purchasesStats.byImporter.peggy.count += 1;
+        purchasesStats.byImporter.peggy.investedUsd += usd;
+        purchasesStats.byImporter.peggy.investedPen += pen;
+      } else {
+        purchasesStats.byImporter.fabio.count += 1;
+        purchasesStats.byImporter.fabio.investedUsd += usd;
+        purchasesStats.byImporter.fabio.investedPen += pen;
+      }
+
+      const dayKey = pDate.toISOString().slice(0, 10);
+      if (dailyMap[dayKey]) {
+        dailyMap[dayKey].count += 1;
+        dailyMap[dayKey].investedPen += pen;
+        dailyMap[dayKey].investedUsd += usd;
+      }
+    }
+
+    purchasesStats.today.investedUsd = Math.round(purchasesStats.today.investedUsd * 100) / 100;
+    purchasesStats.today.investedPen = Math.round(purchasesStats.today.investedPen * 100) / 100;
+    purchasesStats.thisWeek.investedUsd = Math.round(purchasesStats.thisWeek.investedUsd * 100) / 100;
+    purchasesStats.thisWeek.investedPen = Math.round(purchasesStats.thisWeek.investedPen * 100) / 100;
+    purchasesStats.thisMonth.investedUsd = Math.round(purchasesStats.thisMonth.investedUsd * 100) / 100;
+    purchasesStats.thisMonth.investedPen = Math.round(purchasesStats.thisMonth.investedPen * 100) / 100;
+    purchasesStats.total.investedUsd = Math.round(purchasesStats.total.investedUsd * 100) / 100;
+    purchasesStats.total.investedPen = Math.round(purchasesStats.total.investedPen * 100) / 100;
+    purchasesStats.byImporter.fabio.investedUsd = Math.round(purchasesStats.byImporter.fabio.investedUsd * 100) / 100;
+    purchasesStats.byImporter.fabio.investedPen = Math.round(purchasesStats.byImporter.fabio.investedPen * 100) / 100;
+    purchasesStats.byImporter.peggy.investedUsd = Math.round(purchasesStats.byImporter.peggy.investedUsd * 100) / 100;
+    purchasesStats.byImporter.peggy.investedPen = Math.round(purchasesStats.byImporter.peggy.investedPen * 100) / 100;
+
+    purchasesStats.timeline = Object.entries(dailyMap).map(([date, d]) => ({
+      date,
+      label: d.label,
+      count: d.count,
+      investedPen: Math.round(d.investedPen * 100) / 100,
+      investedUsd: Math.round(d.investedUsd * 100) / 100,
+    }));
+
     const recentProducts = await db.product.findMany({
-      where: tenantFilter, orderBy: { createdAt: "desc" }, take: 5,
-      select: { id: true, description: true, shippingStatus: true, purchasePriceUsd: true, profitPen: true, category: true, grade: true, createdAt: true },
+      where: tenantFilter,
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        description: true,
+        shippingStatus: true,
+        purchasePriceUsd: true,
+        profitPen: true,
+        category: true,
+        grade: true,
+        orderNumber: true,
+        trackingId: true,
+        courier: true,
+        importerProfile: true,
+        purchaseDate: true,
+        notes: true,
+        createdAt: true,
+      },
     });
 
     // NRUS status
@@ -139,24 +271,158 @@ export async function GET() {
 
     const nrusStatus = getNRUSCategory(totalMonthlySalesPen, configData);
 
+    const cat2Limit = nrusConfig?.cat2Threshold || 8000;
+    const TC = 3.40;
+
+    let fabioPurchasesPenThisMonth = 0;
+    let peggyPurchasesPenThisMonth = 0;
+
+    for (const prod of allProducts) {
+      const pDate = prod.purchaseDate || prod.createdAt;
+      if (pDate >= startOfMonthDate && pDate <= endOfMonth) {
+        const usd = prod.purchasePriceUsd || 0;
+        const pen = prod.totalCostPen || Math.round(usd * TC * 100) / 100;
+        const isPeggy = (prod.importerProfile || '').toLowerCase() === 'peggy' ||
+          (prod.recipientName || '').toLowerCase().includes('peggy') ||
+          (prod.recipientName || '').toLowerCase().includes('orduña');
+        if (isPeggy) {
+          peggyPurchasesPenThisMonth += pen;
+        } else {
+          fabioPurchasesPenThisMonth += pen;
+        }
+      }
+    }
+
+    const fabioAvailablePen = Math.round((cat2Limit - fabioPurchasesPenThisMonth) * 100) / 100;
+    const fabioAvailableUsd = Math.round((fabioAvailablePen / TC) * 100) / 100;
+    const fabioConsumedPct = Math.round((fabioPurchasesPenThisMonth / cat2Limit) * 100);
+    const fabioIsExceeded = fabioPurchasesPenThisMonth > cat2Limit;
+    const fabioIsNearLimit = fabioPurchasesPenThisMonth >= 6000 && !fabioIsExceeded;
+
+    const peggyAvailablePen = Math.round((cat2Limit - peggyPurchasesPenThisMonth) * 100) / 100;
+    const peggyAvailableUsd = Math.round((peggyAvailablePen / TC) * 100) / 100;
+    const peggyConsumedPct = Math.round((peggyPurchasesPenThisMonth / cat2Limit) * 100);
+    const peggyIsExceeded = peggyPurchasesPenThisMonth > cat2Limit;
+    const peggyIsNearLimit = peggyPurchasesPenThisMonth >= 6000 && !peggyIsExceeded;
+
+    let target: 'fabio' | 'peggy' | 'none' = 'none';
+    let targetName = '';
+    let targetRuc = '';
+    let severity: 'normal' | 'warning' | 'critical' = 'normal';
+    let title = '';
+    let description = '';
+    let actionBanner = '';
+
+    if (fabioIsExceeded && peggyIsExceeded) {
+      target = 'none';
+      severity = 'critical';
+      title = '🚨 ALERTA CRÍTICA: Límite NRUS Alcanzado en Ambos RUCs';
+      description = `Ambos titulares han superado el tope legal de compras de S/ 8,000 mensuales.`;
+      actionBanner = 'DETENER compras bajo el Nuevo RUS durante este mes para evitar contingencias tributarias con SUNAT.';
+    } else if (peggyIsExceeded) {
+      target = 'fabio';
+      targetName = 'FABIO CESAR HERRERA BONILLA';
+      targetRuc = '10762026835';
+      severity = 'critical';
+      title = '🚨 ALERTA SUNAT NRUS: RUC de Peggy Excedido de Compras';
+      description = `El RUC 10091870911 (Peggy) ha superado el tope mensual de S/ 8,000 en compras (S/ ${peggyPurchasesPenThisMonth.toFixed(2)} acumulados).`;
+      actionBanner = `RECOMENDAMOS COMPRAR EXCLUSIVAMENTE CON EL RUC DISPONIBLE DE FABIO CÉSAR (10762026835). Saldo disponible: S/ ${fabioAvailablePen.toFixed(2)} ($${fabioAvailableUsd.toFixed(2)} USD).`;
+    } else if (fabioIsExceeded) {
+      target = 'peggy';
+      targetName = 'BONILLA ORDUÑA PEGGY LILIANA';
+      targetRuc = '10091870911';
+      severity = 'critical';
+      title = '🚨 ALERTA SUNAT NRUS: RUC de Fabio Excedido de Compras';
+      description = `El RUC 10762026835 (Fabio) ha superado el tope mensual de S/ 8,000 en compras (S/ ${fabioPurchasesPenThisMonth.toFixed(2)} acumulados).`;
+      actionBanner = `RECOMENDAMOS COMPRAR EXCLUSIVAMENTE CON EL RUC DISPONIBLE DE PEGGY LILIANA (10091870911). Saldo disponible: S/ ${peggyAvailablePen.toFixed(2)} ($${peggyAvailableUsd.toFixed(2)} USD).`;
+    } else if (peggyIsNearLimit || fabioIsNearLimit) {
+      severity = 'warning';
+      if (fabioAvailablePen > peggyAvailablePen) {
+        target = 'fabio';
+        targetName = 'FABIO CESAR HERRERA BONILLA';
+        targetRuc = '10762026835';
+        title = '⚠️ ALERTA DE COMPRAS SUNAT: Acercándose al tope de S/ 8,000';
+        description = `Peggy ha consumido el ${peggyConsumedPct}% de su tope de compras (restan S/ ${peggyAvailablePen.toFixed(2)}).`;
+        actionBanner = `Recomendamos comprar preferentemente con el RUC de Fabio César (Saldo disponible: S/ ${fabioAvailablePen.toFixed(2)} / $${fabioAvailableUsd.toFixed(2)} USD).`;
+      } else {
+        target = 'peggy';
+        targetName = 'BONILLA ORDUÑA PEGGY LILIANA';
+        targetRuc = '10091870911';
+        title = '⚠️ ALERTA DE COMPRAS SUNAT: Acercándose al tope de S/ 8,000';
+        description = `Fabio ha consumido el ${fabioConsumedPct}% de su tope de compras (restan S/ ${fabioAvailablePen.toFixed(2)}).`;
+        actionBanner = `Recomendamos comprar preferentemente con el RUC de Peggy Liliana (Saldo disponible: S/ ${peggyAvailablePen.toFixed(2)} / $${peggyAvailableUsd.toFixed(2)} USD).`;
+      }
+    } else {
+      severity = 'normal';
+      target = fabioAvailablePen >= peggyAvailablePen ? 'fabio' : 'peggy';
+      targetName = target === 'fabio' ? 'FABIO CESAR HERRERA BONILLA' : 'BONILLA ORDUÑA PEGGY LILIANA';
+      targetRuc = target === 'fabio' ? '10762026835' : '10091870911';
+      title = '✅ Ambos RUCs con Saldo Disponible para Compras';
+      description = `Fabio dispone de S/ ${fabioAvailablePen.toFixed(2)} ($${fabioAvailableUsd.toFixed(2)} USD) | Peggy dispone de S/ ${peggyAvailablePen.toFixed(2)} ($${peggyAvailableUsd.toFixed(2)} USD).`;
+      actionBanner = `Recomendamos comprar con ${target === 'fabio' ? 'Fabio César' : 'Peggy Liliana'} para mantener balance de importaciones.`;
+    }
+
+    const recommendation = {
+      target,
+      targetName,
+      targetRuc,
+      severity,
+      title,
+      description,
+      actionBanner,
+      fabioAvailablePen,
+      fabioAvailableUsd,
+      fabioConsumedPct,
+      peggyAvailablePen,
+      peggyAvailableUsd,
+      peggyConsumedPct,
+    };
+
     return NextResponse.json({
       totalInvested: Math.round(totalInvested * 100) / 100,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       netProfit: Math.round(netProfit * 100) / 100,
       activeProducts, totalClients, totalSales,
       avgTicket: Math.round(avgTicket * 100) / 100,
-      productsByStatus, productsByGrade, monthlyRevenue,
+      productsByStatus, productsByGrade, monthlyRevenue: monthlyRevenueData,
       topSellingProducts, salesByChannel, recentSales,
-      recentProducts: recentProducts.map((p) => ({
-        id: p.id, description: p.description, status: p.shippingStatus,
-        purchasePriceUSD: p.purchasePriceUsd, profitPEN: p.profitPen,
-        category: p.category, grade: p.grade, createdAt: p.createdAt.toISOString(),
-      })),
+      recentProducts: recentProducts.map((p) => {
+        const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
+        const itemId = itemMatch ? itemMatch[1] : undefined;
+        let itemUrl = itemId ? `https://www.ebay.com/itm/${itemId}` : undefined;
+        let orderUrl = p.orderNumber && p.orderNumber.includes('-')
+          ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`
+          : undefined;
+        if (!itemUrl && orderUrl) {
+          itemUrl = orderUrl;
+        }
+
+        return {
+          id: p.id,
+          description: p.description,
+          status: p.shippingStatus,
+          purchasePriceUSD: p.purchasePriceUsd,
+          profitPEN: p.profitPen,
+          category: p.category,
+          grade: p.grade,
+          orderNumber: p.orderNumber,
+          courier: p.courier,
+          trackingNumber: p.trackingId,
+          purchaseDate: p.purchaseDate?.toISOString() || p.createdAt.toISOString(),
+          importerProfile: p.importerProfile || 'fabio',
+          itemId,
+          itemUrl,
+          orderUrl,
+          createdAt: p.createdAt.toISOString(),
+        };
+      }),
+      purchases: purchasesStats,
       nrus: {
         currentMonth: currentMonthStr, totalMonthlySalesPen: nrusStatus.totalMonthlySalesPen,
         category: nrusStatus.category, alertLevel: nrusStatus.alertLevel,
         percentageOfThreshold: nrusStatus.percentageOfThreshold,
         message: nrusStatus.message, currentThreshold: nrusStatus.currentThreshold,
+        recommendation,
       },
     });
   } catch (error: unknown) {
