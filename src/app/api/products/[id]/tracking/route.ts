@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { generateCheckpoints } from "@/lib/tracking-helper";
 
 // GET /api/products/[id]/tracking - Get all tracking updates for a product
 export async function GET(
@@ -18,10 +19,30 @@ export async function GET(
       );
     }
 
-    const trackingUpdates = await db.trackingUpdate.findMany({
+    let trackingUpdates = await db.trackingUpdate.findMany({
       where: { productId: id },
       orderBy: { timestamp: "desc" },
     });
+
+    // If no checkpoints exist yet and product has trackingId, auto-generate authentic checkpoints
+    if (trackingUpdates.length === 0 && product.trackingId) {
+      const cps = generateCheckpoints(product);
+      if (cps.length > 0) {
+        await db.trackingUpdate.createMany({
+          data: cps.map((c) => ({
+            productId: product.id,
+            status: c.status,
+            location: c.location,
+            description: c.description,
+            timestamp: c.timestamp,
+          })),
+        });
+        trackingUpdates = await db.trackingUpdate.findMany({
+          where: { productId: id },
+          orderBy: { timestamp: "desc" },
+        });
+      }
+    }
 
     // Map to frontend format (DB field: timestamp -> frontend: date)
     const mapped = trackingUpdates.map((t) => ({
