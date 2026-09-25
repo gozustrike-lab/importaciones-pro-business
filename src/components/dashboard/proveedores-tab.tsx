@@ -7,7 +7,7 @@ import {
   RefreshCw, Package, DollarSign, Upload, Loader2, X, Unplug, CheckCircle2,
   Bell, BellRing, Tag, Flame, Sparkles, TrendingDown, ShoppingBag,
   ShoppingCart, Check, Copy, Filter, Layers, Percent, Clock, Bookmark,
-  ShieldCheck, AlertTriangle
+  ShieldCheck, AlertTriangle, ArrowRight, Zap
 } from 'lucide-react';
 import {
   Card,
@@ -99,13 +99,108 @@ export interface TrackedDealItem {
   foundAt: string;
 }
 
-// ── Constants ──
-const COUNTRY_FLAGS: Record<string, string> = {
-  USA: '🇺🇸', CN: '🇨🇳', JP: '🇯🇵', KR: '🇰🇷', GB: '🇬🇧', DE: '🇩🇪',
-  TW: '🇹🇼', HK: '🇭🇰', SG: '🇸🇬', IN: '🇮🇳', BR: '🇧🇷', MX: '🇲🇽', PE: '🇵🇪',
-  US: '🇺🇸', China: '🇨🇳', Japan: '🇯🇵', Korea: '🇰🇷', UK: '🇬🇧', Germany: '🇩🇪',
-};
+// ── Plantillas Rápidas basadas en Compras Reales en eBay ──
+const QUICK_TEMPLATES = [
+  {
+    id: 'ipad-pro-105',
+    label: '📱 iPad Pro 10.5 A1701 / A1709',
+    badge: 'Comprado $89-$100',
+    title: 'iPad Pro 10.5 A1701 64GB',
+    keywords: 'iPad Pro 10.5 A1701 64GB',
+    sellerUsername: 'itsworthmore',
+    sellerLink: 'https://www.ebay.com/str/itsworthmore',
+    maxPriceUsd: '110',
+    minDiscountPct: '15',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+  {
+    id: 'ipad-9-64',
+    label: '📱 iPad 9na Gen A2603 (64GB)',
+    badge: 'Comprado $90-$99',
+    title: 'iPad 9th Gen A2603 64GB',
+    keywords: 'iPad 9th Gen A2603 64GB',
+    sellerUsername: 'wikiwoo',
+    sellerLink: 'https://www.ebay.com/str/wikiwoo',
+    maxPriceUsd: '99',
+    minDiscountPct: '15',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+  {
+    id: 'macbook-pro',
+    label: '💻 MacBook Pro i7 16GB / 512GB',
+    badge: 'Comprado $160-$185',
+    title: 'MacBook Pro i7 16GB 512GB',
+    keywords: 'MacBook Pro 13 i7 16GB',
+    sellerUsername: '',
+    sellerLink: '',
+    maxPriceUsd: '190',
+    minDiscountPct: '20',
+    category: 'Laptops',
+    condition: 'Used',
+  },
+  {
+    id: 'ipad-7-8',
+    label: '📱 iPad 7ma / 8va Gen A2200',
+    badge: 'Comprado $30-$45',
+    title: 'iPad 7 A2200 32GB',
+    keywords: 'iPad 7 A2200 32GB',
+    sellerUsername: 'preownedtech',
+    sellerLink: 'https://www.ebay.com/str/preownedtech',
+    maxPriceUsd: '55',
+    minDiscountPct: '15',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+  {
+    id: 'ipad-air-3',
+    label: '📱 iPad Air 3ra / 4ta Gen',
+    badge: 'Comprado $95-$119',
+    title: 'iPad Air 3rd Gen 256GB',
+    keywords: 'iPad Air 3rd Gen 256GB',
+    sellerUsername: 'smartresale',
+    sellerLink: 'https://www.ebay.com/str/smartresale',
+    maxPriceUsd: '120',
+    minDiscountPct: '15',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+  {
+    id: 'itsworthmore-outlet',
+    label: '🏪 Liquidaciones ItsWorthMore',
+    badge: '38 compras TOP',
+    title: 'Outlet Liquidaciones ItsWorthMore',
+    keywords: 'Apple iPad',
+    sellerUsername: 'itsworthmore',
+    sellerLink: 'https://www.ebay.com/str/itsworthmore',
+    maxPriceUsd: '150',
+    minDiscountPct: '20',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+];
 
+// Helper: Generates a guaranteed working live eBay search URL (NEVER 404!)
+function getBuyNowUrl(deal: TrackedDealItem): string {
+  if (deal.itemUrl && deal.itemUrl.includes('ebay.com/sch/')) {
+    return deal.itemUrl;
+  }
+  const cleanQ = (deal.title || '')
+    .replace(/Apple\s+/gi, '')
+    .replace(/-\s*Tested\s*100%\s*OK/gi, '')
+    .replace(/READ\s+DESCRIPTION/gi, '')
+    .replace(/\(Very Good\)/gi, '')
+    .replace(/\(Very Good Condition\)/gi, '')
+    .replace(/Excellent Condition/gi, '')
+    .replace(/Very Good Refurbished/gi, '')
+    .replace(/[()[\]*]/g, ' ')
+    .trim();
+  const sellerParam = deal.sellerUsername ? `&_ssn=${encodeURIComponent(deal.sellerUsername)}` : '';
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanQ)}${sellerParam}&LH_BIN=1&_sop=15`;
+}
+
+// ── Constants ──
 const CATEGORY_LABELS: Record<string, string> = {
   general: 'General',
   electronics: 'Electrónica',
@@ -178,6 +273,11 @@ export function ProveedoresTab() {
   const [dealSearch, setDealSearch] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  // Live Real-Time Search Bar State
+  const [liveSeller, setLiveSeller] = useState<string>('itsworthmore');
+  const [liveKeywords, setLiveKeywords] = useState<string>('iPad Pro 10.5 A1701');
+  const [liveMaxPrice, setLiveMaxPrice] = useState<string>('110');
+
   // Tracker Modal State
   const [trackerModalOpen, setTrackerModalOpen] = useState(false);
   const [trackerForm, setTrackerForm] = useState({
@@ -186,7 +286,7 @@ export function ProveedoresTab() {
     sellerLink: '',
     supplierId: '',
     maxPriceUsd: '',
-    minDiscountPct: '10',
+    minDiscountPct: '15',
     condition: 'Used',
     category: 'Tablets',
     notificationsEnabled: true,
@@ -207,13 +307,6 @@ export function ProveedoresTab() {
   // Link dialog
   const [linkFormOpen, setLinkFormOpen] = useState(false);
   const [linkSaving, setLinkSaving] = useState(false);
-  const [newLink, setNewLink] = useState({
-    title: '',
-    url: '',
-    type: 'url' as SupplierLinkType,
-    priceUsd: '',
-    notes: '',
-  });
 
   // Supplier Form
   const [formData, setFormData] = useState<SupplierFormData>({
@@ -231,10 +324,7 @@ export function ProveedoresTab() {
 
   // eBay Status
   const [ebayStatus, setEbayStatus] = useState<EbayAccountStatus | null>(null);
-  const [ebayDialogOpen, setEbayDialogOpen] = useState(false);
   const [ebayCardDismissed, setEbayCardDismissed] = useState(false);
-  const [ebayConnecting, setEbayConnecting] = useState(false);
-  const [ebayDisconnecting, setEbayDisconnecting] = useState(false);
 
   // 1. Load Suppliers
   const loadSuppliers = useCallback(async () => {
@@ -318,12 +408,52 @@ export function ProveedoresTab() {
     return list;
   }, [allDeals, dealFilter, dealSearch]);
 
-  // Copy helper
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedCode(id);
     setTimeout(() => setCopiedCode(null), 2000);
     toast({ title: 'Copiado', description: 'Código de descuento copiado al portapapeles' });
+  };
+
+  // Launch live search directly on eBay (100% active, zero 404!)
+  const handleLaunchLiveEbay = (seller?: string, query?: string, maxPrice?: string) => {
+    const q = (query || 'iPad').trim();
+    const s = (seller || '').trim();
+    const p = maxPrice ? parseFloat(maxPrice) : null;
+
+    let url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_BIN=1&_sop=15`;
+    if (s && s !== 'all') {
+      url += `&_ssn=${encodeURIComponent(s)}`;
+    }
+    if (p && p > 0) {
+      url += `&_udhi=${p}`;
+    }
+
+    window.open(url, '_blank');
+  };
+
+  // Apply Quick Template
+  const handleApplyTemplate = (tmpl: (typeof QUICK_TEMPLATES)[number]) => {
+    setLiveKeywords(tmpl.keywords);
+    setLiveSeller(tmpl.sellerUsername || 'all');
+    setLiveMaxPrice(tmpl.maxPriceUsd);
+
+    setTrackerForm({
+      title: tmpl.title,
+      keywords: tmpl.keywords,
+      sellerLink: tmpl.sellerLink,
+      supplierId: '',
+      maxPriceUsd: tmpl.maxPriceUsd,
+      minDiscountPct: tmpl.minDiscountPct,
+      condition: tmpl.condition,
+      category: tmpl.category,
+      notificationsEnabled: true,
+    });
+
+    toast({
+      title: '⚡ Plantilla Cargada',
+      description: `${tmpl.label} listo para buscar en vivo o guardar como rastreador.`,
+    });
   };
 
   // 4. Scan All Trackers for Deals
@@ -388,17 +518,6 @@ export function ProveedoresTab() {
         description: `Rastreador "${trackerForm.title}" creado con alertas en tiempo real.`,
       });
       setTrackerModalOpen(false);
-      setTrackerForm({
-        title: '',
-        keywords: '',
-        sellerLink: '',
-        supplierId: '',
-        maxPriceUsd: '',
-        minDiscountPct: '10',
-        condition: 'Used',
-        category: 'Tablets',
-        notificationsEnabled: true,
-      });
       await loadTrackers();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -454,12 +573,13 @@ export function ProveedoresTab() {
 
   // 10. Pre-fill Tracker for a specific supplier
   const handleTrackSupplier = (supplier: Supplier) => {
+    setLiveSeller(supplier.name.toLowerCase());
     setTrackerForm({
       title: `Ofertas de ${supplier.name}`,
-      keywords: 'iPad 10.2 64GB',
+      keywords: 'iPad 10.2',
       sellerLink: supplier.url || supplier.website || supplier.name,
       supplierId: supplier.id,
-      maxPriceUsd: '180',
+      maxPriceUsd: '150',
       minDiscountPct: '15',
       condition: 'Used',
       category: supplier.category || 'Tablets',
@@ -537,7 +657,6 @@ export function ProveedoresTab() {
     }
   };
 
-  // View supplier detail
   const handleViewSupplier = async (supplier: Supplier) => {
     try {
       setDetailLoading(true);
@@ -569,7 +688,7 @@ export function ProveedoresTab() {
                 </Badge>
               </div>
               <p className="text-muted-foreground text-[11px] mt-0.5">
-                Seguimiento de compras, proveedores favoritos y rastreo de ofertas en vivo sincronizados.
+                Seguimiento de compras, 52 proveedores sincronizados y enlaces de compra en tiempo real.
               </p>
             </div>
           </div>
@@ -586,7 +705,7 @@ export function ProveedoresTab() {
         </div>
       )}
 
-      {/* Main Header & Sub-Tabs */}
+      {/* Main Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b">
         <div>
           <div className="flex items-center gap-2.5">
@@ -606,7 +725,7 @@ export function ProveedoresTab() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Buscadores inteligentes con detección de descuentos, cupones de vendedor y compra directa.
+                Buscador en tiempo real con pre-rellenados basados en tus compras, descuentos activos y compra directa sin errores 404.
               </p>
             </div>
           </div>
@@ -697,67 +816,135 @@ export function ProveedoresTab() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 1: RADAR DE OFERTAS & DESCUENTOS
+          TAB 1: RADAR DE OFERTAS & DESCUENTOS EN TIEMPO REAL
       ───────────────────────────────────────────────────────────── */}
       {activeTab === 'radar' && (
         <div className="space-y-4">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-3 bg-card border">
-              <p className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-                <span>Buscadores Activos</span>
-                <Layers className="h-3.5 w-3.5 text-primary" />
-              </p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-bold text-foreground">{trackers.filter((t) => t.isActive).length}</span>
-                <span className="text-xs text-muted-foreground">de {trackers.length} configurados</span>
-              </div>
-            </Card>
-
-            <Card className="p-3 bg-card border">
-              <p className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-                <span>Ofertas Detectadas</span>
-                <Flame className="h-3.5 w-3.5 text-amber-500" />
-              </p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{allDeals.length}</span>
-                <span className="text-xs text-muted-foreground">con descuento activo</span>
-              </div>
-            </Card>
-
-            <Card className="p-3 bg-card border">
-              <p className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-                <span>Descuento Promedio</span>
-                <Percent className="h-3.5 w-3.5 text-emerald-600" />
-              </p>
-              <div className="mt-1">
-                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {allDeals.length > 0
-                    ? `${(allDeals.reduce((acc, d) => acc + (d.discountPct || 0), 0) / allDeals.length).toFixed(1)}% OFF`
-                    : '0%'}
-                </span>
-              </div>
-            </Card>
-
-            <Card className="p-3 bg-card border">
-              <p className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-                <span>Proveedores Rastreados</span>
-                <Store className="h-3.5 w-3.5 text-blue-600" />
-              </p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{suppliers.length}</span>
-                <span className="text-xs text-muted-foreground">tiendas de eBay</span>
-              </div>
-            </Card>
+          {/* BARRA DE PLANTILLAS RÁPIDAS BASADAS EN COMPRAS REALES */}
+          <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-emerald-500/10 border border-amber-200 dark:border-amber-900/50 shadow-xs">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-amber-600 fill-amber-500" />
+                Plantillas Rápidas con Pre-rellenados de tus Compras (1-Clic para buscar o rastrear):
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium">Precios reales de compra</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {QUICK_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  onClick={() => handleApplyTemplate(tmpl)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-card hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-border hover:border-amber-400 text-xs font-semibold text-foreground transition-all shrink-0 cursor-pointer shadow-2xs group"
+                >
+                  <span>{tmpl.label}</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-100/60 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 font-mono">
+                    {tmpl.badge}
+                  </Badge>
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* BUSCADOR DE PROVEEDORES EBAY EN TIEMPO REAL */}
+          <Card className="p-3.5 bg-card border shadow-xs">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-emerald-600" />
+                <h3 className="font-bold text-xs text-foreground uppercase tracking-wider">
+                  Buscador de Proveedores eBay en Tiempo Real
+                </h3>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                Abre directamente los resultados reales en eBay con filtro Cómpralo Ya (Buy It Now) y menor precio
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+              {/* Supplier Select */}
+              <div className="sm:col-span-4 space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Tienda / Proveedor de eBay</Label>
+                <Select value={liveSeller} onValueChange={setLiveSeller}>
+                  <SelectTrigger className="h-8 text-xs bg-background">
+                    <SelectValue placeholder="Seleccionar proveedor" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="all">🔍 Todos los Vendedores de eBay</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.name.toLowerCase()}>
+                        {s.name} ({s.totalOrders} compras)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Keywords Input */}
+              <div className="sm:col-span-5 space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Palabras Clave del Producto</Label>
+                <Input
+                  value={liveKeywords}
+                  onChange={(e) => setLiveKeywords(e.target.value)}
+                  placeholder="ej: iPad Pro 10.5 A1701 64GB"
+                  className="h-8 text-xs font-mono bg-background"
+                />
+              </div>
+
+              {/* Max Price */}
+              <div className="sm:col-span-1 space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Max $</Label>
+                <Input
+                  type="number"
+                  value={liveMaxPrice}
+                  onChange={(e) => setLiveMaxPrice(e.target.value)}
+                  placeholder="110"
+                  className="h-8 text-xs font-mono text-center bg-background"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="sm:col-span-2 flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  onClick={() => handleLaunchLiveEbay(liveSeller, liveKeywords, liveMaxPrice)}
+                  className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
+                  title="Abrir búsqueda en vivo en eBay"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span>Ver eBay</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setTrackerForm({
+                      title: `${liveKeywords} en ${liveSeller === 'all' ? 'eBay' : liveSeller}`,
+                      keywords: liveKeywords,
+                      sellerLink: liveSeller !== 'all' ? `https://www.ebay.com/str/${liveSeller}` : '',
+                      supplierId: '',
+                      maxPriceUsd: liveMaxPrice,
+                      minDiscountPct: '15',
+                      condition: 'Used',
+                      category: 'Tablets',
+                      notificationsEnabled: true,
+                    });
+                    setTrackerModalOpen(true);
+                  }}
+                  className="h-8 px-2 text-xs font-semibold"
+                  title="Guardar como buscador continuo"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </Card>
 
           {/* Section: Buscadores Configurados */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-foreground">Mis Buscadores de Productos & Enlaces eBay</h3>
+                <h3 className="text-sm font-bold text-foreground">Buscadores de Ofertas Activos en Base de Datos</h3>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium">
-                  {trackers.length} Activos
+                  {trackers.length} Guardados
                 </Badge>
               </div>
               <Button
@@ -767,7 +954,7 @@ export function ProveedoresTab() {
                 className="text-xs text-primary hover:text-primary font-semibold h-7 gap-1"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Agregar Buscador
+                Crear Nuevo Buscador
               </Button>
             </div>
 
@@ -792,7 +979,7 @@ export function ProveedoresTab() {
                     <div className="truncate max-w-[130px]">
                       {t.sellerUsername ? (
                         <a
-                          href={t.storeUrl || `https://www.ebay.com/str/${t.sellerUsername}`}
+                          href={`https://www.ebay.com/str/${t.sellerUsername}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline flex items-center gap-1 truncate"
@@ -812,9 +999,13 @@ export function ProveedoresTab() {
                   </div>
 
                   <div className="mt-2 flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-muted-foreground">
-                      {t.deals?.length || 0} ofertas hoy
-                    </span>
+                    <button
+                      onClick={() => handleLaunchLiveEbay(t.sellerUsername || 'all', t.keywords, t.maxPriceUsd ? String(t.maxPriceUsd) : '')}
+                      className="text-[11px] text-blue-600 hover:underline font-semibold flex items-center gap-0.5"
+                    >
+                      <span>Abrir eBay</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -893,7 +1084,7 @@ export function ProveedoresTab() {
                 <Flame className="h-10 w-10 mx-auto opacity-30 mb-2" />
                 <p className="font-semibold text-sm">No se encontraron ofertas con este filtro.</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Haz clic en "Buscar Ofertas Ahora" o agrega un nuevo buscador con palabras clave.
+                  Haz clic en "Buscar Ofertas Ahora" o selecciona una de las plantillas rápidas.
                 </p>
                 <Button
                   size="sm"
@@ -908,6 +1099,7 @@ export function ProveedoresTab() {
                 {filteredDeals.map((deal) => {
                   const landedCostPen = deal.currentPriceUsd * 3.40;
                   const savingsUsd = deal.originalPriceUsd ? deal.originalPriceUsd - deal.currentPriceUsd : 0;
+                  const buyNowUrl = getBuyNowUrl(deal);
 
                   return (
                     <Card
@@ -953,7 +1145,7 @@ export function ProveedoresTab() {
                         {/* Title & Seller Info */}
                         <div className="space-y-1">
                           <a
-                            href={deal.itemUrl}
+                            href={buyNowUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-bold text-xs text-foreground hover:text-primary hover:underline line-clamp-2 leading-snug"
@@ -962,7 +1154,7 @@ export function ProveedoresTab() {
                             {deal.title}
                           </a>
                           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                            <span>Vendido por:</span>
+                            <span>Tienda:</span>
                             <a
                               href={`https://www.ebay.com/str/${deal.sellerUsername}`}
                               target="_blank"
@@ -1025,28 +1217,44 @@ export function ProveedoresTab() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="mt-3 pt-2 border-t flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => window.open(deal.itemUrl, '_blank')}
-                          className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
-                        >
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          <span>Comprar en eBay</span>
-                          <ExternalLink className="h-3 w-3 opacity-70 ml-0.5" />
-                        </Button>
+                      <div className="mt-3 pt-2 border-t space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            onClick={() => window.open(buyNowUrl, '_blank')}
+                            className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
+                            title="Abrir resultados reales y activos en eBay (Cómpralo Ya)"
+                          >
+                            <ShoppingCart className="h-3.5 w-3.5" />
+                            <span>Ver Ofertas en eBay</span>
+                            <ExternalLink className="h-3 w-3 opacity-70 ml-0.5" />
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleImportDealToProduct(deal)}
-                          disabled={importingDealId === deal.id}
-                          className="h-8 text-xs font-semibold gap-1 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-                          title="Pre-registrar este producto en compras e inventario"
-                        >
-                          <Package className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Registrar</span>
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleImportDealToProduct(deal)}
+                            disabled={importingDealId === deal.id}
+                            className="h-8 text-xs font-semibold gap-1 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                            title="Pre-registrar este producto en compras e inventario"
+                          >
+                            <Package className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>Registrar</span>
+                          </Button>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] px-1 text-muted-foreground">
+                          <a
+                            href={`https://www.ebay.com/str/${deal.sellerUsername}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center gap-1 text-[10px]"
+                          >
+                            <Store className="h-2.5 w-2.5" />
+                            <span>Ver Tienda {deal.sellerUsername}</span>
+                          </a>
+                          <span className="text-[10px] text-slate-400">Garantía eBay</span>
+                        </div>
                       </div>
                     </Card>
                   );
@@ -1062,7 +1270,6 @@ export function ProveedoresTab() {
       ───────────────────────────────────────────────────────────── */}
       {activeTab === 'proveedores' && (
         <div className="space-y-4">
-          {/* Controls: Search & Category */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted/30 p-2.5 rounded-lg border">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -1088,7 +1295,6 @@ export function ProveedoresTab() {
             </div>
           </div>
 
-          {/* Suppliers Table */}
           <div className="rounded-lg border bg-card overflow-hidden shadow-xs">
             <div className="overflow-x-auto max-h-[70vh]">
               <Table className="text-xs">
@@ -1247,66 +1453,70 @@ export function ProveedoresTab() {
                 <p className="font-semibold text-sm">No hay alertas de promociones recientes.</p>
               </div>
             ) : (
-              allDeals.map((deal) => (
-                <div
-                  key={deal.id}
-                  className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 shrink-0">
-                      <Flame className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs text-foreground">{deal.title}</span>
-                        <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 font-bold">
-                          {deal.discountPct ? `${deal.discountPct}% OFF` : 'OFERTA'}
-                        </Badge>
-                        {deal.couponCode && (
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300 text-[10px] px-1 py-0 font-mono">
-                            Cupón: {deal.couponCode}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
-                        <span>Tienda: <strong className="text-foreground">{deal.sellerUsername}</strong></span>
-                        <span>•</span>
-                        <span>Ahora: <strong className="text-foreground font-mono">${deal.currentPriceUsd.toFixed(2)}</strong></span>
-                        {deal.originalPriceUsd && (
-                          <>
-                            <span>•</span>
-                            <span>Antes: <span className="line-through font-mono">${deal.originalPriceUsd.toFixed(2)}</span></span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span className="text-[10px]">Llegada a Perú: S/ {(deal.currentPriceUsd * 3.40).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
+              allDeals.map((deal) => {
+                const buyUrl = getBuyNowUrl(deal);
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      onClick={() => window.open(deal.itemUrl, '_blank')}
-                      className="h-7 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1"
-                    >
-                      <ShoppingCart className="h-3 w-3" />
-                      <span>Comprar</span>
-                      <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleImportDealToProduct(deal)}
-                      disabled={importingDealId === deal.id}
-                      className="h-7 text-xs font-semibold gap-1"
-                    >
-                      <Package className="h-3 w-3 text-emerald-600" />
-                      <span>Registrar</span>
-                    </Button>
+                return (
+                  <div
+                    key={deal.id}
+                    className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 shrink-0">
+                        <Flame className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-xs text-foreground">{deal.title}</span>
+                          <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 font-bold">
+                            {deal.discountPct ? `${deal.discountPct}% OFF` : 'OFERTA'}
+                          </Badge>
+                          {deal.couponCode && (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300 text-[10px] px-1 py-0 font-mono">
+                              Cupón: {deal.couponCode}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
+                          <span>Tienda: <strong className="text-foreground">{deal.sellerUsername}</strong></span>
+                          <span>•</span>
+                          <span>Ahora: <strong className="text-foreground font-mono">${deal.currentPriceUsd.toFixed(2)}</strong></span>
+                          {deal.originalPriceUsd && (
+                            <>
+                              <span>•</span>
+                              <span>Antes: <span className="line-through font-mono">${deal.originalPriceUsd.toFixed(2)}</span></span>
+                            </>
+                          )}
+                          <span>•</span>
+                          <span className="text-[10px]">Llegada a Perú: S/ {(deal.currentPriceUsd * 3.40).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(buyUrl, '_blank')}
+                        className="h-7 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1"
+                      >
+                        <ShoppingCart className="h-3 w-3" />
+                        <span>Ver Ofertas</span>
+                        <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleImportDealToProduct(deal)}
+                        disabled={importingDealId === deal.id}
+                        className="h-7 text-xs font-semibold gap-1"
+                      >
+                        <Package className="h-3 w-3 text-emerald-600" />
+                        <span>Registrar</span>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -1614,15 +1824,6 @@ export function ProveedoresTab() {
                     <Link2 className="h-3.5 w-3.5 text-primary" />
                     Enlaces Guardados ({detailSupplier.links?.length || 0})
                   </h4>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setLinkFormOpen(true)}
-                    className="h-6 text-xs text-primary hover:text-primary font-semibold gap-1"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Agregar Enlace
-                  </Button>
                 </div>
 
                 <div className="space-y-1.5">

@@ -91,7 +91,8 @@ export async function POST(
     }
 
     const randomItemId = String(Math.floor(100000000000 + Math.random() * 900000000000));
-    const itemUrl = `https://www.ebay.com/itm/${randomItemId}`;
+    const cleanSearchQuery = tracker.keywords || generatedTitle;
+    const itemUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanSearchQuery)}${sellerName ? `&_ssn=${encodeURIComponent(sellerName)}` : ''}&LH_BIN=1&_sop=15`;
 
     // Create new deal
     const newDeal = await db.trackedDeal.create({
