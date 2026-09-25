@@ -400,8 +400,28 @@ export function ProductosTab() {
     });
   }, [statusFilter, importerFilter, courierFilter, search]);
 
-  const filteredProducts = useMemo(() => filterProductList(products), [filterProductList, products]);
-  const filteredArchivedProducts = useMemo(() => filterProductList(archivedProducts), [filterProductList, archivedProducts]);
+  // Sort active products by purchaseDate DESC (eBay style: most recent purchases first)
+  const filteredProducts = useMemo(() => {
+    const list = filterProductList(products);
+    return [...list].sort((a, b) => {
+      const timeA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : new Date(a.createdAt).getTime();
+      const timeB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+  }, [filterProductList, products]);
+
+  // Sort archived products by archivedAt DESC (eBay style: most recently archived/shipped first)
+  const filteredArchivedProducts = useMemo(() => {
+    const list = filterProductList(archivedProducts);
+    return [...list].sort((a, b) => {
+      const archA = a.archivedAt ? new Date(a.archivedAt).getTime() : (a.purchaseDate ? new Date(a.purchaseDate).getTime() : new Date(a.createdAt).getTime());
+      const archB = b.archivedAt ? new Date(b.archivedAt).getTime() : (b.purchaseDate ? new Date(b.purchaseDate).getTime() : new Date(b.createdAt).getTime());
+      if (archB !== archA) return archB - archA;
+      const timeA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+      const timeB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [filterProductList, archivedProducts]);
 
   // ── Multi-selection & Embarque Documents ──
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -1399,6 +1419,12 @@ export function ProductosTab() {
                         <Calendar className="h-3 w-3 text-muted-foreground/70" />
                         <span>Comprado: {formatPurchaseDate(p.purchaseDate || p.createdAt)}</span>
                       </div>
+                      {p.isArchived && p.archivedAt && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800">
+                          <Archive className="h-2.5 w-2.5" />
+                          Embarcado: {formatPurchaseDate(p.archivedAt)}
+                        </span>
+                      )}
                       {p.status === 'USA' && p.actualDeliveryDate && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
                           <Check className="h-3 w-3" />
@@ -1593,14 +1619,19 @@ export function ProductosTab() {
             <Archive className="h-5 w-5 text-slate-600 dark:text-slate-400" />
           </div>
           <div>
-            <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
-              📦 Productos Archivados — Ya Embarcados a Perú
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                📦 Productos Archivados — Ya Embarcados a Perú
+              </p>
+              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-1.5 py-0 shadow-2xs">
+                Ordenado por más reciente (como en eBay)
+              </Badge>
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Estos productos fueron archivados en eBay (Show hidden) porque ya se embarcaron a Lima. Puedes restaurarlos si es necesario.
+              Ordenados cronológicamente por la fecha de archivado y embarque más reciente hacia Lima. Puedes restaurarlos si es necesario.
             </p>
           </div>
-          <Badge variant="outline" className="ml-auto shrink-0 bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
+          <Badge variant="outline" className="ml-auto shrink-0 bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300 font-mono">
             {counts.archived} productos
           </Badge>
         </div>
@@ -1781,10 +1812,18 @@ export function ProductosTab() {
                                 </div>
                               )}
 
-                              {/* Purchase Date */}
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3 text-muted-foreground/70" />
-                                <span>{formatPurchaseDate(p.purchaseDate || p.createdAt)}</span>
+                              {/* Purchase Date & Archived Date */}
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                                  <span>Compra: {formatPurchaseDate(p.purchaseDate || p.createdAt)}</span>
+                                </div>
+                                {p.isArchived && p.archivedAt && (
+                                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold text-[11px] border border-purple-200 dark:border-purple-800">
+                                    <Archive className="h-2.5 w-2.5" />
+                                    <span>Embarcado: {formatPurchaseDate(p.archivedAt)}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -156,9 +156,10 @@ model Product {
 
   // Otros
   notes            String   @default("")
-  isArchived       Boolean  @default(false)  // true = embarcado a Perú (oculto en eBay)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isArchived       Boolean   @default(false)  // true = embarcado a Perú (oculto en eBay)
+  archivedAt       DateTime?                  // Fecha en que se archivó / embarcó a Perú
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Multi-Tenant
   tenantId         String

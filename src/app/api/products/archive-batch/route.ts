@@ -72,7 +72,10 @@ export async function POST(request: NextRequest) {
     const idsToUpdate = matchingProducts.map((p) => p.id);
     const updateResult = await db.product.updateMany({
       where: { id: { in: idsToUpdate } },
-      data: { isArchived },
+      data: {
+        isArchived,
+        archivedAt: isArchived ? new Date() : null,
+      },
     });
 
     return NextResponse.json(

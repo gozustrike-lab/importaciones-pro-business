@@ -42,6 +42,7 @@ export interface Product {
   actualDeliveryDate?: string;
   estimatedDeliveryDate?: string;
   isArchived?: boolean;
+  archivedAt?: string | null;
   // Order total = purchasePriceUSD + shippingCostUSD (total real pagado en eBay)
   orderTotalUSD?: number;
 

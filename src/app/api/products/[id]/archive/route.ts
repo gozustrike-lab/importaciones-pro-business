@@ -27,7 +27,10 @@ export async function PATCH(
 
     const updated = await db.product.update({
       where: { id },
-      data: { isArchived },
+      data: {
+        isArchived,
+        archivedAt: isArchived ? new Date() : null,
+      },
     });
 
     return NextResponse.json({

@@ -46,9 +46,21 @@ export async function GET(request: NextRequest) {
       where.grade = grade;
     }
 
+    const orderBy =
+      archivedParam === "true"
+        ? [
+            { archivedAt: "desc" as const },
+            { purchaseDate: "desc" as const },
+            { createdAt: "desc" as const },
+          ]
+        : [
+            { purchaseDate: "desc" as const },
+            { createdAt: "desc" as const },
+          ];
+
     const products = await db.product.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       include: {
         qualityChecks: { orderBy: { checkedAt: "desc" }, take: 1 },
         trackingUpdates: { orderBy: { timestamp: "desc" }, take: 1 },
@@ -99,6 +111,7 @@ export async function GET(request: NextRequest) {
         ebayAccount: p.ebayAccount || 'gozustrike@gmail.com',
         notes: p.notes || '',
         isArchived: p.isArchived,
+        archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
         itemId,
         itemUrl,
         orderUrl,
