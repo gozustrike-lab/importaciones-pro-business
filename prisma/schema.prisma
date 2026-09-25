@@ -34,6 +34,7 @@ model Tenant {
   monthlySales    MonthlySales[]
   suppliers       Supplier[]
   shipments       Shipment[]
+  dealTrackers    DealTracker[]
 }
 
 // ============================================
@@ -322,6 +323,7 @@ model Supplier {
 
   products        Product[]  @relation("ProductSupplierRef")
   supplierLinks   SupplierLink[]
+  dealTrackers    DealTracker[]
 }
 
 // ============================================
@@ -398,4 +400,57 @@ model Shipment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ============================================
+// BUSCADORES DE OFERTAS & RASTREADORES EBAY
+// ============================================
+model DealTracker {
+  id                    String      @id @default(cuid())
+  title                 String      // e.g. "iPad 9na Gen 64GB en Oferta"
+  keywords              String      // Palabras clave de búsqueda en eBay
+  supplierId            String?     // Proveedor asociado (opcional)
+  supplier              Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  sellerUsername        String?     // e.g. "itsworthmore" o null para todos
+  storeUrl              String?     // URL directa a tienda o búsqueda del proveedor
+  category              String      @default("Tablets")
+  maxPriceUsd           Float?      // Precio máximo objetivo en USD
+  minDiscountPct        Float?      @default(10) // Mínimo descuento % para alertar
+  condition             String      @default("Used") // Used, Refurbished, All
+  isActive              Boolean     @default(true)
+  notificationsEnabled  Boolean     @default(true)
+  lastCheckedAt         DateTime?
+  lastFoundCount        Int         @default(0)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  tenantId              String
+  tenant                Tenant      @relation(fields: [tenantId], references: [id])
+
+  deals                 TrackedDeal[]
+}
+
+model TrackedDeal {
+  id                String       @id @default(cuid())
+  trackerId         String
+  tracker           DealTracker  @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+
+  itemId            String       // eBay Item ID
+  title             String
+  itemUrl           String
+  imageUrl          String       @default("")
+  sellerUsername    String
+  sellerFeedback    String       @default("")
+
+  currentPriceUsd   Float
+  originalPriceUsd  Float?
+  discountPct       Float?       // e.g. 25.0
+  couponCode        String?
+  promoDescription  String?
+  condition         String       @default("Used")
+
+  isRead            Boolean      @default(false)
+  isStarred         Boolean      @default(false)
+  foundAt           DateTime     @default(now())
+}
+
 

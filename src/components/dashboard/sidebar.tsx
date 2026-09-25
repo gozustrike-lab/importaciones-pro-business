@@ -73,7 +73,7 @@ const navItems: {
   { key: 'tracking', label: 'Tracking USA', icon: Truck, section: 'Herramientas' },
   { key: 'calidad', label: 'Control Calidad', icon: CheckSquare, section: 'Herramientas' },
   { key: 'analitica', label: 'Analítica Utilidad', icon: BarChart3, section: 'Herramientas' },
-  { key: 'proveedores', label: 'Proveedores', icon: Store, section: 'Herramientas' },
+  { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Herramientas', badge: 'Radar' },
   { key: 'admin', label: 'Super Admin', icon: Shield, section: 'Admin', adminOnly: true },
 ];
 
