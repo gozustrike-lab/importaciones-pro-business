@@ -87,6 +87,8 @@ export async function GET(request: NextRequest) {
         supplier: p.supplier,
         courier: p.courier,
         trackingNumber: p.trackingId,
+        shipperTracking: p.shipperTracking || "",
+        shipperConfirmed: p.shipperConfirmed ?? false,
         estimatedArrival: p.estimatedArrival?.toISOString() || "",
         actualArrival: p.actualArrival?.toISOString() || "",
         actualDeliveryDate: p.actualArrival?.toISOString() || "",

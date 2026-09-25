@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { Sidebar, type TabKey } from '@/components/dashboard/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 // Lazy load all tab components for performance
 const DashboardTab = lazy(() => import('@/components/dashboard/dashboard-tab').then(m => ({ default: m.DashboardTab })));
 const ProveedoresTab = lazy(() => import('@/components/dashboard/proveedores-tab').then(m => ({ default: m.ProveedoresTab })));
 const ProductosTab = lazy(() => import('@/components/dashboard/productos-tab').then(m => ({ default: m.ProductosTab })));
+const ComprasTab = lazy(() => import('@/components/dashboard/compras-tab').then(m => ({ default: m.ComprasTab })));
 const ClientesTab = lazy(() => import('@/components/dashboard/clientes-tab').then(m => ({ default: m.ClientesTab })));
 const VentasTab = lazy(() => import('@/components/dashboard/ventas-tab').then(m => ({ default: m.VentasTab })));
 const AnaliticaTab = lazy(() => import('@/components/dashboard/analitica-tab').then(m => ({ default: m.AnaliticaTab })));
@@ -24,6 +26,7 @@ const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: str
   dashboard: DashboardTab,
   proveedores: ProveedoresTab,
   productos: ProductosTab,
+  compras: ComprasTab,
   clientes: ClientesTab,
   ventas: VentasTab,
   analitica: AnaliticaTab,
@@ -39,6 +42,7 @@ const tabTitles: Record<TabKey, string> = {
   dashboard: 'Dashboard',
   proveedores: 'Proveedores',
   productos: 'Inventario',
+  compras: 'Registro Compras & Logística',
   clientes: 'CRM Clientes',
   ventas: 'Registro Ventas',
   analitica: 'Analítica Utilidad',
@@ -76,19 +80,54 @@ function TabSkeleton() {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<TabKey>('shipper');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
 
-  const userRole = (session?.user as { role?: string })?.role || 'TENANT_USER';
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('importHub_sidebar_collapsed');
+      if (saved !== null) {
+        setIsCollapsed(saved === 'true');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
+  const handleToggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('importHub_sidebar_collapsed', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const userRole = (session?.user as { role?: string })?.role || 'TENANT_USER';
   const ActiveComponent = tabComponents[activeTab];
 
   return (
     <>
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole={userRole} session={session} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        userRole={userRole}
+        session={session}
+        collapsed={isCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
 
       {/* Main Content */}
-      <main className="lg:pl-64 overflow-x-hidden">
-        <div className={`w-full max-w-[1800px] mx-auto ${isMobile ? 'p-3 pt-16' : 'p-6 sm:p-8'}`}>
+      <main
+        className={cn(
+          'transition-all duration-200 overflow-x-hidden min-h-screen',
+          isCollapsed ? 'lg:pl-16' : 'lg:pl-64'
+        )}
+      >
+        <div className={`w-full max-w-[1900px] mx-auto ${isMobile ? 'p-3 pt-16' : 'p-5 sm:p-7'}`}>
           {/* Mobile Header */}
           {isMobile && (
             <div className="mb-4 flex items-center gap-3">

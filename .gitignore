@@ -46,6 +46,7 @@ dev.log
 dev.out.log
 server.log
 test
+*.backup.xlsx
 
 # Database files (generated on deploy)
 /db/*.db

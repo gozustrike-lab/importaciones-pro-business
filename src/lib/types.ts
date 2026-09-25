@@ -26,6 +26,8 @@ export interface Product {
   // Logistics
   courier: string;
   trackingNumber: string;
+  shipperTracking?: string;
+  shipperConfirmed?: boolean;
   estimatedArrival: string;
 
   // Real purchase details & eBay
@@ -352,7 +354,11 @@ export interface ProductFormData {
   quantity?: number;
   courier: string;
   trackingNumber: string;
+  shipperTracking?: string;
+  shipperConfirmed?: boolean;
   estimatedArrival: string;
+  actualArrival?: string;
+  purchaseDate?: string;
   screenOk: boolean;
   touchOk: boolean;
   speakersOk: boolean;

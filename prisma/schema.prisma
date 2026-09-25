@@ -102,6 +102,8 @@ model Product {
   // Logística
   courier         String   @default("")
   trackingId      String   @default("")
+  shipperTracking String   @default("") // Tracking corregido/registrado por Shiper (ej: con prefijo GS1-128 postal)
+  shipperConfirmed Boolean @default(false) // Confirmado físicamente en almacén por Shiper
   shippingStatus  String   @default("USA")
   estimatedArrival DateTime?
   actualArrival   DateTime?

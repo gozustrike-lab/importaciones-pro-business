@@ -141,13 +141,20 @@ export async function PUT(
     if (body.orderNumber !== undefined) updateData.orderNumber = body.orderNumber;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.category !== undefined) updateData.category = body.category;
+    if (body.model !== undefined) updateData.model = body.model;
+    if (body.quantity !== undefined) updateData.quantity = Number(body.quantity) || 1;
     if (body.grade !== undefined) updateData.grade = body.grade;
     if (body.condition !== undefined) updateData.condition = body.condition;
     if (body.status !== undefined) updateData.shippingStatus = body.status;
     if (body.supplier !== undefined) updateData.supplier = body.supplier;
     if (body.courier !== undefined) updateData.courier = body.courier;
     if (body.trackingNumber !== undefined) updateData.trackingId = body.trackingNumber;
+    if (body.shipperTracking !== undefined) updateData.shipperTracking = body.shipperTracking;
+    if (body.shipperConfirmed !== undefined) updateData.shipperConfirmed = Boolean(body.shipperConfirmed);
+    if (body.importerProfile !== undefined) updateData.importerProfile = body.importerProfile;
+    if (body.recipientName !== undefined) updateData.recipientName = body.recipientName;
     if (body.estimatedArrival !== undefined) updateData.estimatedArrival = body.estimatedArrival ? new Date(body.estimatedArrival) : null;
+    if (body.actualArrival !== undefined) updateData.actualArrival = body.actualArrival ? new Date(body.actualArrival) : null;
     if (body.batteryCycles !== undefined) updateData.batteryCycles = body.batteryCycles;
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (purchasePriceUsd !== undefined) updateData.purchasePriceUsd = purchasePriceUsd;
@@ -178,13 +185,18 @@ export async function PUT(
       orderNumber: product.orderNumber,
       description: product.description,
       category: product.category,
+      model: product.model,
+      quantity: product.quantity,
       grade: product.grade,
       condition: product.condition,
       status: product.shippingStatus,
       supplier: product.supplier,
       courier: product.courier,
       trackingNumber: product.trackingId,
+      importerProfile: product.importerProfile,
+      recipientName: product.recipientName,
       estimatedArrival: product.estimatedArrival?.toISOString() || "",
+      actualArrival: product.actualArrival?.toISOString() || "",
       batteryCycles: product.batteryCycles,
       purchasePriceUSD: product.purchasePriceUsd,
       shippingCostUSD: product.shippingCostUsd,

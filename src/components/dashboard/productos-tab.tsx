@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -25,6 +25,13 @@ import {
   Archive,
   ArchiveRestore,
   ShoppingCart,
+  X,
+  ArrowRight,
+  History,
+  FileSpreadsheet,
+  CheckSquare,
+  Square,
+  RefreshCw,
 } from 'lucide-react';
 import {
   Card,
@@ -64,6 +71,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { fetchProducts, deleteProduct, createProduct, updateProduct, fetchNRUSStatus, archiveProduct } from '@/lib/api';
 import type { Product, ProductFormData, NRUSStatus } from '@/lib/types';
 import { ProductDialog } from './product-dialog';
+import { EmbarqueDialog } from './embarque-dialog';
+import { SyncHiddenDialog } from './sync-hidden-dialog';
+import { ShipperVerifyDialog } from './shipper-verify-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 // ── eBay Types ──
@@ -206,6 +216,19 @@ export function ProductosTab() {
   const [saving, setSaving] = useState(false);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close search suggestions on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ── eBay Search State ──
   const [ebayDialogOpen, setEbayDialogOpen] = useState(false);
@@ -235,9 +258,81 @@ export function ProductosTab() {
     }
   }, [toast]);
 
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
+
+  // Auto-refresh every 30 minutes in background
   useEffect(() => {
     loadProducts();
+    const interval = setInterval(() => {
+      console.log('🔄 [Auto-sync 30min] Refrescando inventario y estados...');
+      loadProducts();
+    }, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [loadProducts]);
+
+  const handleRefreshStatus = async () => {
+    try {
+      setRefreshingStatus(true);
+      // Intentar sincronización en tiempo real directo con la API de eBay
+      const syncRes = await fetch('/api/ebay/sync-live', { method: 'POST' }).catch(() => null);
+      const syncData = syncRes && syncRes.ok ? await syncRes.json().catch(() => null) : null;
+
+      await loadProducts();
+
+      if (syncData?.success) {
+        if (syncData.newlyDeliveredCount > 0) {
+          toast({
+            title: `🎉 ¡${syncData.newlyDeliveredCount} nuevo(s) paquete(s) en Miami!`,
+            description: `Sincronizado en vivo con eBay. Total en Almacén Miami: ${syncData.inMiamiTotal}`,
+          });
+        } else {
+          toast({
+            title: '✅ Sincronizado en Vivo con eBay',
+            description: syncData.message || `Todos los envíos al día (${syncData.inMiamiTotal} en Miami, ${syncData.inTransitTotal} en camino).`,
+          });
+        }
+      } else if (syncData?.requiresAuth) {
+        toast({
+          title: '🔄 Inventario Local Actualizado',
+          description: 'Tu sesión de eBay expiró. Usa "Sincronizar con eBay" para actualizar o reconectar.',
+        });
+      } else {
+        toast({
+          title: '🔄 Inventario Actualizado',
+          description: `Se sincronizó el estado: ${counts.usa} en Almacén Miami, ${counts.transitoUsa} en camino.`,
+        });
+      }
+    } catch {
+      await loadProducts();
+      toast({
+        title: 'Inventario Actualizado',
+        description: 'Se recargó la información local.',
+      });
+    } finally {
+      setRefreshingStatus(false);
+    }
+  };
+
+  const handleQuickMarkMiami = async (p: Product) => {
+    try {
+      const today = new Date().toISOString();
+      await updateProduct(p.id, {
+        status: 'USA',
+        actualArrival: today,
+      });
+      toast({
+        title: '🏢 Llegó al Almacén Miami',
+        description: `Orden [${p.orderNumber}] marcada como entregada en Miami hoy.`,
+      });
+      await loadProducts();
+    } catch (err: any) {
+      toast({
+        title: 'Error al actualizar',
+        description: err.message || 'No se pudo actualizar el producto a Miami',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleCopy = (text: string, id: string, label: string) => {
     if (!text) return;
@@ -260,9 +355,9 @@ export function ProductosTab() {
     };
   }, [products, archivedProducts]);
 
-  // Filtered products list
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+  // Universal Filter helper applied to both active and archived lists
+  const filterProductList = useCallback((list: Product[]) => {
+    return list.filter((p) => {
       // Status filter
       if (statusFilter !== 'all') {
         if (statusFilter === 'Lima') {
@@ -285,21 +380,150 @@ export function ProductosTab() {
         const c = (p.courier || '').toUpperCase();
         if (!c.includes(courierFilter.toUpperCase())) return false;
       }
-      // Search
+      // Search: match title, orderNumber, tracking, courier, supplier, recipient, model, notes, itemId
       if (search.trim()) {
-        const q = search.toLowerCase();
+        const q = search.trim().toLowerCase();
         const match =
           (p.description || '').toLowerCase().includes(q) ||
           (p.orderNumber || '').toLowerCase().includes(q) ||
           (p.trackingNumber || '').toLowerCase().includes(q) ||
           (p.courier || '').toLowerCase().includes(q) ||
           (p.supplier || '').toLowerCase().includes(q) ||
-          (p.recipientName || '').toLowerCase().includes(q);
+          (p.recipientName || '').toLowerCase().includes(q) ||
+          (p.category || '').toLowerCase().includes(q) ||
+          (p.model || '').toLowerCase().includes(q) ||
+          (p.notes || '').toLowerCase().includes(q) ||
+          (p.itemId || '').toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;
     });
-  }, [products, statusFilter, importerFilter, courierFilter, search]);
+  }, [statusFilter, importerFilter, courierFilter, search]);
+
+  const filteredProducts = useMemo(() => filterProductList(products), [filterProductList, products]);
+  const filteredArchivedProducts = useMemo(() => filterProductList(archivedProducts), [filterProductList, archivedProducts]);
+
+  // ── Multi-selection & Embarque Documents ──
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [embarqueDialogOpen, setEmbarqueDialogOpen] = useState(false);
+  const [syncHiddenOpen, setSyncHiddenOpen] = useState(false);
+  const [shipperVerifyOpen, setShipperVerifyOpen] = useState(false);
+
+  const currentList = activeView === 'active' ? filteredProducts : filteredArchivedProducts;
+  const allCurrentSelected = currentList.length > 0 && currentList.every((p) => selectedIds.includes(p.id));
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    if (allCurrentSelected) {
+      const currentIds = new Set(currentList.map((p) => p.id));
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.has(id)));
+    } else {
+      const newIds = new Set([...selectedIds, ...currentList.map((p) => p.id)]);
+      setSelectedIds(Array.from(newIds));
+    }
+  }, [allCurrentSelected, currentList, selectedIds]);
+
+  const handleOpenSingleEmbarque = useCallback((p: Product) => {
+    setSelectedIds((prev) => (prev.includes(p.id) ? prev : [p.id]));
+    setEmbarqueDialogOpen(true);
+  }, []);
+
+  const selectedProductsList = useMemo(() => {
+    const all = [...products, ...archivedProducts];
+    return all.filter((p) => selectedIds.includes(p.id));
+  }, [products, archivedProducts, selectedIds]);
+
+  const selectedFobTotal = useMemo(() => {
+    return selectedProductsList.reduce((acc, p) => {
+      const total = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
+      return acc + total;
+    }, 0);
+  }, [selectedProductsList]);
+
+  // Smart suggestions generator for the mini search box
+  const searchSuggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const allCombined: Array<Product & { inArchived: boolean }> = [
+      ...products.map(p => ({ ...p, inArchived: false })),
+      ...archivedProducts.map(p => ({ ...p, inArchived: true })),
+    ];
+
+    if (!q) {
+      // Default fast shortcuts when search box is empty
+      return [
+        { type: 'model', label: 'iPad Pro 10.5', value: 'iPad Pro 10.5', sub: 'Modelos de 10.5 pulgadas', inArchived: false },
+        { type: 'model', label: 'MacBook Pro', value: 'MacBook Pro', sub: 'Laptops 13" y 16"', inArchived: false },
+        { type: 'model', label: 'iPad (9th Gen)', value: 'iPad (9th Gen', sub: 'Tabletas 10.2 pulgadas', inArchived: false },
+        { type: 'courier', label: 'UPS', value: 'UPS', sub: 'Envíos vía UPS', inArchived: false },
+        { type: 'courier', label: 'USPS', value: 'USPS', sub: 'Envíos vía USPS', inArchived: false },
+        { type: 'importer', label: 'Fabio César', value: 'Fabio', sub: 'RUC 10762026835', inArchived: false },
+        { type: 'importer', label: 'Peggy Liliana', value: 'Peggy', sub: 'RUC 10091870911', inArchived: false },
+      ];
+    }
+
+    const items: Array<{
+      type: 'tracking' | 'order' | 'product';
+      label: string;
+      value: string;
+      sub: string;
+      inArchived: boolean;
+    }> = [];
+    const seen = new Set<string>();
+
+    for (const p of allCombined) {
+      // 1. Match Tracking (Highest priority)
+      if (p.trackingNumber && p.trackingNumber.toLowerCase().includes(q)) {
+        if (!seen.has(p.trackingNumber)) {
+          seen.add(p.trackingNumber);
+          items.push({
+            type: 'tracking',
+            label: p.trackingNumber,
+            value: p.trackingNumber,
+            sub: `${p.courier || 'Courier'} • ${p.description.slice(0, 32)}...`,
+            inArchived: p.inArchived,
+          });
+        }
+      }
+
+      // 2. Match Order Number
+      if (p.orderNumber && p.orderNumber.toLowerCase().includes(q)) {
+        if (!seen.has(p.orderNumber)) {
+          seen.add(p.orderNumber);
+          items.push({
+            type: 'order',
+            label: `Orden ${p.orderNumber}`,
+            value: p.orderNumber,
+            sub: `${p.description.slice(0, 38)}...`,
+            inArchived: p.inArchived,
+          });
+        }
+      }
+
+      // 3. Match Description
+      if (p.description && p.description.toLowerCase().includes(q)) {
+        const shortName = p.description.slice(0, 42);
+        if (!seen.has(shortName)) {
+          seen.add(shortName);
+          items.push({
+            type: 'product',
+            label: shortName,
+            value: p.description.slice(0, 30),
+            sub: `Total: $${(p.orderTotalUSD ?? p.purchasePriceUSD).toFixed(2)} USD • ${p.status}`,
+            inArchived: p.inArchived,
+          });
+        }
+      }
+
+      if (items.length >= 7) break;
+    }
+
+    return items;
+  }, [search, products, archivedProducts]);
 
   const handleSave = async (data: ProductFormData) => {
     try {
@@ -333,6 +557,52 @@ export function ProductosTab() {
       await loadProducts();
     } catch {
       toast({ title: 'Error', description: 'No se pudo actualizar el estado del producto', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleShipperConfirmed = async (p: Product) => {
+    const newStatus = !p.shipperConfirmed;
+    try {
+      // Optimistic update
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === p.id
+            ? {
+                ...item,
+                shipperConfirmed: newStatus,
+                status: newStatus && item.status === 'TRANSITO_USA' ? 'USA' : item.status,
+              }
+            : item
+        )
+      );
+
+      const payload: any = { shipperConfirmed: newStatus };
+      if (newStatus && p.status === 'TRANSITO_USA') {
+        payload.status = 'USA';
+        payload.actualArrival = new Date().toISOString();
+      }
+
+      const res = await fetch(`/api/products/${p.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Error al actualizar');
+
+      toast({
+        title: newStatus ? '✅ Almacén Shiper OK' : '⏳ Marcado como Pendiente Shiper',
+        description: `Producto ${p.orderNumber || ''} actualizado en el sistema.`,
+      });
+      await loadProducts();
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado de Shiper',
+        variant: 'destructive',
+      });
+      await loadProducts();
     }
   };
 
@@ -479,6 +749,52 @@ export function ProductosTab() {
               )}
             </button>
           </div>
+
+          <Button
+            onClick={() => setEmbarqueDialogOpen(true)}
+            variant="outline"
+            className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
+            title="Generar Hoja de Embarque y Hoja de Traducción SUNAT para los productos seleccionados"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+            <span>Embarque & Traducción</span>
+            {selectedIds.length > 0 && (
+              <Badge className="bg-emerald-600 text-white ml-0.5 px-1.5 py-0 text-[10px] font-bold">
+                {selectedIds.length}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleRefreshStatus}
+            disabled={refreshingStatus || loading}
+            variant="outline"
+            className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
+            title="Actualizar estado de envíos y paquetes en Miami (Auto cada 30 min o manual)"
+          >
+            <RefreshCw className={`h-4 w-4 text-emerald-600 ${refreshingStatus ? 'animate-spin' : ''}`} />
+            <span>Actualizar Estados</span>
+          </Button>
+
+          <Button
+            onClick={() => setSyncHiddenOpen(true)}
+            variant="outline"
+            className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 min-h-[40px] font-semibold"
+            title="Sincronizar paquetes llegados a Miami o compras ocultas de eBay con 1 clic o marcador de Chrome"
+          >
+            <Building2 className="h-4 w-4 text-emerald-600" />
+            <span>Sincronizar con eBay</span>
+          </Button>
+
+          <Button
+            onClick={() => setShipperVerifyOpen(true)}
+            variant="outline"
+            className="gap-2 border-emerald-400 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
+            title="Copiar lista de trackings para WhatsApp o validar la respuesta de Shiper Courier"
+          >
+            <Building2 className="h-4 w-4 text-emerald-600" />
+            <span>Validar con Shiper</span>
+          </Button>
 
           <Button
             onClick={() => setEbayDialogOpen(true)}
@@ -675,18 +991,123 @@ export function ProductosTab() {
       <Card className="border-border/60 shadow-sm">
         <CardContent className="pt-5 pb-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* Search */}
-            <div className="space-y-1.5 lg:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Buscar compra / producto</label>
+            {/* Search Input with Mini Suggestions Dropdown */}
+            <div className="space-y-1.5 lg:col-span-2 relative" ref={searchContainerRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">Buscar compra / producto</label>
+                {search && (
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setShowSuggestions(false);
+                    }}
+                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 font-medium transition-colors"
+                  >
+                    <X className="h-3 w-3" /> Limpiar filtro
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por descripción, orden #, tracking, courier..."
+                  placeholder="Buscar por descripción, orden #, tracking, courier, titular..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 h-9 text-sm"
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  className="pl-9 pr-8 h-9 text-sm"
                 />
+                {search && (
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setShowSuggestions(false);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+                    title="Borrar texto"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
+
+              {/* Mini Cuadro de Sugerencias y Autocompletado */}
+              {showSuggestions && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl overflow-hidden backdrop-blur-md animate-in fade-in-0 zoom-in-95">
+                  <div className="p-2 border-b border-border/50 bg-muted/40 flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      {search ? 'Coincidencias encontradas' : 'Sugerencias rápidas'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {searchSuggestions.length} opciones
+                    </span>
+                  </div>
+
+                  <div className="max-h-[260px] overflow-y-auto p-1.5 space-y-1">
+                    {searchSuggestions.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-muted-foreground">
+                        No hay coincidencias para &quot;{search}&quot;
+                      </div>
+                    ) : (
+                      searchSuggestions.map((sug, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSearch(sug.value);
+                            setShowSuggestions(false);
+                            if (sug.inArchived && activeView === 'active') {
+                              setActiveView('archived');
+                              toast({
+                                title: '📦 Producto Archivado',
+                                description: 'Cambiado automáticamente a la vista de Archivados.',
+                              });
+                            } else if (!sug.inArchived && activeView === 'archived') {
+                              setActiveView('active');
+                            }
+                          }}
+                          className="w-full text-left flex items-center justify-between p-2 rounded-lg hover:bg-accent/80 transition-colors text-xs group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <div className="p-1.5 rounded-md bg-muted group-hover:bg-background shrink-0 text-muted-foreground group-hover:text-foreground">
+                              {sug.type === 'tracking' && <Truck className="h-3.5 w-3.5 text-blue-500" />}
+                              {sug.type === 'order' && <ShoppingCart className="h-3.5 w-3.5 text-emerald-500" />}
+                              {sug.type === 'product' && <Package className="h-3.5 w-3.5 text-purple-500" />}
+                              {sug.type === 'model' && <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+                              {sug.type === 'courier' && <Truck className="h-3.5 w-3.5 text-sky-500" />}
+                              {sug.type === 'importer' && <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate group-hover:text-primary">
+                                {sug.label}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {sug.sub}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {sug.inArchived ? (
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
+                                Archivado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                Activo
+                              </Badge>
+                            )}
+                            <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Importer Filter */}
@@ -723,6 +1144,94 @@ export function ProductosTab() {
         </CardContent>
       </Card>
 
+      {/* ─── CROSS-VIEW SEARCH NOTIFICATION ─── */}
+      {search.trim() && activeView === 'active' && filteredProducts.length === 0 && filteredArchivedProducts.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs">
+          <div className="flex items-center gap-2">
+            <Archive className="h-4 w-4 text-amber-600 shrink-0" />
+            <span>
+              No hay coincidencias en inventario activo, pero se encontró <strong>{filteredArchivedProducts.length} producto{filteredArchivedProducts.length !== 1 ? 's' : ''}</strong> con &quot;{search}&quot; en <strong>Productos Archivados</strong>.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setActiveView('archived');
+              setShowSuggestions(false);
+            }}
+            className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1.5 shrink-0"
+          >
+            Ver en Archivados ({filteredArchivedProducts.length}) <ArrowRight className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {search.trim() && activeView === 'archived' && filteredArchivedProducts.length === 0 && filteredProducts.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 text-xs">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>
+              No hay coincidencias en archivados, pero se encontró <strong>{filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''}</strong> con &quot;{search}&quot; en <strong>Inventario Activo</strong>.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setActiveView('active');
+              setShowSuggestions(false);
+            }}
+            className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shrink-0"
+          >
+            Ver en Activos ({filteredProducts.length}) <ArrowRight className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* ─── SUMMARY COUNTER BAR ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1 py-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-foreground">
+            {activeView === 'active' ? 'Artículos en Inventario Activo:' : 'Artículos Ocultos / Archivados:'}
+          </span>
+          <Badge
+            variant="outline"
+            className={`font-mono text-xs font-bold px-2 py-0.5 ${
+              activeView === 'active'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'
+            }`}
+          >
+            {activeView === 'active' ? `${filteredProducts.length} de ${counts.all}` : `${filteredArchivedProducts.length} de ${counts.archived}`}
+          </Badge>
+          {((activeView === 'active' && filteredProducts.length !== products.length) || (activeView === 'archived' && filteredArchivedProducts.length !== archivedProducts.length)) && (
+            <span className="text-[11px] text-muted-foreground italic">
+              (filtrados por búsqueda / estado)
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono self-start sm:self-auto">
+          <span>Inversión Total:</span>
+          <strong className="text-foreground font-bold">
+            ${(
+              (activeView === 'active' ? filteredProducts : filteredArchivedProducts).reduce(
+                (acc, cur) => acc + (cur.orderTotalUSD ?? (cur.purchasePriceUSD + (cur.shippingCostUSD || 0))),
+                0
+              )
+            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+          </strong>
+          <span>•</span>
+          <strong className="text-emerald-600 font-bold">
+            {formatPEN(
+              (activeView === 'active' ? filteredProducts : filteredArchivedProducts).reduce(
+                (acc, cur) => acc + (cur.orderTotalUSD ?? (cur.purchasePriceUSD + (cur.shippingCostUSD || 0))),
+                0
+              ) * 3.40
+            )}
+          </strong>
+        </div>
+      </div>
+
       {/* ─── MOBILE ARCHIVED BANNER ─── */}
       {activeView === 'archived' && (
         <div className="block md:hidden p-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 space-y-1">
@@ -750,7 +1259,7 @@ export function ProductosTab() {
               <Skeleton className="h-12 w-full" />
             </Card>
           ))
-        ) : (activeView === 'active' ? filteredProducts : archivedProducts).length === 0 ? (
+        ) : (activeView === 'active' ? filteredProducts : filteredArchivedProducts).length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
             {activeView === 'archived' ? (
               <>
@@ -767,7 +1276,7 @@ export function ProductosTab() {
             )}
           </Card>
         ) : (
-          (activeView === 'active' ? filteredProducts : archivedProducts).map((p) => {
+          (activeView === 'active' ? filteredProducts : filteredArchivedProducts).map((p, idx) => {
             const imp = getImporterInfo(p);
             const st = statusConfig[p.status] || statusConfig.USA;
             const trackUrl = getTrackingUrl(p.courier, p.trackingNumber);
@@ -786,19 +1295,32 @@ export function ProductosTab() {
                 <CardContent className="p-4 space-y-3">
                   {/* Top Badges & eBay Links */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className={`gap-1 text-[11px] font-medium ${st.badge}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} />
-                        {st.label}
-                      </Badge>
-                      <Badge variant="outline" className={`text-[11px] font-medium ${imp.badge}`}>
-                        {imp.name}
-                      </Badge>
-                      {p.isArchived && (
-                        <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
-                          Archivado
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleSelect(p.id)}
+                        className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                        title={selectedIds.includes(p.id) ? "Deseleccionar" : "Seleccionar"}
+                      >
+                        {selectedIds.includes(p.id) ? (
+                          <CheckSquare className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <Square className="h-4 w-4 text-muted-foreground/60" />
+                        )}
+                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant="outline" className={`gap-1 text-[11px] font-medium ${st.badge}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                          {st.label}
                         </Badge>
-                      )}
+                        <Badge variant="outline" className={`text-[11px] font-medium ${imp.badge}`}>
+                          {imp.name}
+                        </Badge>
+                        {p.isArchived && (
+                          <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300">
+                            Archivado
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -828,11 +1350,16 @@ export function ProductosTab() {
                     </div>
                   </div>
 
-                  {/* Title & Order Total */}
+                  {/* Title & Order Total with Numbering Badge */}
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                      {p.description}
-                    </h3>
+                    <div className="flex items-start gap-2">
+                      <span className="shrink-0 inline-flex items-center justify-center min-w-[26px] h-5 px-1.5 rounded-md bg-muted font-mono text-[11px] font-bold text-foreground border border-border/60 mt-0.5">
+                        #{String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                        {p.description}
+                      </h3>
+                    </div>
 
                     {/* Order Total Badge */}
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-xs font-semibold">
@@ -840,6 +1367,31 @@ export function ProductosTab() {
                       <span>Order Total: ${orderTotal.toFixed(2)} USD</span>
                       <span className="text-emerald-500/60 font-normal">•</span>
                       <span>{formatPEN(orderTotalPEN)}</span>
+                    </div>
+
+                    {/* Cantidad & Modelo Badges */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
+                        p.quantity > 1 
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200' 
+                          : 'bg-muted text-muted-foreground border border-border/50'
+                      }`}>
+                        <Package className="h-3 w-3" />
+                        {p.quantity > 1 ? `x${p.quantity} unids` : `1 unid`}
+                      </span>
+
+                      <button
+                        onClick={() => handleOpenSingleEmbarque(p)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors ${
+                          p.model
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100'
+                        }`}
+                        title={p.model ? "Modelo técnico registrado. Clic para editar." : "Falta ingresar modelo técnico para aduanas. Clic para ingresar."}
+                      >
+                        <span>Mod: {p.model || 'Sin modelo'}</span>
+                        <Pencil className="h-2.5 w-2.5 opacity-60" />
+                      </button>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-2">
@@ -853,11 +1405,47 @@ export function ProductosTab() {
                           Entregado en Miami: {formatPurchaseDate(p.actualDeliveryDate)}
                         </span>
                       )}
+                      {p.status === 'USA' && (
+                        <div className="inline-flex items-center gap-1">
+                          {p.shipperConfirmed ? (
+                            <button
+                              onClick={() => handleToggleShipperConfirmed(p)}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 hover:bg-amber-100 text-emerald-800 hover:text-amber-900 border border-emerald-300 transition-colors cursor-pointer"
+                              title="Confirmado por Shiper Miami. Clic para cambiar a Pendiente."
+                            >
+                              <Check className="h-2.5 w-2.5 text-emerald-600" />
+                              Almacén Shiper OK
+                            </button>
+                          ) : (
+                            <div className="inline-flex items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-300">
+                                ⏳ Pendiente Shiper
+                              </span>
+                              <button
+                                onClick={() => handleToggleShipperConfirmed(p)}
+                                className="h-4.5 px-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold inline-flex items-center gap-0.5 transition-colors cursor-pointer"
+                                title="Marcar Almacén Shiper OK con 1 clic"
+                              >
+                                <Check className="h-2.5 w-2.5" />
+                                OK
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {p.status === 'TRANSITO_USA' && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-200 dark:border-sky-800">
+                        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
                           <Truck className="h-3 w-3" />
-                          Rumbo a Miami
-                        </span>
+                          <span>Rumbo a Miami</span>
+                          <button
+                            onClick={() => handleQuickMarkMiami(p)}
+                            className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] shadow-xs cursor-pointer"
+                            title="Marcar como entregado en Almacén Miami hoy"
+                          >
+                            <Building2 className="h-2.5 w-2.5" />
+                            Llegó a Miami
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -934,6 +1522,15 @@ export function ProductosTab() {
                     </div>
 
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300"
+                        onClick={() => handleOpenSingleEmbarque(p)}
+                        title="Embarque & Traducción"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1017,7 +1614,7 @@ export function ProductosTab() {
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
-          ) : (activeView === 'active' ? filteredProducts : archivedProducts).length === 0 ? (
+          ) : (activeView === 'active' ? filteredProducts : filteredArchivedProducts).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
               {activeView === 'archived' ? (
                 <>
@@ -1038,21 +1635,34 @@ export function ProductosTab() {
               <Table className="w-full">
                 <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead className="w-[40%] min-w-[320px]">Artículo / Compra eBay</TableHead>
-                    <TableHead className="w-[18%] min-w-[180px]">Courier & Tracking USA</TableHead>
-                    <TableHead className="w-[14%] min-w-[140px]">Titular SUNAT</TableHead>
-                    <TableHead className="w-[12%] min-w-[120px]">Ubicación</TableHead>
-                    <TableHead className="w-[10%] text-right min-w-[120px]">
+                    <TableHead className="w-[42px] px-2 text-center">
+                      <button
+                        onClick={handleToggleSelectAll}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title={allCurrentSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                      >
+                        {allCurrentSelected ? (
+                          <CheckSquare className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <Square className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[38%] min-w-[300px]">Artículo / Compra eBay</TableHead>
+                    <TableHead className="w-[18%] min-w-[170px]">Courier & Tracking USA</TableHead>
+                    <TableHead className="w-[14%] min-w-[130px]">Titular SUNAT</TableHead>
+                    <TableHead className="w-[12%] min-w-[110px]">Ubicación</TableHead>
+                    <TableHead className="w-[10%] text-right min-w-[110px]">
                       <span className="flex items-center justify-end gap-1">
                         <ShoppingCart className="h-3.5 w-3.5" />
                         Order Total
                       </span>
                     </TableHead>
-                    <TableHead className="w-[6%] text-right min-w-[90px]">Acciones</TableHead>
+                    <TableHead className="w-[8%] text-right min-w-[120px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(activeView === 'active' ? filteredProducts : archivedProducts).map((p) => {
+                  {(activeView === 'active' ? filteredProducts : filteredArchivedProducts).map((p, idx) => {
                     const imp = getImporterInfo(p);
                     const st = statusConfig[p.status] || statusConfig.USA;
                     const trackUrl = getTrackingUrl(p.courier, p.trackingNumber);
@@ -1068,14 +1678,33 @@ export function ProductosTab() {
                     const orderTotalPEN = orderTotal * 3.40;
 
                     return (
-                      <TableRow key={p.id} className={`hover:bg-muted/30 transition-colors ${p.isArchived ? 'opacity-75 bg-slate-50/50 dark:bg-slate-950/30' : ''}`}>
+                      <TableRow key={p.id} className={`hover:bg-muted/30 transition-colors ${selectedIds.includes(p.id) ? 'bg-emerald-50/50 dark:bg-emerald-950/25' : ''} ${p.isArchived ? 'opacity-75 bg-slate-50/50 dark:bg-slate-950/30' : ''}`}>
+                        {/* Checkbox Col */}
+                        <TableCell className="align-top py-3 px-2 text-center">
+                          <button
+                            onClick={() => handleToggleSelect(p.id)}
+                            className="p-1 rounded hover:bg-muted transition-colors mt-0.5"
+                            title={selectedIds.includes(p.id) ? "Deseleccionar" : "Seleccionar para embarque"}
+                          >
+                            {selectedIds.includes(p.id) ? (
+                              <CheckSquare className="h-4 w-4 text-emerald-600" />
+                            ) : (
+                              <Square className="h-4 w-4 text-muted-foreground/60 hover:text-foreground" />
+                            )}
+                          </button>
+                        </TableCell>
                         {/* Title & Order & Date & Real eBay Price */}
                         <TableCell className="align-top py-3">
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
-                              <span className="font-semibold text-foreground text-sm line-clamp-2 leading-snug" title={p.description}>
-                                {p.description}
-                              </span>
+                              <div className="flex items-start gap-2.5">
+                                <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-muted font-mono text-xs font-bold text-foreground border border-border/60 mt-0.5">
+                                  #{String(idx + 1).padStart(2, '0')}
+                                </span>
+                                <span className="font-semibold text-foreground text-sm line-clamp-2 leading-snug pt-0.5" title={p.description}>
+                                  {p.description}
+                                </span>
+                              </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {ebayPrimaryUrl && (
                                   <a
@@ -1112,6 +1741,30 @@ export function ProductosTab() {
                                 <span className="text-emerald-500/60 font-normal">|</span>
                                 <span>{formatPEN(orderTotalPEN)}</span>
                               </div>
+
+                              {/* Cantidad Badge */}
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${
+                                p.quantity > 1
+                                  ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+                                  : 'bg-muted/80 text-muted-foreground border border-border/50'
+                              }`}>
+                                <Package className="h-3 w-3 shrink-0" />
+                                <span>{p.quantity > 1 ? `x${p.quantity} unids` : '1 unid'}</span>
+                              </span>
+
+                              {/* Technical Model Badge - Click to open Embarque dialog or edit */}
+                              <button
+                                onClick={() => handleOpenSingleEmbarque(p)}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono font-medium transition-colors ${
+                                  p.model
+                                    ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100'
+                                }`}
+                                title={p.model ? "Modelo técnico registrado. Clic para editar." : "Falta ingresar modelo técnico para aduanas. Clic para ingresar."}
+                              >
+                                <span>Mod: {p.model || 'Sin modelo'}</span>
+                                <Pencil className="h-2.5 w-2.5 opacity-60" />
+                              </button>
 
                               {/* Order Number */}
                               {p.orderNumber && (
@@ -1199,11 +1852,56 @@ export function ProductosTab() {
                                 {formatPurchaseDate(p.actualDeliveryDate)}
                               </p>
                             )}
+                            {p.status === 'USA' && (
+                              <div className="pt-0.5">
+                                {p.shipperConfirmed ? (
+                                  <button
+                                    onClick={() => handleToggleShipperConfirmed(p)}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 hover:bg-amber-100 text-emerald-800 hover:text-amber-900 border border-emerald-300 hover:border-amber-300 transition-colors cursor-pointer group shadow-2xs"
+                                    title="Confirmado por Shiper Miami. Clic para cambiar a Pendiente."
+                                  >
+                                    <Check className="h-2.5 w-2.5 text-emerald-600 group-hover:hidden" />
+                                    <span className="group-hover:hidden">Almacén Shiper OK</span>
+                                    <span className="hidden group-hover:inline">⚠️ Cambiar a Pendiente</span>
+                                  </button>
+                                ) : (
+                                  <div className="inline-flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleToggleShipperConfirmed(p)}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 hover:bg-emerald-50 text-amber-800 hover:text-emerald-800 border border-amber-300 hover:border-emerald-400 transition-colors cursor-pointer"
+                                      title="Clic para marcar como Almacén Shiper OK"
+                                    >
+                                      ⏳ Pendiente Shiper
+                                    </button>
+                                    <button
+                                      onClick={() => handleToggleShipperConfirmed(p)}
+                                      className="h-5 px-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold inline-flex items-center gap-0.5 transition-colors shadow-2xs cursor-pointer"
+                                      title="Marcar Almacén Shiper OK con 1 clic"
+                                    >
+                                      <Check className="h-2.5 w-2.5" />
+                                      OK
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             {p.status === 'TRANSITO_USA' && (
-                              <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium flex items-center gap-1">
-                                <Truck className="h-3 w-3" />
-                                En camino a Miami
-                              </p>
+                              <div className="space-y-1.5 pt-0.5">
+                                <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium flex items-center gap-1">
+                                  <Truck className="h-3 w-3" />
+                                  En camino a Miami
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-5 px-1.5 text-[10px] font-semibold gap-1 bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 hover:text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                                  onClick={() => handleQuickMarkMiami(p)}
+                                  title="Marcar como entregado en Almacén Miami hoy"
+                                >
+                                  <Building2 className="h-2.5 w-2.5 text-emerald-600" />
+                                  Llegó a Miami
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </TableCell>
@@ -1228,6 +1926,16 @@ export function ProductosTab() {
                         {/* Actions */}
                         <TableCell className="align-top py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2 text-xs gap-1 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300"
+                              onClick={() => handleOpenSingleEmbarque(p)}
+                              title="Generar Hoja de Embarque y Traducción de este producto"
+                            >
+                              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                              <span className="hidden xl:inline">Embarque</span>
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1609,6 +2317,81 @@ export function ProductosTab() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Embarque & Traducción Dialog ─── */}
+      <EmbarqueDialog
+        open={embarqueDialogOpen}
+        onOpenChange={setEmbarqueDialogOpen}
+        selectedProducts={selectedProductsList}
+        onProductsUpdated={loadProducts}
+        onClearSelection={() => setSelectedIds([])}
+      />
+
+      {/* ─── Sincronizar Ocultos de eBay Dialog ─── */}
+      <SyncHiddenDialog
+        open={syncHiddenOpen}
+        onOpenChange={setSyncHiddenOpen}
+        onSyncCompleted={loadProducts}
+      />
+
+      {/* ─── Validación con Shiper Courier Dialog ─── */}
+      <ShipperVerifyDialog
+        open={shipperVerifyOpen}
+        onOpenChange={setShipperVerifyOpen}
+        products={products}
+        onVerified={loadProducts}
+      />
+
+      {/* ─── STICKY FLOATING SELECTION BAR ─── */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card/95 backdrop-blur-md border-2 border-emerald-500 shadow-2xl rounded-2xl px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 sm:gap-6 max-w-[95vw] w-auto animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+              <Package className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-foreground">
+                  {selectedIds.length} {selectedIds.length === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+                </span>
+                <Badge variant="outline" className="font-mono text-xs font-bold bg-emerald-50 text-emerald-800 border-emerald-300">
+                  Total FOB: ${selectedFobTotal.toFixed(2)} USD
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedFobTotal <= 200 ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    ✓ Régimen Simplificado Courier (&lt; $200 USD)
+                  </span>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 inline" /> Supera $200 USD (declaración sujeta a aranceles)
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds([])}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Limpiar
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setEmbarqueDialogOpen(true)}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md min-h-[36px]"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Generar Documentos Shipper & Aduanas
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
