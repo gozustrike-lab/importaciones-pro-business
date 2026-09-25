@@ -163,6 +163,9 @@ export async function PUT(
     if (extraCostsUsd !== undefined) updateData.extraCostsUsd = extraCostsUsd;
     if (exchangeRate !== undefined) updateData.exchangeRate = exchangeRate;
     if (salePricePen !== undefined) updateData.salePricePen = salePricePen;
+    const suggestedPricePen = body.suggestedPricePEN ?? body.suggestedPricePen;
+    if (suggestedPricePen !== undefined) updateData.suggestedPricePen = Number(suggestedPricePen) || 0;
+    if (body.isArchived !== undefined) updateData.isArchived = Boolean(body.isArchived);
 
     // Add recalculated financials
     if (financials) {

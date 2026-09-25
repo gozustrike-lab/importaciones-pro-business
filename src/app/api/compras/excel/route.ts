@@ -6,7 +6,12 @@ import * as XLSX from 'xlsx';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth-helper';
 
-// GET /api/compras/excel - Return Excel sheets & combined DB purchases
+const MONTH_NAMES = [
+  'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+  'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+];
+
+// GET /api/compras/excel - Return purchases separated by year & month
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
@@ -14,138 +19,110 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const filePath = path.join(
-      process.cwd(),
-      'PLANTILLAS',
-      'COMPRAS EBAY - CONTABILIDAD - COSTOS - VENTAS.xlsx'
-    );
+    const { searchParams } = new URL(request.url);
+    const selectedYear = searchParams.get('year'); // '2026', '2025', or 'all'
+    const selectedMonth = searchParams.get('month'); // e.g. 'SEPTIEMBRE'
 
-    // Fetch DB products
-    const dbProducts = await db.product.findMany({
+    // Fetch ALL products from DB for this tenant
+    const products = await db.product.findMany({
       where: { tenantId: currentUser.tenantId },
       orderBy: { purchaseDate: 'desc' },
     });
 
-    // Read Excel file
-    let sheetNames: string[] = [];
-    const sheetsData: Record<string, any[]> = {};
+    const mappedProducts = products.map((p) => {
+      const pDate = p.purchaseDate || p.createdAt;
+      const year = pDate.getFullYear();
+      const monthIdx = pDate.getMonth();
+      const monthName = MONTH_NAMES[monthIdx];
+      const orderTotalUsd = (p.purchasePriceUsd || 0) + (p.shippingCostUsd || 0);
 
-    if (fs.existsSync(filePath)) {
-      const wb = new ExcelJS.Workbook();
-      await wb.xlsx.readFile(filePath);
-
-      sheetNames = wb.worksheets.map((w) => w.name);
-
-      for (const ws of wb.worksheets) {
-        const rows: any[] = [];
-        // Rows start at index 4 (1-based)
-        for (let r = 4; r <= ws.rowCount; r++) {
-          const row = ws.getRow(r);
-          const fecha = row.getCell(2).value;
-          const orden = row.getCell(5).value;
-          const desc = row.getCell(9).value;
-          const precioUsd = row.getCell(10).value;
-
-          if (!fecha && !orden && !desc && !precioUsd) continue;
-
-          let descText = '';
-          let descUrl = '';
-          if (desc && typeof desc === 'object') {
-            descText = (desc as any).text || '';
-            descUrl = (desc as any).hyperlink || '';
-          } else {
-            descText = String(desc || '');
-          }
-
-          let provText = '';
-          let provUrl = '';
-          const prov = row.getCell(8).value;
-          if (prov && typeof prov === 'object') {
-            provText = (prov as any).text || '';
-            provUrl = (prov as any).hyperlink || '';
-          } else {
-            provText = String(prov || '');
-          }
-
-          const getNumericValue = (val: any, fallback = 0): number => {
-            if (val === null || val === undefined) return fallback;
-            if (typeof val === 'object') return Number(val.result) || fallback;
-            const n = Number(val);
-            return isNaN(n) ? fallback : n;
-          };
-
-          const rawUsd = getNumericValue(precioUsd, 0);
-          const precioSoles = row.getCell(11).value;
-          const rawSoles = getNumericValue(precioSoles, rawUsd * 3.40);
-
-          rows.push({
-            rowNumber: r,
-            sheet: ws.name,
-            fechaCompra: String(fecha || ''),
-            sistema: String(row.getCell(3).value || 'SI'),
-            embarcado: String(row.getCell(4).value || 'NO'),
-            orderNumber: String(orden || ''),
-            courier: String(row.getCell(6).value || 'USPS'),
-            trackingNumber: String(row.getCell(7).value || ''),
-            proveedor: provText,
-            proveedorUrl: provUrl,
-            descripcion: descText,
-            itemUrl: descUrl,
-            precioCompraUsd: rawUsd,
-            precioCompraPen: rawSoles,
-            precioVentaPen: getNumericValue(row.getCell(12).value, 0),
-            publicidadUsd: getNumericValue(row.getCell(13).value, 0),
-            costosExtraUsd: getNumericValue(row.getCell(14).value, 0),
-            gananciaPen: getNumericValue(row.getCell(15).value, 0),
-            stock: getNumericValue(row.getCell(16).value, 1),
-            precioSugeridoPen: getNumericValue(row.getCell(17).value, 0),
-            fechaVenta: String(row.getCell(18).value || ''),
-            metodoPago: String(row.getCell(19).value || ''),
-          });
-        }
-        sheetsData[ws.name] = rows;
+      // Order URL and Item URL
+      let itemUrl: string | undefined = undefined;
+      let orderUrl: string | undefined = undefined;
+      if (p.orderNumber && p.orderNumber.includes('-')) {
+        orderUrl = `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`;
       }
+      const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
+      if (itemMatch) {
+        itemUrl = `https://www.ebay.com/itm/${itemMatch[1]}`;
+      } else if (orderUrl) {
+        itemUrl = orderUrl;
+      }
+
+      return {
+        id: p.id,
+        year: String(year),
+        monthIndex: monthIdx,
+        monthName,
+        fechaCompraFormatted: pDate.toLocaleDateString('es-PE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        purchaseDate: pDate.toISOString(),
+        orderNumber: p.orderNumber,
+        courier: p.courier || 'USPS',
+        trackingNumber: (p.shipperTracking || p.trackingId || '').trim(),
+        originalTracking: p.trackingId || '',
+        shipperTracking: p.shipperTracking || '',
+        shipperConfirmed: p.shipperConfirmed ?? false,
+        supplier: p.supplier || 'eBay',
+        supplierUrl: p.supplier ? `https://www.ebay.com/usr/${p.supplier}` : 'https://www.ebay.com',
+        description: p.description,
+        model: p.model || '',
+        category: p.category || '',
+        quantity: p.quantity || 1,
+        purchasePriceUsd: p.purchasePriceUsd || 0,
+        shippingCostUsd: p.shippingCostUsd || 0,
+        orderTotalUsd,
+        purchasePricePen: p.totalCostPen || orderTotalUsd * (p.exchangeRate || 3.40),
+        salePricePen: p.salePricePen || 0,
+        suggestedPricePen: p.suggestedPricePen || 0,
+        advertisingCostUsd: p.advertisingCostUsd || 0,
+        extraCostsUsd: p.extraCostsUsd || 0,
+        profitPen: p.profitPen || 0,
+        exchangeRate: p.exchangeRate || 3.40,
+        shippingStatus: p.shippingStatus,
+        isArchived: p.isArchived,
+        importerProfile: p.importerProfile || 'fabio',
+        orderUrl,
+        itemUrl,
+      };
+    });
+
+    // Extract available years and months
+    const yearsSet = new Set<string>();
+    const monthsByYear: Record<string, Set<string>> = {};
+
+    mappedProducts.forEach((p) => {
+      yearsSet.add(p.year);
+      if (!monthsByYear[p.year]) {
+        monthsByYear[p.year] = new Set<string>();
+      }
+      monthsByYear[p.year].add(p.monthName);
+    });
+
+    const years = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+    const monthsStructure: Record<string, string[]> = {};
+    for (const y of years) {
+      // Sort months chronologically or reverse
+      const mList = Array.from(monthsByYear[y] || []);
+      mList.sort((a, b) => MONTH_NAMES.indexOf(b) - MONTH_NAMES.indexOf(a));
+      monthsStructure[y] = mList;
     }
 
     return NextResponse.json({
       success: true,
-      sheetNames,
-      sheetsData,
-      dbProductsCount: dbProducts.length,
-      dbProducts: dbProducts.map((p) => {
-        const orderTotalUsd = (p.purchasePriceUsd || 0) + (p.shippingCostUsd || 0);
-        return {
-          id: p.id,
-          orderNumber: p.orderNumber,
-          description: p.description,
-          category: p.category,
-          model: p.model,
-          quantity: p.quantity || 1,
-          purchasePriceUsd: p.purchasePriceUsd,
-          shippingCostUsd: p.shippingCostUsd,
-          orderTotalUsd,
-          purchasePricePen: orderTotalUsd * (p.exchangeRate || 3.40),
-          salePricePen: p.salePricePen || 0,
-          suggestedPricePen: p.suggestedPricePen || 0,
-          advertisingCostUsd: p.advertisingCostUsd || 0,
-          extraCostsUsd: p.extraCostsUsd || 0,
-          profitPen: p.profitPen || 0,
-          exchangeRate: p.exchangeRate || 3.40,
-          courier: p.courier || 'USPS',
-          trackingNumber: p.trackingId || '',
-          shipperTracking: p.shipperTracking || '',
-          shipperConfirmed: p.shipperConfirmed ?? false,
-          shippingStatus: p.shippingStatus,
-          isArchived: p.isArchived,
-          supplier: p.supplier || 'eBay',
-          purchaseDate: p.purchaseDate ? p.purchaseDate.toISOString() : p.createdAt.toISOString(),
-          importerProfile: p.importerProfile || 'fabio',
-        };
-      }),
+      totalCount: mappedProducts.length,
+      years,
+      monthsStructure,
+      products: mappedProducts,
     });
   } catch (error: any) {
-    console.error('Error reading compras excel:', error);
-    return NextResponse.json({ error: error.message || 'Error al leer el archivo Excel' }, { status: 500 });
+    console.error('Error fetching compras data:', error);
+    return NextResponse.json({ error: error.message || 'Error al obtener compras' }, { status: 500 });
   }
 }
 

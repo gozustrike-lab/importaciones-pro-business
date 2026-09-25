@@ -183,30 +183,71 @@ export function EmbarqueDialog({
     });
   };
 
-  // Sanitizar modelo en tiempo de edición
-  const handleModelBlur = (index: number) => {
-    setItems((prev) => {
-      const copy = [...prev];
-      copy[index] = {
-        ...copy[index],
-        modelo: sanitizeSunatModel(copy[index].modelo),
-      };
-      return copy;
-    });
+  // Autoguardado en tiempo real en PostgreSQL
+  const [autoSavingId, setAutoSavingId] = useState<string | null>(null);
+  const [lastAutoSavedTime, setLastAutoSavedTime] = useState<string | null>(null);
+
+  const saveSingleItemToDb = async (item: EditableItem) => {
+    try {
+      setAutoSavingId(item.productId);
+      const cleanModel = sanitizeSunatModel(item.modelo);
+      await fetch(`/api/products/${item.productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: cleanModel,
+          quantity: Number(item.cantidad) || 1,
+          condition: item.estado,
+          importerProfile: item.importerProfile,
+          recipientName: item.consignatario,
+        }),
+      });
+      setLastAutoSavedTime(new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      if (onProductsUpdated) {
+        onProductsUpdated();
+      }
+    } catch (err) {
+      console.error('Error autosaving to DB:', err);
+    } finally {
+      setTimeout(() => setAutoSavingId(null), 800);
+    }
   };
 
-  // Cambiar perfil de un ítem individual
-  const updateItemProfile = (index: number, profile: 'fabio' | 'peggy') => {
+  // Sanitizar modelo en tiempo de edición y autoguardar
+  const handleModelBlur = (index: number) => {
+    const item = items[index];
+    const cleanModel = sanitizeSunatModel(item.modelo);
+    const updated = {
+      ...item,
+      modelo: cleanModel,
+    };
     setItems((prev) => {
       const copy = [...prev];
-      copy[index] = {
-        ...copy[index],
-        importerProfile: profile,
-        dniRuc: profile === 'peggy' ? PEGGY_RUC : FABIO_RUC,
-        consignatario: profile === 'peggy' ? PEGGY_NAME : FABIO_NAME,
-      };
+      copy[index] = updated;
       return copy;
     });
+
+    // Autoguardar en BD en tiempo real
+    saveSingleItemToDb(updated);
+  };
+
+  // Cambiar perfil de un ítem individual y autoguardar
+  const updateItemProfile = (index: number, profile: 'fabio' | 'peggy') => {
+    const item = items[index];
+    const updated = {
+      ...item,
+      importerProfile: profile,
+      dniRuc: profile === 'peggy' ? PEGGY_RUC : FABIO_RUC,
+      consignatario: profile === 'peggy' ? PEGGY_NAME : FABIO_NAME,
+    };
+    setItems((prev) => {
+      const copy = [...prev];
+      copy[index] = updated;
+      return copy;
+    });
+
+    // Autoguardar en BD en tiempo real
+    saveSingleItemToDb(updated);
   };
 
   // Quitar un ítem de la selección
@@ -575,6 +616,23 @@ export function EmbarqueDialog({
 
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-semibold">
+                {autoSavingId ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                    <span>Guardando en BD...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-600" />
+                    <span>Autoguardado en BD activo</span>
+                    {lastAutoSavedTime && (
+                      <span className="text-[10px] text-emerald-600/70 font-mono">({lastAutoSavedTime})</span>
+                    )}
+                  </>
+                )}
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
