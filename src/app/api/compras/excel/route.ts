@@ -67,9 +67,16 @@ export async function GET(request: NextRequest) {
             provText = String(prov || '');
           }
 
-          const rawUsd = typeof precioUsd === 'object' ? (precioUsd as any).result || 0 : Number(precioUsd) || 0;
+          const getNumericValue = (val: any, fallback = 0): number => {
+            if (val === null || val === undefined) return fallback;
+            if (typeof val === 'object') return Number(val.result) || fallback;
+            const n = Number(val);
+            return isNaN(n) ? fallback : n;
+          };
+
+          const rawUsd = getNumericValue(precioUsd, 0);
           const precioSoles = row.getCell(11).value;
-          const rawSoles = typeof precioSoles === 'object' ? (precioSoles as any).result || (rawUsd * 3.40) : Number(precioSoles) || (rawUsd * 3.40);
+          const rawSoles = getNumericValue(precioSoles, rawUsd * 3.40);
 
           rows.push({
             rowNumber: r,
@@ -86,12 +93,12 @@ export async function GET(request: NextRequest) {
             itemUrl: descUrl,
             precioCompraUsd: rawUsd,
             precioCompraPen: rawSoles,
-            precioVentaPen: Number(row.getCell(12).value) || 0,
-            publicidadUsd: Number(row.getCell(13).value) || 0,
-            costosExtraUsd: Number(row.getCell(14).value) || 0,
-            gananciaPen: Number(row.getCell(15).value) || 0,
-            stock: Number(row.getCell(16).value) || 1,
-            precioSugeridoPen: Number(row.getCell(17).value) || 0,
+            precioVentaPen: getNumericValue(row.getCell(12).value, 0),
+            publicidadUsd: getNumericValue(row.getCell(13).value, 0),
+            costosExtraUsd: getNumericValue(row.getCell(14).value, 0),
+            gananciaPen: getNumericValue(row.getCell(15).value, 0),
+            stock: getNumericValue(row.getCell(16).value, 1),
+            precioSugeridoPen: getNumericValue(row.getCell(17).value, 0),
             fechaVenta: String(row.getCell(18).value || ''),
             metodoPago: String(row.getCell(19).value || ''),
           });
