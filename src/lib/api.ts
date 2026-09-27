@@ -176,6 +176,18 @@ export function updateNRUSConfig(data: NRUSConfig) {
   });
 }
 
+export function saveNRUSDeclaredSales(data: {
+  month: string;
+  importerKey: 'fabio' | 'peggy';
+  declaredSalesPen: number;
+  notes?: string;
+}) {
+  return apiFetch<{ success: boolean; message: string }>(`${BASE}/nrus/status`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 // Quality
 export function fetchQualityChecks(productId: string) {
   return apiFetch<QualityCheck[]>(`${BASE}/products/${productId}/quality`);

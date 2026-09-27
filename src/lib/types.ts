@@ -268,6 +268,12 @@ export interface NRUSProfileStatus {
     adquisicionesPen: number;
     categoria: number;
     importePagarPen: number;
+    interesMoratorioPen?: number;
+    compensacionPercepcionesPen?: number;
+    fechaVencimiento?: string;
+    fechaVencimientoCorta?: string;
+    diasRestantes?: number;
+    estadoPlazo?: 'DENTRO_DE_PLAZO' | 'VENCE_PRONTO' | 'VENCE_HOY' | 'VENCIDO';
   };
 }
 
@@ -297,6 +303,43 @@ export interface NRUSStatus {
     peggy: NRUSProfileStatus;
   };
   recommendation?: NRUSRecommendation;
+  availableMonths?: { month: string; label: string; year: number }[];
+  annualHistory?: NRUSMonthHistoryItem[];
+}
+
+export interface NRUSMonthHistoryItem {
+  monthKey: string;      // "2025-11"
+  periodoSunat: string;  // "11/2025"
+  monthLabel: string;    // "Noviembre 2025"
+  year: number;
+  totalPurchasesPen: number;
+  totalPurchasesUsd: number;
+  totalSalesPen: number;
+  purchasesCount: number;
+  fabio: {
+    purchasesPen: number;
+    purchasesUsd: number;
+    purchasesCount: number;
+    salesPen: number;
+    category: 'Cat 1' | 'Cat 2' | 'Excedido';
+    quota: number;
+    deadlineFormatted: string;
+    daysRemaining: number;
+    isOverdue: boolean;
+    status: string;
+  };
+  peggy: {
+    purchasesPen: number;
+    purchasesUsd: number;
+    purchasesCount: number;
+    salesPen: number;
+    category: 'Cat 1' | 'Cat 2' | 'Excedido';
+    quota: number;
+    deadlineFormatted: string;
+    daysRemaining: number;
+    isOverdue: boolean;
+    status: string;
+  };
 }
 
 export interface NRUSConfig {
