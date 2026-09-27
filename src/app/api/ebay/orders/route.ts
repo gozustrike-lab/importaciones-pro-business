@@ -4,6 +4,7 @@ import { getUserToken } from '@/lib/ebay-account';
 import { db } from '@/lib/db';
 import { XMLParser } from 'fast-xml-parser';
 import { inferTechnicalModel } from '@/lib/shipper-classification';
+import { notifyMiamiArrival } from '@/lib/notifications';
 
 if (process.env.NODE_ENV !== 'production' || process.platform === 'win32') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -288,6 +289,19 @@ export async function GET(request: Request) {
             updates.shippingStatus = targetStatus;
             updates.actualArrival = ord.actualDeliveryTime ? new Date(ord.actualDeliveryTime) : existing.actualArrival;
             updates.estimatedArrival = ord.estimatedDeliveryTime ? new Date(ord.estimatedDeliveryTime) : existing.estimatedArrival;
+
+            // Trigger notification if newly delivered in Miami
+            if (targetStatus === 'USA' && existing.shippingStatus !== 'USA') {
+              notifyMiamiArrival({
+                orderNumber: ord.orderId,
+                trackingNumber: ord.trackingNumber || existing.trackingId || '',
+                courier: ord.courier || existing.courier,
+                description: ord.title || existing.description,
+                model: inferTechnicalModel(ord.title, existing.model),
+                recipientName: ord.recipientName || existing.recipientName,
+                actualArrival: ord.actualDeliveryTime,
+              }).catch((err) => console.error('Error enviando notificación Miami arrival:', err));
+            }
           }
           if (ord.itemId && (!existing.notes || !existing.notes.includes(ord.itemId))) {
             updates.notes = [existing.notes, `ItemID: ${ord.itemId}`].filter(Boolean).join(' | ');

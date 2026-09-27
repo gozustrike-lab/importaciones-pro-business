@@ -23,12 +23,14 @@ import {
   FileSpreadsheet,
   PanelLeftClose,
   PanelLeftOpen,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
+import { NotificationsDialog } from '@/components/dashboard/notifications-dialog';
 
 export type TabKey =
   | 'dashboard'
@@ -328,6 +330,26 @@ function SidebarContent({
           </>
         )}
       </nav>
+
+      {/* Bot Alertas Celular (WhatsApp & Telegram) */}
+      <div className={cn('px-3 py-1.5', collapsed ? 'px-2' : 'px-3')}>
+        <NotificationsDialog
+          triggerButton={
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'w-full gap-2 border-emerald-500/30 hover:border-emerald-500 bg-emerald-50/50 hover:bg-emerald-100/50 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold text-xs transition-all shadow-xs',
+                collapsed && 'px-0 justify-center'
+              )}
+              title="Configurar Bot de Notificaciones (WhatsApp & Telegram)"
+            >
+              <Bell className="h-3.5 w-3.5 text-emerald-600 animate-bounce" />
+              {!collapsed && <span>Alertas Celular</span>}
+            </Button>
+          }
+        />
+      </div>
 
       {/* User info + logout */}
       <UserSection

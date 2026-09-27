@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth-helper";
+import { notifyRadarDeal } from "@/lib/notifications";
 
 // Realistic item pool based on common eBay sellers for iPads and tech
 const MOCK_DEAL_TEMPLATES = [
@@ -125,6 +126,20 @@ export async function POST(
       },
       include: { deals: { orderBy: { foundAt: "desc" }, take: 20 }, supplier: true },
     });
+
+    // Automated alert to Telegram & WhatsApp if discount is >= 25% (or configured threshold)
+    if (randomDiscountPct >= 25) {
+      notifyRadarDeal({
+        title: generatedTitle,
+        sellerUsername: sellerName,
+        currentPriceUsd: currentPrice,
+        originalPriceUsd: originalPrice,
+        discountPct: randomDiscountPct,
+        couponCode: tmpl.coupon,
+        condition: tmpl.condition,
+        itemUrl,
+      }).catch((err) => console.error('Error enviando notificación de oferta radar:', err));
+    }
 
     return NextResponse.json({
       success: true,

@@ -58,6 +58,7 @@ import type {
   EbayAccountStatus,
 } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { NotificationsDialog } from '@/components/dashboard/notifications-dialog';
 
 // ── Types for Deal Trackers ──
 export interface DealTrackerItem {
@@ -742,6 +743,8 @@ export function ProveedoresTab() {
             <RefreshCw className={`h-3.5 w-3.5 ${scanningAll ? 'animate-spin' : ''}`} />
             {scanningAll ? 'Escaneando Ofertas...' : '🔍 Buscar Ofertas Ahora'}
           </Button>
+
+          <NotificationsDialog />
 
           <Button
             size="sm"

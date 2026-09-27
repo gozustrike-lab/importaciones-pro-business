@@ -1,0 +1,13 @@
+{
+  "telegramEnabled": false,
+  "telegramBotToken": "",
+  "telegramChatId": "",
+  "whatsappEnabled": false,
+  "whatsappProvider": "ultramsg",
+  "whatsappInstanceId": "",
+  "whatsappToken": "",
+  "whatsappPhone": "51976202683",
+  "minDiscountPct": 25,
+  "notifyOnMiamiDelivery": true,
+  "notifyOnRadarDeal": true
+}

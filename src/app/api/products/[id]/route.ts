@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateProductFinancials } from "@/lib/business-logic";
 import { sanitizeSunatModel } from "@/lib/shipper-classification";
+import { notifyMiamiArrival } from "@/lib/notifications";
 
 // GET /api/products/[id] - Get single product
 export async function GET(
@@ -183,6 +184,23 @@ export async function PUT(
       where: { id },
       data: updateData,
     });
+
+    // Notify if status transitioned to USA / Entregado en Miami
+    const isNewMiamiDelivery =
+      (updateData.shippingStatus === 'USA' && existing.shippingStatus !== 'USA') ||
+      (updateData.shipperConfirmed === true && !existing.shipperConfirmed);
+
+    if (isNewMiamiDelivery) {
+      notifyMiamiArrival({
+        orderNumber: product.orderNumber,
+        trackingNumber: product.shipperTracking || product.trackingId || '',
+        courier: product.courier,
+        description: product.description,
+        model: product.model,
+        recipientName: product.recipientName,
+        actualArrival: product.actualArrival || new Date(),
+      }).catch((err) => console.error('Error enviando notificación Miami arrival:', err));
+    }
 
     return NextResponse.json({
       id: product.id,
