@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateProductFinancials } from "@/lib/business-logic";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
+import { sanitizeSunatModel, inferTechnicalModel } from "@/lib/shipper-classification";
 
 // GET /api/products - List products (tenant-scoped)
 export async function GET(request: NextRequest) {
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
         shippingStatus: status || "USA",
         estimatedArrival: estimatedArrival ? new Date(estimatedArrival) : null,
         description, category: category || "",
-        model: body.model || "", color: body.color || "",
+        model: sanitizeSunatModel(body.model) || (description ? inferTechnicalModel(description) : ""), color: body.color || "",
         capacity: body.capacity || "", grade: grade || "A",
         condition: condition || "", serialNumber: body.serialNumber || "",
         quantity: body.quantity || 1, batteryCycles: body.batteryCycles || 0,

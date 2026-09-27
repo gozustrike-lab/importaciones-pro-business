@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { sanitizeSunatModel, inferTechnicalModel } from '@/lib/shipper-classification';
 
 export type ProfileKey = 'fabio' | 'peggy';
 
@@ -252,7 +253,7 @@ export function ShipperTab() {
       indicaciones: '',
       productoNombre: 'Tableta Electrónica',
       marca: 'Apple',
-      modelo: 'A1701 (iPad Pro 10.5)',
+      modelo: 'A1701',
       cantidad: 1,
       estado: 'Usado',
       numeroFactura: '22-15116-16018',
@@ -275,7 +276,7 @@ export function ShipperTab() {
       indicaciones: '',
       productoNombre: 'Tableta Electrónica',
       marca: 'Apple',
-      modelo: 'A1701 (iPad Pro 10.5)',
+      modelo: 'A1701',
       cantidad: 1,
       estado: 'Usado',
       numeroFactura: '22-15116-16018',
@@ -298,7 +299,7 @@ export function ShipperTab() {
       indicaciones: '',
       productoNombre: 'Tableta Electrónica',
       marca: 'Apple',
-      modelo: 'A2197 (iPad 7th Gen)',
+      modelo: 'A2197',
       cantidad: 1,
       estado: 'Usado',
       numeroFactura: '23-15114-36516',
@@ -416,19 +417,8 @@ export function ShipperTab() {
             ? 'Laptop Portátil'
             : 'Dispositivo Electrónico';
 
-          // Extract exact Apple model (e.g., A1701, A2200, A2603, A2197, etc.)
-          const appleModelMatch = (ord.title || '').match(/\bA\d{4}\b/i);
-          let modelo = appleModelMatch ? appleModelMatch[0].toUpperCase() : '';
-          if (!modelo) {
-            if (titleLower.includes('10.5')) modelo = 'A1701 (iPad Pro 10.5)';
-            else if (titleLower.includes('12.9')) modelo = 'A1670 (iPad Pro 12.9)';
-            else if (titleLower.includes('9th') || titleLower.includes('9na')) modelo = 'A2603 (iPad 9th Gen)';
-            else if (titleLower.includes('7th') || titleLower.includes('7ma')) modelo = 'A2197 (iPad 7th Gen)';
-            else if (titleLower.includes('air 3') || titleLower.includes('air (3rd')) modelo = 'A2152 (iPad Air 3)';
-            else if (titleLower.includes('se 3rd') || titleLower.includes('se 2022') || titleLower.includes('iphone se')) modelo = 'A2783 (iPhone SE 3)';
-            else if (isMac) modelo = 'MacBook Pro 13"';
-            else modelo = isTablet ? 'A1701' : 'A2197';
-          }
+          // Extract exact Apple model (strictly A#### code for SUNAT customs compliance)
+          const modelo = inferTechnicalModel(ord.title, ord.model);
 
           const isDelivered = ord.status === 'USA' || !!ord.actualDeliveryDate;
 
@@ -567,7 +557,7 @@ export function ShipperTab() {
         items: selectedProfileItems.map((it) => ({
           productoNombre: it.productoNombre,
           marca: it.marca,
-          modelo: it.modelo,
+          modelo: sanitizeSunatModel(it.modelo),
           paisFabricacion: it.paisFabricacion,
           cantidad: it.cantidad,
           estado: it.estado,
@@ -639,7 +629,7 @@ export function ShipperTab() {
         traduccionItems: selectedProfileItems.map((it) => ({
           productoNombre: it.productoNombre,
           marca: it.marca,
-          modelo: it.modelo,
+          modelo: sanitizeSunatModel(it.modelo),
           paisFabricacion: it.paisFabricacion,
           cantidad: it.cantidad,
           estado: it.estado,
@@ -1699,9 +1689,11 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
                         <td className="p-3">
                           <Input
                             value={item.modelo}
-                            onChange={(e) => updateItem(item.id, 'modelo', e.target.value)}
-                            placeholder="Ej. A1701"
-                            className="h-7 text-xs font-mono"
+                            onChange={(e) => updateItem(item.id, 'modelo', e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())}
+                            onBlur={() => updateItem(item.id, 'modelo', sanitizeSunatModel(item.modelo))}
+                            placeholder="A1701"
+                            title="Código técnico SUNAT (ej. A1701). Sin palabras como iPad o Pro."
+                            className="h-7 text-xs font-mono font-semibold text-blue-600 dark:text-blue-400"
                           />
                         </td>
                         <td className="p-3">

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth-helper';
 import { getUserToken } from '@/lib/ebay-account';
 import { db } from '@/lib/db';
 import { XMLParser } from 'fast-xml-parser';
+import { inferTechnicalModel } from '@/lib/shipper-classification';
 
 if (process.env.NODE_ENV !== 'production' || process.platform === 'win32') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -266,7 +267,7 @@ export async function GET(request: Request) {
               actualArrival: ord.actualDeliveryTime ? new Date(ord.actualDeliveryTime) : null,
               estimatedArrival: ord.estimatedDeliveryTime ? new Date(ord.estimatedDeliveryTime) : null,
               description: ord.title,
-              model: ord.title.toLowerCase().includes('ipad') ? 'iPad' : 'Electrónico',
+              model: inferTechnicalModel(ord.title),
               condition: 'Usado',
               purchasePriceUsd: ord.priceUsd,
               exchangeRate: exchangeRate,
@@ -365,7 +366,7 @@ export async function POST(request: Request) {
         actualArrival: ord.actualDeliveryTime ? new Date(ord.actualDeliveryTime) : existing?.actualArrival || null,
         estimatedArrival: ord.estimatedDeliveryTime ? new Date(ord.estimatedDeliveryTime) : existing?.estimatedArrival || null,
         description: ord.title || 'Producto eBay',
-        model: ord.model || (ord.title?.toLowerCase().includes('ipad') ? 'iPad' : 'Electrónico'),
+        model: inferTechnicalModel(ord.title, ord.model),
         condition: ord.condition || 'Usado',
         purchasePriceUsd: parseFloat(ord.priceUsd || '0'),
         exchangeRate,

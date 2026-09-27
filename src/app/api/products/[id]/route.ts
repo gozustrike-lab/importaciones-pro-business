@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateProductFinancials } from "@/lib/business-logic";
+import { sanitizeSunatModel } from "@/lib/shipper-classification";
 
 // GET /api/products/[id] - Get single product
 export async function GET(
@@ -141,7 +142,7 @@ export async function PUT(
     if (body.orderNumber !== undefined) updateData.orderNumber = body.orderNumber;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.category !== undefined) updateData.category = body.category;
-    if (body.model !== undefined) updateData.model = body.model;
+    if (body.model !== undefined) updateData.model = sanitizeSunatModel(body.model);
     if (body.quantity !== undefined) updateData.quantity = Number(body.quantity) || 1;
     if (body.grade !== undefined) updateData.grade = body.grade;
     if (body.condition !== undefined) updateData.condition = body.condition;

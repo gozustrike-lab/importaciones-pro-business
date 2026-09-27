@@ -39,10 +39,37 @@ export function sanitizeSunatModel(rawModel?: string): string {
   return trimmed
     .replace(/iPad(\s*Pro|\s*Air|\s*Mini)?/gi, '')
     .replace(/MacBook(\s*Pro|\s*Air)?/gi, '')
-    .replace(/iPhone/gi, '')
+    .replace(/iPhone(\s*SE|\s*Pro|\s*Max)?/gi, '')
     .replace(/Mod(elo)?[:.]?/gi, '')
     .replace(/[()[\]]/g, '')
     .trim();
+}
+
+/**
+ * Infer technical model code (strictly A#### format) from title or raw model.
+ * Never returns descriptive words like "iPad" or "Pro" - strictly for customs compliance.
+ */
+export function inferTechnicalModel(title: string = '', rawModel?: string): string {
+  if (rawModel) {
+    const clean = sanitizeSunatModel(rawModel);
+    if (clean) return clean;
+  }
+  const match = (title || '').match(/\b(A\d{4})\b/i);
+  if (match) return match[1].toUpperCase();
+
+  const titleLower = (title || '').toLowerCase();
+  if (titleLower.includes('10.5')) return 'A1701';
+  if (titleLower.includes('12.9')) return 'A1670';
+  if (titleLower.includes('9th') || titleLower.includes('9na')) return 'A2603';
+  if (titleLower.includes('7th') || titleLower.includes('7ma')) return 'A2197';
+  if (titleLower.includes('8th') || titleLower.includes('8va')) return 'A2270';
+  if (titleLower.includes('air 3') || titleLower.includes('air (3rd')) return 'A2152';
+  if (titleLower.includes('air 4') || titleLower.includes('air (4th')) return 'A2316';
+  if (titleLower.includes('air 5') || titleLower.includes('air (5th')) return 'A2588';
+  if (titleLower.includes('se 3rd') || titleLower.includes('se 2022') || titleLower.includes('iphone se')) return 'A2783';
+  if (titleLower.includes('macbook')) return 'A1706';
+
+  return '';
 }
 
 /**
@@ -82,16 +109,11 @@ export function autoClassifyProduct(product: {
     productoNombre = 'Dispositivo Electrónico';
   }
 
-  // Model extraction - STRICTLY explicit code in description or manual user input
-  // Never guess or infer to avoid customs discrepancies with SUNAT
-  let modelo = '';
-  const aNumberMatch = product.description.match(/\b(A\d{4})\b/i);
-  if (aNumberMatch) {
-    // Explicit A#### code found in product description
-    modelo = aNumberMatch[1].toUpperCase();
-  } else if (product.model) {
-    // Use user's manually entered model if available
-    modelo = sanitizeSunatModel(product.model);
+  // Model extraction - STRICTLY explicit code or technical inference
+  // Never includes "iPad" or descriptive words - strictly manufacturer model code A####
+  let modelo = sanitizeSunatModel(product.model);
+  if (!modelo) {
+    modelo = inferTechnicalModel(product.description);
   }
 
   // Estado: Strictly 'Usado' by default
