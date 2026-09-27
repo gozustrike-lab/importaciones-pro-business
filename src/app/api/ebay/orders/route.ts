@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { XMLParser } from 'fast-xml-parser';
 import { inferTechnicalModel } from '@/lib/shipper-classification';
 import { notifyMiamiArrival } from '@/lib/notifications';
+import { appendPurchaseToEbayExcel } from '@/lib/excel-compras-writer';
 
 if (process.env.NODE_ENV !== 'production' || process.platform === 'win32') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -283,6 +284,22 @@ export async function GET(request: Request) {
             },
           });
           createdCount++;
+
+          // Auto-append to Fabio or Liliana Excel workbook in Google Drive
+          appendPurchaseToEbayExcel({
+            orderNumber: ord.orderId,
+            purchaseDate: ord.orderDate ? new Date(ord.orderDate) : new Date(),
+            courier: ord.courier,
+            trackingId: ord.trackingNumber || '',
+            supplier: ord.seller || 'eBay',
+            description: ord.title,
+            purchasePriceUsd: ord.priceUsd,
+            importerProfile: ord.assignedProfile,
+            recipientName: ord.recipientName,
+            itemId: ord.itemId,
+            exchangeRate: 3.40,
+            notes: ord.buyerMessage,
+          }).catch((err) => console.error('Error auto-appending to Excel:', err));
         } else {
           const updates: Record<string, unknown> = {};
           if (!['En Tránsito', 'Perú', 'Entregado', 'Vendido'].includes(existing.shippingStatus)) {
@@ -311,6 +328,19 @@ export async function GET(request: Request) {
               where: { id: existing.id },
               data: updates,
             });
+
+            if (ord.trackingNumber && ord.trackingNumber !== existing.trackingId) {
+              appendPurchaseToEbayExcel({
+                orderNumber: existing.orderNumber,
+                purchaseDate: existing.purchaseDate,
+                courier: ord.courier || existing.courier,
+                trackingId: ord.trackingNumber,
+                description: ord.title || existing.description,
+                purchasePriceUsd: ord.priceUsd || existing.purchasePriceUsd,
+                importerProfile: ord.assignedProfile || existing.importerProfile,
+                recipientName: ord.recipientName || existing.recipientName,
+              }).catch((err) => console.error('Error auto-updating Excel tracking:', err));
+            }
           }
         }
       }

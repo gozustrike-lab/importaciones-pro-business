@@ -194,6 +194,12 @@ export function syncDriveFolder() {
   });
 }
 
+export function syncPurchasesToExcel() {
+  return apiFetch<{ success: boolean; message: string; result: any }>(`${BASE}/compras/sync-to-excel`, {
+    method: 'POST',
+  });
+}
+
 // Quality
 export function fetchQualityChecks(productId: string) {
   return apiFetch<QualityCheck[]>(`${BASE}/products/${productId}/quality`);

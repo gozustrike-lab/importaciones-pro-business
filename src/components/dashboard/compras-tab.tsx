@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeSunatModel } from '@/lib/shipper-classification';
+import { syncPurchasesToExcel } from '@/lib/api';
 
 interface ComprasTabProps {
   onNavigate?: (tab: string) => void;
@@ -116,6 +117,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   // saveStatus holds saving / saved / error state keyed by `${productId}_${field}`
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
+  const [syncingExcel, setSyncingExcel] = useState(false);
 
   const loadData = async () => {
     try {
@@ -143,6 +145,26 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncExcel = async () => {
+    try {
+      setSyncingExcel(true);
+      const res = await syncPurchasesToExcel();
+      toast({
+        title: 'Sincronización con Excels completada',
+        description: res.message || 'Todas las compras fueron actualizadas en los Excels de Fabio y Liliana.',
+      });
+      await loadData();
+    } catch (err: any) {
+      toast({
+        title: 'Error de sincronización',
+        description: err?.message || 'No se pudo sincronizar con los Excels de Google Drive',
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingExcel(false);
     }
   };
 
@@ -461,6 +483,18 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Sincronizar
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncExcel}
+            disabled={syncingExcel || loading}
+            className="gap-1.5 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 shadow-xs"
+            title="Sincronizar compras de la base de datos hacia los Excels de Fabio y Liliana en Google Drive"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncingExcel ? 'animate-spin' : ''}`} />
+            {syncingExcel ? 'Sincronizando Excels...' : 'Sincronizar Excels Drive'}
           </Button>
 
           <Button

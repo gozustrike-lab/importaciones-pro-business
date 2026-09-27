@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { calculateProductFinancials } from "@/lib/business-logic";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
 import { sanitizeSunatModel, inferTechnicalModel } from "@/lib/shipper-classification";
+import { appendPurchaseToEbayExcel } from "@/lib/excel-compras-writer";
 
 // GET /api/products - List products (tenant-scoped)
 export async function GET(request: NextRequest) {
@@ -231,6 +232,20 @@ export async function POST(request: NextRequest) {
         tenantId: currentUser.tenantId,
       },
     });
+
+    // Auto-append new product to respective Excel workbook in Google Drive
+    appendPurchaseToEbayExcel({
+      orderNumber: product.orderNumber,
+      purchaseDate: product.purchaseDate,
+      courier: product.courier,
+      trackingId: product.trackingId,
+      supplier: product.supplier,
+      description: product.description,
+      purchasePriceUsd: product.purchasePriceUsd,
+      importerProfile: body.importerProfile,
+      recipientName: body.recipientName,
+      exchangeRate: product.exchangeRate,
+    }).catch((err) => console.error("Error writing new product to Excel:", err));
 
     return NextResponse.json({
       id: product.id,

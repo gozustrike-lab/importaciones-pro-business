@@ -3,6 +3,7 @@ import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
 import { getUserToken } from "@/lib/ebay-account";
 import { db } from "@/lib/db";
 import { XMLParser } from "fast-xml-parser";
+import { appendPurchaseToEbayExcel } from "@/lib/excel-compras-writer";
 
 if (process.env.NODE_ENV !== "production" || process.platform === "win32") {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -214,6 +215,20 @@ export async function POST(request: NextRequest) {
             where: { id: existing.id },
             data: updates,
           });
+
+          // Sync tracking update to respective Excel file (Fabio or Liliana)
+          if (trackingNumber && trackingNumber !== existing.trackingId) {
+            appendPurchaseToEbayExcel({
+              orderNumber: existing.orderNumber,
+              purchaseDate: existing.purchaseDate,
+              courier: courier || existing.courier,
+              trackingId: trackingNumber,
+              description: existing.description,
+              purchasePriceUsd: existing.purchasePriceUsd,
+              importerProfile: existing.importerProfile,
+              recipientName: existing.recipientName,
+            }).catch((err) => console.error('Error updating Excel tracking in sync-live:', err));
+          }
         }
       }
     }
