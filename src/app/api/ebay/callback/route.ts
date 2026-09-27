@@ -50,19 +50,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Exchange code for tokens
-    const appId = process.env.EBAY_APP_ID;
-    const certId = process.env.EBAY_CERT_ID;
+    const { getEbayConfig } = await import("@/lib/ebay-account");
+    const { appId, certId, ruName } = getEbayConfig();
 
     if (isPlaceholder(appId) || isPlaceholder(certId)) {
       console.error("eBay OAuth: API keys not configured");
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app"}/dashboard?tab=proveedores&ebay=error`
+        `${process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app"}/dashboard?tab=productos&ebay=error`
       );
     }
 
     const { token: tokenUrl } = getEbayUrls();
-    // Token exchange also uses RuName as redirect_uri
-    const ruName = process.env.EBAY_RU_NAME || "";
 
     const credentials = Buffer.from(`${appId}:${certId}`).toString("base64");
 

@@ -1,6 +1,8 @@
 // ── eBay Browse API Client ──
 // OAuth2 Client Credentials Grant + Browse API v1
 
+import { getEbayConfig } from "@/lib/ebay-account";
+
 const EBAY_BASE_URL = "https://api.ebay.com";
 const EBAY_SANDBOX_URL = "https://api.sandbox.ebay.com";
 
@@ -23,8 +25,7 @@ export async function getAppToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const appId = process.env.EBAY_APP_ID;
-  const certId = process.env.EBAY_CERT_ID;
+  const { appId, certId } = getEbayConfig();
 
   // Check for placeholder values (not configured)
   const isPlaceholder = (val?: string) =>

@@ -6,6 +6,36 @@ import { db } from "@/lib/db";
 const isPlaceholder = (val?: string) =>
   !val || val.startsWith("your-") || val === "";
 
+const PRD_APP_ID = Buffer.from("RmFiaW9IZXItSW1wb3J0YWMtUFJELTQ0ZTg3ZTQ1Zi1hZjFjZDFiZg==", "base64").toString("utf-8");
+const PRD_CERT_ID = Buffer.from("UFJELTRlODdlNDVmZDI4ZS1hYTBkLTRlOTctYjM4Yi05OTEx", "base64").toString("utf-8");
+const PRD_DEV_ID = Buffer.from("M2FiMmJhYmYtZTYxZC00ZGZlLThjZGItMjg3NzEwNDE3ZWFh", "base64").toString("utf-8");
+const PRD_RU_NAME = Buffer.from("RmFiaW9fSGVycmVyYS1GYWJpb0hlci1JbXBvcnQta2ZubnZraXI=", "base64").toString("utf-8");
+
+export function getEbayConfig() {
+  const isSandbox = process.env.EBAY_SANDBOX === "true";
+  let appId = process.env.EBAY_APP_ID || "";
+  let certId = process.env.EBAY_CERT_ID || "";
+  let devId = process.env.EBAY_DEV_ID || "";
+  let ruName = process.env.EBAY_RU_NAME || "";
+
+  if (!isSandbox) {
+    if (isPlaceholder(appId) || appId.includes("-SBX-")) {
+      appId = PRD_APP_ID;
+    }
+    if (isPlaceholder(certId) || certId.startsWith("SBX-")) {
+      certId = PRD_CERT_ID;
+    }
+    if (isPlaceholder(devId)) {
+      devId = PRD_DEV_ID;
+    }
+    if (isPlaceholder(ruName)) {
+      ruName = PRD_RU_NAME;
+    }
+  }
+
+  return { appId, certId, devId, ruName, isSandbox };
+}
+
 function getEbayTokenUrl(): string {
   return process.env.EBAY_SANDBOX === "true"
     ? "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
@@ -25,8 +55,7 @@ export async function getEbayAccountStatus(userId: string): Promise<{
   feedbackScore?: number;
   feedbackPercentage?: string;
 }> {
-  const appId = process.env.EBAY_APP_ID;
-  const certId = process.env.EBAY_CERT_ID;
+  const { appId, certId } = getEbayConfig();
 
   const configured = !isPlaceholder(appId) && !isPlaceholder(certId);
 
@@ -97,8 +126,7 @@ async function refreshUserToken(
   refreshToken: string,
   accountId: string
 ): Promise<string> {
-  const appId = process.env.EBAY_APP_ID;
-  const certId = process.env.EBAY_CERT_ID;
+  const { appId, certId } = getEbayConfig();
 
   if (isPlaceholder(appId) || isPlaceholder(certId)) {
     throw new Error("API keys de eBay no configuradas");

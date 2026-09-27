@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
-import { getUserToken } from "@/lib/ebay-account";
+import { getUserToken, getEbayConfig } from "@/lib/ebay-account";
 import { db } from "@/lib/db";
 import { XMLParser } from "fast-xml-parser";
 import { appendPurchaseToEbayExcel } from "@/lib/excel-compras-writer";
@@ -41,10 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appId = process.env.EBAY_APP_ID || "";
-    const certId = process.env.EBAY_CERT_ID || "";
-    const devId = process.env.EBAY_DEV_ID || "";
-    const isSandbox = process.env.EBAY_SANDBOX === "true";
+    const { appId, certId, devId, isSandbox } = getEbayConfig();
     const endpoint = isSandbox
       ? "https://api.sandbox.ebay.com/ws/api.dll"
       : "https://api.ebay.com/ws/api.dll";

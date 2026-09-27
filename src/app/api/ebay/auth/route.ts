@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/auth-helper";
+import { getEbayConfig } from "@/lib/ebay-account";
 import { randomUUID } from "crypto";
 
 const isPlaceholder = (val?: string) =>
   !val || val.startsWith("your-") || val === "";
 
-function getEbayUrls() {
-  const isSandbox = process.env.EBAY_SANDBOX === "true";
+function getEbayUrls(isSandbox: boolean) {
   return {
     authorize: isSandbox
       ? "https://auth.sandbox.ebay.com/oauth2/authorize"
@@ -26,9 +26,7 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const appId = process.env.EBAY_APP_ID;
-    const certId = process.env.EBAY_CERT_ID;
-    const ruName = process.env.EBAY_RU_NAME;
+    const { appId, certId, ruName, isSandbox } = getEbayConfig();
 
     if (isPlaceholder(appId) || isPlaceholder(certId)) {
       return NextResponse.json(
@@ -44,7 +42,7 @@ export async function GET() {
       );
     }
 
-    const { authorize } = getEbayUrls();
+    const { authorize } = getEbayUrls(isSandbox);
 
     // Generate CSRF state parameter
     const state = randomUUID();
