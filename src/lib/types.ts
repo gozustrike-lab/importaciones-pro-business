@@ -511,6 +511,8 @@ export interface SupplierLinkFormData {
 export interface EbayAccountStatus {
   configured: boolean;
   connected: boolean;
+  hasRefreshToken?: boolean;
+  requiresAuth?: boolean;
   username?: string;
   feedbackScore?: number;
   feedbackPercentage?: string;

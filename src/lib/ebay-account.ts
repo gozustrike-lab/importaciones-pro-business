@@ -19,6 +19,8 @@ function getEbayTokenUrl(): string {
 export async function getEbayAccountStatus(userId: string): Promise<{
   configured: boolean;
   connected: boolean;
+  hasRefreshToken: boolean;
+  requiresAuth: boolean;
   username?: string;
   feedbackScore?: number;
   feedbackPercentage?: string;
@@ -39,12 +41,21 @@ export async function getEbayAccountStatus(userId: string): Promise<{
   const token = account?.access_token || process.env.EBAY_USER_TOKEN;
 
   if (!token) {
-    return { configured, connected: false };
+    return { configured, connected: false, hasRefreshToken: false, requiresAuth: true };
   }
+
+  const hasRefreshToken = Boolean(account?.refresh_token);
+  const now = Math.floor(Date.now() / 1000);
+  const isExpired = account?.expires_at ? now > account.expires_at : false;
+
+  // If no refresh token exists, this token cannot auto-renew when eBay expires it
+  const requiresAuth = !hasRefreshToken || (isExpired && !hasRefreshToken);
 
   return {
     configured,
-    connected: true,
+    connected: !requiresAuth,
+    hasRefreshToken,
+    requiresAuth,
     username: account?.providerAccountId || "gozustrike",
     feedbackScore: 119,
     feedbackPercentage: "100.0%",

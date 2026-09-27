@@ -239,18 +239,33 @@ export function ProductosTab() {
   const [ebayResults, setEbayResults] = useState<EbaySearchItem[]>([]);
   const [ebayImporting, setEbayImporting] = useState<string | null>(null);
   const [nrusStatus, setNrusStatus] = useState<NRUSStatus | null>(null);
+  const [ebayRequiresAuth, setEbayRequiresAuth] = useState(false);
 
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const [activeData, archivedData, nrus] = await Promise.all([
-        fetchProducts({ archived: 'false' }),
-        fetchProducts({ archived: 'true' }),
+      const [activeData, archivedData, nrus, ebayAcc] = await Promise.all([
+        fetchProducts({ archived: 'false' }).catch((err) => {
+          console.error('fetch active products error:', err);
+          return [];
+        }),
+        fetchProducts({ archived: 'true' }).catch((err) => {
+          console.error('fetch archived products error:', err);
+          return [];
+        }),
         fetchNRUSStatus().catch(() => null),
+        fetch('/api/ebay/account')
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
       ]);
       setProducts(activeData);
       setArchivedProducts(archivedData);
       if (nrus) setNrusStatus(nrus);
+      if (ebayAcc && (ebayAcc.requiresAuth || !ebayAcc.connected)) {
+        setEbayRequiresAuth(true);
+      } else if (ebayAcc?.connected) {
+        setEbayRequiresAuth(false);
+      }
     } catch {
       toast({ title: 'Error', description: 'No se pudieron cargar los productos', variant: 'destructive' });
     } finally {
@@ -260,17 +275,29 @@ export function ProductosTab() {
 
   const [refreshingStatus, setRefreshingStatus] = useState(false);
 
-  // Auto-refresh every 30 minutes in background
-  useEffect(() => {
-    loadProducts();
-    const interval = setInterval(() => {
-      console.log('🔄 [Auto-sync 30min] Refrescando inventario y estados...');
-      loadProducts();
-    }, 30 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [loadProducts]);
+  const handleConnectEbay = async () => {
+    try {
+      const res = await fetch('/api/ebay/auth');
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toast({
+          title: 'Error de configuración',
+          description: data?.error || 'No se pudo obtener la URL de autorización de eBay',
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'No se pudo iniciar la conexión con eBay',
+        variant: 'destructive',
+      });
+    }
+  };
 
-  const handleRefreshStatus = async () => {
+  const handleRefreshStatus = useCallback(async () => {
     try {
       setRefreshingStatus(true);
       // Intentar sincronización en tiempo real directo con la API de eBay
@@ -280,10 +307,18 @@ export function ProductosTab() {
       await loadProducts();
 
       if (syncData?.success) {
+        setEbayRequiresAuth(false);
+        const parts: string[] = [];
+        if (syncData.newlyImportedCount > 0) {
+          parts.push(`🛍️ ${syncData.newlyImportedCount} nueva(s) compra(s) importada(s) y guardada(s) en Excel`);
+        }
         if (syncData.newlyDeliveredCount > 0) {
+          parts.push(`🎉 ${syncData.newlyDeliveredCount} nuevo(s) paquete(s) en Miami`);
+        }
+        if (parts.length > 0) {
           toast({
-            title: `🎉 ¡${syncData.newlyDeliveredCount} nuevo(s) paquete(s) en Miami!`,
-            description: `Sincronizado en vivo con eBay. Total en Almacén Miami: ${syncData.inMiamiTotal}`,
+            title: '✅ Sincronizado en Vivo con eBay',
+            description: `${parts.join(' | ')}. Total en Miami: ${syncData.inMiamiTotal}`,
           });
         } else {
           toast({
@@ -292,14 +327,16 @@ export function ProductosTab() {
           });
         }
       } else if (syncData?.requiresAuth) {
+        setEbayRequiresAuth(true);
         toast({
-          title: '🔄 Inventario Local Actualizado',
-          description: 'Tu sesión de eBay expiró. Usa "Sincronizar con eBay" para actualizar o reconectar.',
+          title: '⚠️ Sesión de eBay Expirada',
+          description: 'Haz clic en "Reconectar Cuenta de eBay" arriba para descargar las compras de hoy en tiempo real.',
+          variant: 'destructive',
         });
       } else {
         toast({
           title: '🔄 Inventario Actualizado',
-          description: `Se sincronizó el estado: ${counts.usa} en Almacén Miami, ${counts.transitoUsa} en camino.`,
+          description: 'Se recargaron los productos y estados del sistema.',
         });
       }
     } catch {
@@ -311,7 +348,26 @@ export function ProductosTab() {
     } finally {
       setRefreshingStatus(false);
     }
-  };
+  }, [loadProducts, toast]);
+
+  // Auto-refresh every 30 minutes in background & handle OAuth return
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('ebay=connected')) {
+      window.history.replaceState({}, '', '/dashboard?tab=productos');
+      toast({
+        title: '🎉 ¡Cuenta de eBay Vinculada!',
+        description: 'Sincronizando compras de hoy en tiempo real con tu base de datos y Excel de Google Drive...',
+      });
+      handleRefreshStatus();
+    } else {
+      loadProducts();
+    }
+    const interval = setInterval(() => {
+      console.log('🔄 [Auto-sync 30min] Sincronizando compras en vivo con eBay...');
+      handleRefreshStatus();
+    }, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loadProducts, handleRefreshStatus, toast]);
 
   const handleQuickMarkMiami = async (p: Product) => {
     try {
@@ -836,6 +892,40 @@ export function ProductosTab() {
           </Button>
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* EBAY OAUTH RECONNECT BANNER (REAL-TIME SYNC)                  */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {ebayRequiresAuth && (
+        <Card className="border-amber-400 dark:border-amber-800 bg-amber-50/95 dark:bg-amber-950/40 shadow-sm overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 shrink-0">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-amber-900 dark:text-amber-200 text-sm">
+                    ⚠️ Sesión de eBay Expirada — Reconexión Requerida para Compras de Hoy
+                  </h4>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                    Para descargar automáticamente tus compras de hoy, detectar llegadas a Miami y autoguardar en tu Excel de Google Drive (Fabio / Liliana), autoriza tu cuenta de eBay con 1 clic.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  onClick={handleConnectEbay}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-2 min-h-[38px] shadow-xs"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Reconectar Cuenta de eBay
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* SUNAT NRUS PURCHASE LIMIT ALERT & RECOMMENDATION BANNER       */}

@@ -95,11 +95,27 @@ export async function GET(request: Request) {
 
     if (getOrdersResponse?.Ack === 'Failure') {
       const errors = getOrdersResponse.Errors;
-      const errorMsg = Array.isArray(errors)
-        ? errors.map((e: any) => e.LongMessage || e.ShortMessage).join('; ')
-        : errors?.LongMessage || errors?.ShortMessage || 'Error desconocido de eBay';
-      console.error('eBay API Ack Failure:', errorMsg);
-      return NextResponse.json({ error: errorMsg }, { status: 400 });
+      const errorList = Array.isArray(errors) ? errors : errors ? [errors] : [];
+      const errorMsg = errorList
+        .map((e: any) => e?.LongMessage || e?.ShortMessage)
+        .join('; ') || 'Error de autenticación de eBay';
+      console.warn('eBay API Ack Failure:', errorMsg);
+
+      const isTokenExpired = errorList.some(
+        (e: any) =>
+          e?.ErrorCode === '931' ||
+          e?.ErrorCode === '932' ||
+          (e?.ShortMessage && String(e.ShortMessage).toLowerCase().includes('token'))
+      );
+
+      return NextResponse.json({
+        connected: false,
+        requiresAuth: isTokenExpired,
+        error: isTokenExpired
+          ? 'Tu sesión de eBay ha expirado. Por favor reconecta tu cuenta de eBay para sincronizar compras en vivo.'
+          : errorMsg,
+        orders: [],
+      }, { status: 200 });
     }
 
     const rawOrders = getOrdersResponse?.OrderArray?.Order;

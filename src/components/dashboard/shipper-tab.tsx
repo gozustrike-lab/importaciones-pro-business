@@ -388,9 +388,16 @@ export function ShipperTab() {
   const handleSyncEbay = useCallback(async (isAuto = false) => {
     try {
       setSyncingEbay(true);
-      const res = await fetch('/api/ebay/orders');
+      const res = await fetch('/api/ebay/orders?syncDb=true');
       if (!res.ok) throw new Error('Error al sincronizar con eBay');
       const data = await res.json();
+
+      if (data.requiresAuth) {
+        if (!isAuto) {
+          toast.error('Tu sesión de eBay expiró. Reconecta tu cuenta en la pestaña Inventario para sincronizar compras en vivo.');
+        }
+        return;
+      }
 
       const syncedOrders = data.orders || [];
       if (syncedOrders.length > 0) {

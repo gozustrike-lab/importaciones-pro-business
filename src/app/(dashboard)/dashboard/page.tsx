@@ -89,6 +89,11 @@ export default function DashboardPage() {
       if (saved !== null) {
         setIsCollapsed(saved === 'true');
       }
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab') as TabKey | null;
+      if (urlTab && tabComponents[urlTab]) {
+        setActiveTab(urlTab);
+      }
     } catch {
       // ignore
     }

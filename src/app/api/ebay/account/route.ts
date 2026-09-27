@@ -15,6 +15,8 @@ export async function GET() {
     return NextResponse.json({
       configured: status.configured,
       connected: status.connected,
+      hasRefreshToken: status.hasRefreshToken,
+      requiresAuth: status.requiresAuth,
       username: status.username,
       feedbackScore: status.feedbackScore,
       feedbackPercentage: status.feedbackPercentage,

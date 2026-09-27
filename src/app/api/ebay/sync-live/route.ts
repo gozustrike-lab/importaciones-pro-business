@@ -4,6 +4,7 @@ import { getUserToken } from "@/lib/ebay-account";
 import { db } from "@/lib/db";
 import { XMLParser } from "fast-xml-parser";
 import { appendPurchaseToEbayExcel } from "@/lib/excel-compras-writer";
+import { inferTechnicalModel } from "@/lib/shipper-classification";
 
 if (process.env.NODE_ENV !== "production" || process.platform === "win32") {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
     let newlyDeliveredCount = 0;
     let newlyDeliveredOrders: string[] = [];
     let updatedTrackingCount = 0;
+    let newlyImportedCount = 0;
 
     for (const ord of orderList) {
       const orderId = ord.OrderID;
@@ -177,7 +179,83 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        if (!existing) continue;
+        if (!existing) {
+          const recipientName = ord.ShippingAddress?.Name || "";
+          const lowerRecipient = recipientName.toLowerCase();
+          const isPeggy =
+            lowerRecipient.includes("peggy") ||
+            lowerRecipient.includes("liliana") ||
+            lowerRecipient.includes("orduna") ||
+            lowerRecipient.includes("orduña") ||
+            lowerRecipient.includes("10091870911") ||
+            lowerRecipient.includes("09187091");
+
+          const assignedProfile = isPeggy ? "peggy" : "fabio";
+          const orderTotal = parseFloat(
+            typeof ord.Total === "object" ? ord.Total["#text"] || "0" : ord.Total || "0"
+          );
+          const txPrice = parseFloat(
+            typeof tx?.TransactionPrice === "object"
+              ? tx.TransactionPrice["#text"] || "0"
+              : tx?.TransactionPrice || "0"
+          );
+          const finalPrice = txPrice > 0 ? txPrice : orderTotal;
+          const title = tx?.Item?.Title || `Artículo eBay (${ordIdToMatch})`;
+          const itemId = tx?.Item?.ItemID || "";
+          const targetStatus = isDelivered ? "USA" : "TRANSITO_USA";
+          const exchangeRate = 3.4;
+
+          await db.product.create({
+            data: {
+              tenantId: currentUser.tenantId,
+              purchaseDate: ord.CreatedTime ? new Date(ord.CreatedTime) : new Date(),
+              orderNumber: ordIdToMatch,
+              supplier: ord.SellerUserID || "eBay",
+              courier: courier || "USPS",
+              trackingId: trackingNumber || "",
+              shippingStatus: targetStatus,
+              actualArrival: actualDeliveryTime ? new Date(actualDeliveryTime) : null,
+              estimatedArrival: estimatedDeliveryTime ? new Date(estimatedDeliveryTime) : null,
+              description: title,
+              model: inferTechnicalModel(title),
+              condition: "Usado",
+              purchasePriceUsd: finalPrice,
+              exchangeRate: exchangeRate,
+              totalCostPen: Math.round(finalPrice * exchangeRate * 100) / 100,
+              importerProfile: assignedProfile,
+              recipientName: recipientName,
+              ebayAccount: ord.BuyerUserID || "gozustrike@gmail.com",
+              notes: [
+                itemId ? `ItemID: ${itemId}` : "",
+                ord.BuyerCheckoutMessage ? `Nota: ${ord.BuyerCheckoutMessage}` : "",
+              ]
+                .filter(Boolean)
+                .join(" | "),
+            },
+          });
+          newlyImportedCount++;
+          if (isDelivered) {
+            newlyDeliveredCount++;
+            newlyDeliveredOrders.push(ordIdToMatch);
+          }
+
+          appendPurchaseToEbayExcel({
+            orderNumber: ordIdToMatch,
+            purchaseDate: ord.CreatedTime ? new Date(ord.CreatedTime) : new Date(),
+            courier: courier || "USPS",
+            trackingId: trackingNumber || "",
+            supplier: ord.SellerUserID || "eBay",
+            description: title,
+            purchasePriceUsd: finalPrice,
+            importerProfile: assignedProfile,
+            recipientName: recipientName,
+            itemId: itemId,
+            exchangeRate: exchangeRate,
+            notes: ord.BuyerCheckoutMessage,
+          }).catch((err) => console.error("Error auto-appending to Excel in sync-live:", err));
+
+          continue;
+        }
 
         // Do not alter products that are already in flight to Peru or sold
         if (["En Tránsito", "Perú", "Entregado", "Vendido"].includes(existing.shippingStatus)) {
@@ -253,14 +331,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       totalEbayOrdersScanned: orderList.length,
+      newlyImportedCount,
       newlyDeliveredCount,
       newlyDeliveredOrders,
       updatedTrackingCount,
       inMiamiTotal,
       inTransitTotal,
       message:
-        newlyDeliveredCount > 0
-          ? `¡Sincronización completada! Se identificaron ${newlyDeliveredCount} nuevo(s) paquete(s) entregado(s) en Miami.`
+        newlyImportedCount > 0 || newlyDeliveredCount > 0
+          ? `¡Sincronización completada! ${newlyImportedCount > 0 ? `${newlyImportedCount} nueva(s) compra(s) registrada(s) en BD y Excel. ` : ""}${newlyDeliveredCount > 0 ? `${newlyDeliveredCount} nuevo(s) paquete(s) en Miami.` : ""}`
           : `Sincronización completada con eBay. Todos los paquetes están al día (${inMiamiTotal} en Miami, ${inTransitTotal} en tránsito).`,
     });
   } catch (error: unknown) {
