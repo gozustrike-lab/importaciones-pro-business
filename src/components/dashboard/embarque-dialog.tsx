@@ -329,6 +329,7 @@ export function EmbarqueDialog({
       document.body.removeChild(a);
 
       if (autoArchiveOnDownload) {
+        // 1. Archivar productos con fecha actual
         await fetch('/api/products/archive-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -338,9 +339,32 @@ export function EmbarqueDialog({
           }),
         });
 
+        // 2. Registrar Expediente de Embarque en Bitácora & Shipper
+        const isPeggy =
+          globalProfile === 'peggy' ||
+          (globalProfile === 'individual' && items[0]?.importerProfile === 'peggy');
+        const profile = isPeggy ? 'peggy' : 'fabio';
+        const consigneeName = profile === 'peggy' ? PEGGY_NAME : FABIO_NAME;
+        const consigneeRuc = profile === 'peggy' ? PEGGY_RUC : FABIO_RUC;
+
+        await fetch('/api/shipments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flightDate: new Date(),
+            importerProfile: profile,
+            consigneeName,
+            consigneeRuc,
+            productIds: items.map((it) => it.productId),
+            awbNumber: awbNumber.trim(),
+            fallbackFobUsd: totals.totalFob,
+            notes: `Embarque de ${items.length} productos hacia Lima`,
+          }),
+        }).catch((err) => console.error('Error auto-registrando embarque en bitácora:', err));
+
         toast({
-          title: '📥 Hoja de Embarque descargada y productos archivados',
-          description: `Se descargó el Excel y se movieron ${items.length} productos a "Archivados" para no volver a embarcarlos.`,
+          title: '📥 Hoja de Embarque descargada y registrada',
+          description: `Se descargó el Excel, se archivaron ${items.length} productos y se creó el expediente en "Bitácora & Shipper" para su seguimiento a Lima.`,
         });
 
         if (onProductsUpdated) {
@@ -552,19 +576,41 @@ export function EmbarqueDialog({
 
     try {
       setArchiving(true);
-      const promises = items.map((it) =>
-        fetch(`/api/products/${it.productId}/archive`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isArchived: true }),
-        })
-      );
+      await fetch('/api/products/archive-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productIds: items.map((it) => it.productId),
+          isArchived: true,
+        }),
+      });
 
-      await Promise.all(promises);
+      // Auto-register in Bitácora & Shipper
+      const isPeggy =
+        globalProfile === 'peggy' ||
+        (globalProfile === 'individual' && items[0]?.importerProfile === 'peggy');
+      const profile = isPeggy ? 'peggy' : 'fabio';
+      const consigneeName = profile === 'peggy' ? PEGGY_NAME : FABIO_NAME;
+      const consigneeRuc = profile === 'peggy' ? PEGGY_RUC : FABIO_RUC;
+
+      await fetch('/api/shipments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flightDate: new Date(),
+          importerProfile: profile,
+          consigneeName,
+          consigneeRuc,
+          productIds: items.map((it) => it.productId),
+          awbNumber: awbNumber.trim(),
+          fallbackFobUsd: totals.totalFob,
+          notes: `Embarque archivado manualmente (${items.length} productos)`,
+        }),
+      }).catch((err) => console.error('Error auto-registrando embarque:', err));
 
       toast({
-        title: '📦 Productos Archivados (Embarcados a Perú)',
-        description: `Se movieron ${items.length} productos a la sección de Archivados para proteger tu inventario.`,
+        title: '📦 Productos Archivados y Registrados en Bitácora',
+        description: `Se movieron ${items.length} productos a Archivados y se creó el seguimiento en "Bitácora & Shipper".`,
       });
 
       if (onProductsUpdated) {
