@@ -25,6 +25,7 @@ import {
   Save,
   ArrowUpRight,
   Filter,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { fetchNRUSStatus, fetchNRUSConfig, updateNRUSConfig, saveNRUSDeclaredSales } from '@/lib/api';
+import { fetchNRUSStatus, fetchNRUSConfig, updateNRUSConfig, saveNRUSDeclaredSales, syncDriveFolder } from '@/lib/api';
 import type { NRUSStatus, NRUSConfig, NRUSProfileStatus, NRUSMonthHistoryItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,6 +57,7 @@ export function NRUSTab() {
   const [selectedMonth, setSelectedMonth] = useState('2026-09');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [savingSalesFor, setSavingSalesFor] = useState<string | null>(null);
+  const [syncingDrive, setSyncingDrive] = useState(false);
 
   // Editable config form
   const [cat1Limit, setCat1Limit] = useState('5000');
@@ -158,6 +160,26 @@ T.C. Oficial Aplicado: S/ 3.40 (eBay USD a Soles)`;
     }
   };
 
+  const handleSyncDrive = async () => {
+    try {
+      setSyncingDrive(true);
+      const res = await syncDriveFolder();
+      toast({
+        title: 'Sincronización completada',
+        description: res.message || 'Compras eBay y boletas de venta sincronizadas con éxito.',
+      });
+      await loadData(selectedMonth);
+    } catch (err: any) {
+      toast({
+        title: 'Error de sincronización',
+        description: err?.message || 'No se pudo sincronizar la carpeta COMPRAS EBAY',
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingDrive(false);
+    }
+  };
+
   const handleSaveConfig = async () => {
     try {
       setSaving(true);
@@ -255,6 +277,18 @@ T.C. Oficial Aplicado: S/ 3.40 (eBay USD a Soles)`;
           <Badge variant="secondary" className="text-xs px-2.5 py-1 font-mono">
             T.C. S/ 3.40
           </Badge>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncDrive}
+            disabled={syncingDrive}
+            className="h-7 text-xs gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 shadow-xs"
+            title="Escanear y sincronizar compras de Excel y Boletas PDF de la carpeta local/Google Drive"
+          >
+            <RefreshCw className={`h-3 w-3 ${syncingDrive ? 'animate-spin' : ''}`} />
+            {syncingDrive ? 'Sincronizando...' : 'Sincronizar Drive / Local'}
+          </Button>
         </div>
       </div>
 

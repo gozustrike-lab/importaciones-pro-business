@@ -188,6 +188,12 @@ export function saveNRUSDeclaredSales(data: {
   });
 }
 
+export function syncDriveFolder() {
+  return apiFetch<{ success: boolean; message: string; result: any }>(`${BASE}/nrus/sync-drive`, {
+    method: 'POST',
+  });
+}
+
 // Quality
 export function fetchQualityChecks(productId: string) {
   return apiFetch<QualityCheck[]>(`${BASE}/products/${productId}/quality`);

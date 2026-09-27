@@ -70,3 +70,8 @@ mini-services/
 schema.sql
 worklog.md
 scratch/
+
+# Local Drive & Parsed data
+COMPRAS EBAY/
+scripts/parsed_data.json
+scripts/test-prisma.ts
