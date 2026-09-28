@@ -144,8 +144,7 @@ async function refreshUserToken(
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
-      scope:
-        "https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/buy.order.readonly https://api.ebay.com/oauth/api_scope/sell.marketing.readonly https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
+      scope: "https://api.ebay.com/oauth/api_scope",
     }).toString(),
   });
 

@@ -64,11 +64,7 @@ export async function GET() {
       path: "/",
     });
 
-    const scopes = [
-      "https://api.ebay.com/oauth/api_scope",
-      "https://api.ebay.com/oauth/api_scope/buy.order.readonly",
-      "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
-    ].join(" ");
+    const scopes = "https://api.ebay.com/oauth/api_scope";
 
     // eBay OAuth: redirect_uri must be the RuName (not the actual HTTPS URL)
     // eBay internally maps the RuName to the configured HTTPS redirect URL
