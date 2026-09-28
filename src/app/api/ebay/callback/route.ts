@@ -172,8 +172,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const returnBaseUrl = state?.startsWith("local_")
+      ? "http://localhost:3000"
+      : process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app";
+
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL || "https://importaciones-pro-business.vercel.app"}/dashboard?tab=productos&ebay=connected`
+      `${returnBaseUrl}/dashboard?tab=productos&ebay=connected`
     );
   } catch (error) {
     console.error("eBay OAuth callback error:", error);

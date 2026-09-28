@@ -19,7 +19,7 @@ function getEbayUrls(isSandbox: boolean) {
 }
 
 // GET /api/ebay/auth - Generate eBay OAuth authorization URL
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser.userId) {
@@ -44,8 +44,10 @@ export async function GET() {
 
     const { authorize } = getEbayUrls(isSandbox);
 
-    // Generate CSRF state parameter
-    const state = randomUUID();
+    // Generate CSRF state parameter (encode origin so callback knows whether to return to localhost or prod)
+    const host = request.headers.get("host") || "";
+    const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+    const state = `${isLocal ? "local" : "prod"}_${randomUUID()}`;
 
     // Store state + userId in a cookie for callback verification (max-age = 10 min)
     const cookieStore = await cookies();
