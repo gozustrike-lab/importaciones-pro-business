@@ -79,7 +79,7 @@ function TabSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<TabKey>('shipper');
+  const [activeTab, setActiveTab] = useState<TabKey>('productos');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
 

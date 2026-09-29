@@ -15,7 +15,9 @@ interface TokenCache {
 let cachedToken: TokenCache | null = null;
 
 function getBaseUrl(): string {
-  return process.env.EBAY_SANDBOX === "true" ? EBAY_SANDBOX_URL : EBAY_BASE_URL;
+  const { appId, isSandbox } = getEbayConfig();
+  if (appId.includes("-PRD-")) return EBAY_BASE_URL;
+  return isSandbox ? EBAY_SANDBOX_URL : EBAY_BASE_URL;
 }
 
 // ── OAuth2: Get App Access Token ──
@@ -283,3 +285,84 @@ export async function getItem(itemId: string): Promise<EbayItemDetail> {
     categoryPath: data.categoryPaths?.[0]?.map((c) => c.categoryName) || [],
   };
 }
+
+// ── Fetch Real eBay Product Image (by Legacy ItemID or Fallback Title Search) ──
+export async function fetchEbayItemImage(
+  legacyId?: string | null,
+  fallbackTitle?: string | null
+): Promise<string | null> {
+  try {
+    const token = await getAppToken();
+    const baseUrl = getBaseUrl();
+
+    if (legacyId) {
+      try {
+        const r1 = await fetch(
+          `${baseUrl}/buy/browse/v1/item/get_item_by_legacy_id?legacy_item_id=${encodeURIComponent(legacyId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+            },
+          }
+        );
+        if (r1.ok) {
+          const d1 = await r1.json();
+          if (d1.image?.imageUrl) return d1.image.imageUrl;
+        } else {
+          // Multi-variation listing fallback
+          const r2 = await fetch(
+            `${baseUrl}/buy/browse/v1/item/get_items_by_item_group?item_group_id=${encodeURIComponent(legacyId)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+              },
+            }
+          );
+          if (r2.ok) {
+            const d2 = await r2.json();
+            const img = d2.items?.[0]?.image?.imageUrl;
+            if (img) return img;
+          }
+        }
+      } catch {
+        // ignore and fallback to search
+      }
+    }
+
+    if (fallbackTitle) {
+      const cleanQ = fallbackTitle
+        .replace(/\[.*?\]/g, " ")
+        .replace(/READ DESCRIPTION/gi, " ")
+        .replace(/BATTERY ISSUE/gi, " ")
+        .replace(/[^\w\s."'-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 65);
+
+      const r3 = await fetch(
+        `${baseUrl}/buy/browse/v1/item_summary/search?q=${encodeURIComponent(cleanQ)}&limit=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+          },
+        }
+      );
+      if (r3.ok) {
+        const d3 = await r3.json();
+        const img =
+          d3.itemSummaries?.[0]?.image?.imageUrl ||
+          d3.itemSummaries?.[0]?.thumbnailImages?.[0]?.imageUrl;
+        if (img) {
+          return img.replace("/s-l225.", "/s-l500.");
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("fetchEbayItemImage failed:", err);
+  }
+  return null;
+}
+

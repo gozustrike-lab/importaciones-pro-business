@@ -297,10 +297,10 @@ export function ProductosTab() {
     }
   };
 
-  const handleRefreshStatus = useCallback(async () => {
+  const handleRefreshStatus = useCallback(async (silent = false) => {
     try {
       setRefreshingStatus(true);
-      // Intentar sincronización en tiempo real directo con la API de eBay
+      // Sincronización en tiempo real directo con la API de eBay + Excel Google Drive
       const syncRes = await fetch('/api/ebay/sync-live', { method: 'POST' }).catch(() => null);
       const syncData = syncRes && syncRes.ok ? await syncRes.json().catch(() => null) : null;
 
@@ -320,20 +320,22 @@ export function ProductosTab() {
             title: '✅ Sincronizado en Vivo con eBay',
             description: `${parts.join(' | ')}. Total en Miami: ${syncData.inMiamiTotal}`,
           });
-        } else {
+        } else if (!silent) {
           toast({
             title: '✅ Sincronizado en Vivo con eBay',
-            description: syncData.message || `Todos los envíos al día (${syncData.inMiamiTotal} en Miami, ${syncData.inTransitTotal} en camino).`,
+            description: syncData.message || `Todo al día (${syncData.inMiamiTotal} en Miami, ${syncData.inTransitTotal} en tránsito).`,
           });
         }
       } else if (syncData?.requiresAuth) {
         setEbayRequiresAuth(true);
-        toast({
-          title: '⚠️ Sesión de eBay Expirada',
-          description: 'Haz clic en "Reconectar Cuenta de eBay" arriba para descargar las compras de hoy en tiempo real.',
-          variant: 'destructive',
-        });
-      } else {
+        if (!silent) {
+          toast({
+            title: '⚠️ Sesión de eBay Expirada',
+            description: 'Haz clic en "Reconectar Cuenta de eBay" arriba para descargar las compras de hoy en tiempo real.',
+            variant: 'destructive',
+          });
+        }
+      } else if (!silent) {
         toast({
           title: '🔄 Inventario Actualizado',
           description: 'Se recargaron los productos y estados del sistema.',
@@ -341,31 +343,34 @@ export function ProductosTab() {
       }
     } catch {
       await loadProducts();
-      toast({
-        title: 'Inventario Actualizado',
-        description: 'Se recargó la información local.',
-      });
+      if (!silent) {
+        toast({
+          title: 'Inventario Actualizado',
+          description: 'Se recargó la información local.',
+        });
+      }
     } finally {
       setRefreshingStatus(false);
     }
   }, [loadProducts, toast]);
 
-  // Auto-refresh every 30 minutes in background & handle OAuth return
+  // Auto-sync on page load and every 5 minutes in background
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('ebay=connected')) {
       window.history.replaceState({}, '', '/dashboard?tab=productos');
       toast({
         title: '🎉 ¡Cuenta de eBay Vinculada!',
-        description: 'Sincronizando compras de hoy en tiempo real con tu base de datos y Excel de Google Drive...',
+        description: 'Sincronizando compras en tiempo real con tu base de datos y Excel de Google Drive...',
       });
-      handleRefreshStatus();
+      handleRefreshStatus(false);
     } else {
       loadProducts();
+      // Sincronización silenciosa automática en segundo plano al abrir
+      handleRefreshStatus(true);
     }
     const interval = setInterval(() => {
-      console.log('🔄 [Auto-sync 30min] Sincronizando compras en vivo con eBay...');
-      handleRefreshStatus();
-    }, 30 * 60 * 1000);
+      handleRefreshStatus(true);
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [loadProducts, handleRefreshStatus, toast]);
 
@@ -827,10 +832,21 @@ export function ProductosTab() {
           </div>
 
           <Button
+            onClick={() => handleRefreshStatus(false)}
+            disabled={refreshingStatus || loading}
+            variant="outline"
+            className="gap-2 border-emerald-400 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-bold shadow-xs"
+            title="Sincroniza en 1 clic tus compras nuevas de eBay, estados en Miami y Excel de Google Drive (también corre automático cada 5 min)"
+          >
+            <RefreshCw className={`h-4 w-4 text-emerald-600 ${refreshingStatus ? 'animate-spin' : ''}`} />
+            <span>{refreshingStatus ? 'Sincronizando eBay...' : 'Sincronizar eBay'}</span>
+          </Button>
+
+          <Button
             onClick={() => setEmbarqueDialogOpen(true)}
             variant="outline"
-            className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
-            title="Generar Hoja de Embarque y Hoja de Traducción SUNAT para los productos seleccionados"
+            className="gap-2 border-slate-300 text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 min-h-[40px] font-semibold"
+            title="Generar Hoja de Embarque y Hoja de Traducción SUNAT"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             <span>Embarque & Traducción</span>
@@ -842,53 +858,14 @@ export function ProductosTab() {
           </Button>
 
           <Button
-            onClick={handleRefreshStatus}
-            disabled={refreshingStatus || loading}
-            variant="outline"
-            className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
-            title="Actualizar estado de envíos y paquetes en Miami (Auto cada 30 min o manual)"
-          >
-            <RefreshCw className={`h-4 w-4 text-emerald-600 ${refreshingStatus ? 'animate-spin' : ''}`} />
-            <span>Actualizar Estados</span>
-          </Button>
-
-          <Button
-            onClick={() => setSyncHiddenOpen(true)}
-            variant="outline"
-            className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 min-h-[40px] font-semibold"
-            title="Sincronizar paquetes llegados a Miami o compras ocultas de eBay con 1 clic o marcador de Chrome"
-          >
-            <Building2 className="h-4 w-4 text-emerald-600" />
-            <span>Sincronizar con eBay</span>
-          </Button>
-
-          <Button
-            onClick={() => setShipperVerifyOpen(true)}
-            variant="outline"
-            className="gap-2 border-emerald-400 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-semibold"
-            title="Copiar lista de trackings para WhatsApp o validar la respuesta de Shiper Courier"
-          >
-            <Building2 className="h-4 w-4 text-emerald-600" />
-            <span>Validar con Shiper</span>
-          </Button>
-
-          <Button
-            onClick={() => setEbayDialogOpen(true)}
-            variant="outline"
-            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40 min-h-[40px]"
-          >
-            <ShoppingBag className="h-4 w-4 text-orange-600" />
-            Buscar en eBay
-          </Button>
-          <Button
             onClick={() => {
               setEditProduct(null);
               setDialogOpen(true);
             }}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white min-h-[40px]"
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white min-h-[40px] font-semibold"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Producto
+            Nuevo
           </Button>
         </div>
       </div>
@@ -1822,6 +1799,22 @@ export function ProductosTab() {
                                 <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-muted font-mono text-xs font-bold text-foreground border border-border/60 mt-0.5">
                                   #{String(idx + 1).padStart(2, '0')}
                                 </span>
+                                {p.imageUrl && (
+                                  <a
+                                    href={ebayPrimaryUrl || p.imageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0 h-12 w-12 rounded-lg border bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-0.5 hover:ring-2 hover:ring-emerald-500 transition-all shadow-2xs"
+                                    title="Ver foto original del producto en eBay"
+                                  >
+                                    <img
+                                      src={p.imageUrl}
+                                      alt={p.description}
+                                      loading="lazy"
+                                      className="max-h-11 max-w-11 object-contain"
+                                    />
+                                  </a>
+                                )}
                                 <span className="font-semibold text-foreground text-sm line-clamp-2 leading-snug pt-0.5" title={p.description}>
                                   {p.description}
                                 </span>

@@ -39,6 +39,7 @@ export interface Product {
   itemId?: string;
   itemUrl?: string;
   orderUrl?: string;
+  imageUrl?: string;
   actualDeliveryDate?: string;
   estimatedDeliveryDate?: string;
   isArchived?: boolean;

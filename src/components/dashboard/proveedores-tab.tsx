@@ -819,452 +819,285 @@ export function ProveedoresTab() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 1: RADAR DE OFERTAS & DESCUENTOS EN TIEMPO REAL
+          TAB 1: RADAR DE OFERTAS & DESCUENTOS EN TIEMPO REAL (VISUAL)
       ───────────────────────────────────────────────────────────── */}
       {activeTab === 'radar' && (
-        <div className="space-y-4">
-          {/* BARRA DE PLANTILLAS RÁPIDAS BASADAS EN COMPRAS REALES */}
-          <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-emerald-500/10 border border-amber-200 dark:border-amber-900/50 shadow-xs">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5 text-amber-600 fill-amber-500" />
-                Plantillas Rápidas con Pre-rellenados de tus Compras (1-Clic para buscar o rastrear):
-              </span>
-              <span className="text-[10px] text-muted-foreground font-medium">Precios reales de compra</span>
-            </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              {QUICK_TEMPLATES.map((tmpl) => (
-                <button
-                  key={tmpl.id}
-                  onClick={() => handleApplyTemplate(tmpl)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-card hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-border hover:border-amber-400 text-xs font-semibold text-foreground transition-all shrink-0 cursor-pointer shadow-2xs group"
-                >
-                  <span>{tmpl.label}</span>
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-100/60 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 font-mono">
-                    {tmpl.badge}
-                  </Badge>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* BUSCADOR DE PROVEEDORES EBAY EN TIEMPO REAL */}
-          <Card className="p-3.5 bg-card border shadow-xs">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-emerald-600" />
-                <h3 className="font-bold text-xs text-foreground uppercase tracking-wider">
-                  Buscador de Proveedores eBay en Tiempo Real
-                </h3>
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                Abre directamente los resultados reales en eBay con filtro Cómpralo Ya (Buy It Now) y menor precio
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-              {/* Supplier Select */}
-              <div className="sm:col-span-4 space-y-1">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Tienda / Proveedor de eBay</Label>
+        <div className="space-y-3.5">
+          {/* COMPACT VISUAL SEARCH & QUICK CHIPS BAR ("Menos Texto, Más Visual") */}
+          <Card className="p-3 bg-card border shadow-xs space-y-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+              <div className="sm:col-span-3">
                 <Select value={liveSeller} onValueChange={setLiveSeller}>
                   <SelectTrigger className="h-8 text-xs bg-background">
-                    <SelectValue placeholder="Seleccionar proveedor" />
+                    <SelectValue placeholder="Tienda eBay" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
-                    <SelectItem value="all">🔍 Todos los Vendedores de eBay</SelectItem>
+                    <SelectItem value="all">🔍 Todas las Tiendas eBay</SelectItem>
                     {suppliers.map((s) => (
                       <SelectItem key={s.id} value={s.name.toLowerCase()}>
-                        {s.name} ({s.totalOrders} compras)
+                        {s.name} ({s.totalOrders})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Keywords Input */}
-              <div className="sm:col-span-5 space-y-1">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Palabras Clave del Producto</Label>
+              <div className="sm:col-span-6">
                 <Input
                   value={liveKeywords}
                   onChange={(e) => setLiveKeywords(e.target.value)}
-                  placeholder="ej: iPad Pro 10.5 A1701 64GB"
+                  placeholder="Buscar modelo en vivo (ej: iPad Pro 10.5 A1701 64GB)..."
                   className="h-8 text-xs font-mono bg-background"
                 />
               </div>
 
-              {/* Max Price */}
-              <div className="sm:col-span-1 space-y-1">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Max $</Label>
+              <div className="sm:col-span-1">
                 <Input
                   type="number"
                   value={liveMaxPrice}
                   onChange={(e) => setLiveMaxPrice(e.target.value)}
-                  placeholder="110"
+                  placeholder="Max $"
+                  title="Precio máximo USD"
                   className="h-8 text-xs font-mono text-center bg-background"
                 />
               </div>
 
-              {/* Action Buttons */}
               <div className="sm:col-span-2 flex items-center gap-1.5">
                 <Button
                   size="sm"
                   onClick={() => handleLaunchLiveEbay(liveSeller, liveKeywords, liveMaxPrice)}
                   className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
-                  title="Abrir búsqueda en vivo en eBay"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  <span>Ver eBay</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setTrackerForm({
-                      title: `${liveKeywords} en ${liveSeller === 'all' ? 'eBay' : liveSeller}`,
-                      keywords: liveKeywords,
-                      sellerLink: liveSeller !== 'all' ? `https://www.ebay.com/str/${liveSeller}` : '',
-                      supplierId: '',
-                      maxPriceUsd: liveMaxPrice,
-                      minDiscountPct: '15',
-                      condition: 'Used',
-                      category: 'Tablets',
-                      notificationsEnabled: true,
-                    });
-                    setTrackerModalOpen(true);
-                  }}
-                  className="h-8 px-2 text-xs font-semibold"
-                  title="Guardar como buscador continuo"
-                >
-                  <Plus className="h-3 w-3" />
+                  <span>Buscar eBay</span>
                 </Button>
               </div>
+            </div>
+
+            {/* 1-Click Quick Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 border-t border-border/50">
+              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 shrink-0 flex items-center gap-1 mr-1">
+                <Zap className="h-3 w-3 fill-amber-500" /> 1-Clic:
+              </span>
+              {QUICK_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  onClick={() => handleApplyTemplate(tmpl)}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/60 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-border/70 hover:border-amber-400 text-[11px] font-medium text-foreground transition-all shrink-0 cursor-pointer"
+                >
+                  <span>{tmpl.label}</span>
+                  <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold">
+                    {tmpl.badge.replace('Comprado ', '')}
+                  </span>
+                </button>
+              ))}
             </div>
           </Card>
 
-          {/* Section: Buscadores Configurados */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-foreground">Buscadores de Ofertas Activos en Base de Datos</h3>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium">
-                  {trackers.length} Guardados
-                </Badge>
-              </div>
+          {/* Filter & Search Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-muted/30 p-2 rounded-lg border">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Button
-                variant="ghost"
                 size="sm"
-                onClick={() => setTrackerModalOpen(true)}
-                className="text-xs text-primary hover:text-primary font-semibold h-7 gap-1"
+                variant={dealFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setDealFilter('all')}
+                className="h-7 text-xs font-medium"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Crear Nuevo Buscador
+                Todas ({allDeals.length})
+              </Button>
+              <Button
+                size="sm"
+                variant={dealFilter === 'discount_20' ? 'default' : 'outline'}
+                onClick={() => setDealFilter('discount_20')}
+                className="h-7 text-xs font-medium gap-1 text-emerald-700 dark:text-emerald-300"
+              >
+                <Flame className="h-3 w-3 text-amber-500" />
+                ≥ 20% OFF
+              </Button>
+              <Button
+                size="sm"
+                variant={dealFilter === 'starred' ? 'default' : 'outline'}
+                onClick={() => setDealFilter('starred')}
+                className="h-7 text-xs font-medium gap-1 text-yellow-600"
+              >
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                Favoritos
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {trackers.map((t) => (
-                <Card key={t.id} className="p-3 bg-card border hover:border-primary/40 transition-colors shadow-xs">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="font-bold text-xs text-foreground line-clamp-1" title={t.title}>
-                        {t.title}
-                      </h4>
-                      <p className="text-[11px] text-muted-foreground font-mono mt-0.5 line-clamp-1" title={t.keywords}>
-                        🔍 {t.keywords}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] shrink-0 font-bold bg-amber-50 text-amber-800 border-amber-300">
-                      ≥{t.minDiscountPct || 10}% OFF
-                    </Badge>
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t flex items-center justify-between text-[11px] text-muted-foreground">
-                    <div className="truncate max-w-[130px]">
-                      {t.sellerUsername ? (
-                        <a
-                          href={`https://www.ebay.com/str/${t.sellerUsername}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1 truncate"
-                        >
-                          <Store className="h-3 w-3 shrink-0" />
-                          <span>{t.sellerUsername}</span>
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">Todos los vendedores</span>
-                      )}
-                    </div>
-                    {t.maxPriceUsd && (
-                      <span className="font-semibold text-foreground font-mono">
-                        Max: ${t.maxPriceUsd}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between pt-1">
-                    <button
-                      onClick={() => handleLaunchLiveEbay(t.sellerUsername || 'all', t.keywords, t.maxPriceUsd ? String(t.maxPriceUsd) : '')}
-                      className="text-[11px] text-blue-600 hover:underline font-semibold flex items-center gap-0.5"
-                    >
-                      <span>Abrir eBay</span>
-                      <ExternalLink className="h-2.5 w-2.5" />
-                    </button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleScanSingleTracker(t.id)}
-                      disabled={scanningId === t.id}
-                      className="h-6 px-2 text-[10px] font-semibold gap-1"
-                    >
-                      <RefreshCw className={`h-2.5 w-2.5 ${scanningId === t.id ? 'animate-spin' : ''}`} />
-                      Escanear
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={dealSearch}
+                onChange={(e) => setDealSearch(e.target.value)}
+                placeholder="Filtrar catálogo visual..."
+                className="h-7 pl-8 text-xs bg-background"
+              />
             </div>
           </div>
 
-          {/* Section: Feed de Ofertas Detectadas */}
-          <div className="space-y-3 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted/30 p-2.5 rounded-lg border">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mr-1">
-                  <Filter className="h-3.5 w-3.5 text-primary" />
-                  Filtrar Ofertas:
-                </span>
-                <Button
-                  size="sm"
-                  variant={dealFilter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setDealFilter('all')}
-                  className="h-7 text-xs font-medium"
-                >
-                  Todas ({allDeals.length})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={dealFilter === 'discount_20' ? 'default' : 'outline'}
-                  onClick={() => setDealFilter('discount_20')}
-                  className="h-7 text-xs font-medium gap-1 text-emerald-700 dark:text-emerald-300"
-                >
-                  <Flame className="h-3 w-3 text-amber-500" />
-                  ≥ 20% OFF
-                </Button>
-                <Button
-                  size="sm"
-                  variant={dealFilter === 'coupon' ? 'default' : 'outline'}
-                  onClick={() => setDealFilter('coupon')}
-                  className="h-7 text-xs font-medium gap-1 text-purple-700 dark:text-purple-300"
-                >
-                  <Tag className="h-3 w-3" />
-                  Con Cupones
-                </Button>
-                <Button
-                  size="sm"
-                  variant={dealFilter === 'starred' ? 'default' : 'outline'}
-                  onClick={() => setDealFilter('starred')}
-                  className="h-7 text-xs font-medium gap-1 text-yellow-600"
-                >
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  Favoritos
-                </Button>
-              </div>
-
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={dealSearch}
-                  onChange={(e) => setDealSearch(e.target.value)}
-                  placeholder="Buscar en ofertas..."
-                  className="h-7 pl-8 text-xs bg-background"
-                />
-              </div>
+          {/* VISUAL CATALOG GRID WITH REAL EBAY PHOTOS */}
+          {filteredDeals.length === 0 ? (
+            <div className="p-12 text-center border rounded-lg bg-card text-muted-foreground">
+              <Flame className="h-10 w-10 mx-auto opacity-30 mb-2" />
+              <p className="font-semibold text-sm">No se encontraron ofertas con este filtro.</p>
+              <Button
+                size="sm"
+                onClick={handleScanAll}
+                className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+              >
+                🔍 Buscar Ofertas Ahora
+              </Button>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {filteredDeals.map((deal) => {
+                const landedCostPen = deal.currentPriceUsd * 3.40;
+                const savingsUsd = deal.originalPriceUsd ? deal.originalPriceUsd - deal.currentPriceUsd : 0;
+                const buyNowUrl = deal.itemUrl || getBuyNowUrl(deal);
 
-            {/* Deals Grid */}
-            {filteredDeals.length === 0 ? (
-              <div className="p-12 text-center border rounded-lg bg-card text-muted-foreground">
-                <Flame className="h-10 w-10 mx-auto opacity-30 mb-2" />
-                <p className="font-semibold text-sm">No se encontraron ofertas con este filtro.</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Haz clic en "Buscar Ofertas Ahora" o selecciona una de las plantillas rápidas.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={handleScanAll}
-                  className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
-                >
-                  🔍 Escanear Ahora
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {filteredDeals.map((deal) => {
-                  const landedCostPen = deal.currentPriceUsd * 3.40;
-                  const savingsUsd = deal.originalPriceUsd ? deal.originalPriceUsd - deal.currentPriceUsd : 0;
-                  const buyNowUrl = getBuyNowUrl(deal);
-
-                  return (
-                    <Card
-                      key={deal.id}
-                      className="p-3.5 bg-card border hover:border-emerald-500/50 transition-all flex flex-col justify-between shadow-xs group"
-                    >
-                      <div>
-                        {/* Top Bar: Badges & Star */}
-                        <div className="flex items-center justify-between gap-2 pb-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-1.5 py-0 gap-0.5 shadow-2xs">
-                              <TrendingDown className="h-3 w-3" />
-                              {deal.discountPct ? `${deal.discountPct}% OFF` : 'OFERTA'}
-                            </Badge>
-                            {deal.couponCode && (
-                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300 font-mono text-[10px] px-1.5 py-0">
-                                Cupón: {deal.couponCode}
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              {deal.condition}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleToggleStarDeal(deal)}
-                              className="p-1 text-muted-foreground hover:text-yellow-500 transition-colors"
-                              title={deal.isStarred ? 'Quitar de favoritos' : 'Marcar favorito'}
-                            >
-                              <Star className={`h-4 w-4 ${deal.isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                            </button>
-                            <button
-                              onClick={() => handleDismissDeal(deal.id)}
-                              className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
-                              title="Descartar oferta"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Title & Seller Info */}
-                        <div className="space-y-1">
+                return (
+                  <Card
+                    key={deal.id}
+                    className="overflow-hidden bg-card border hover:border-emerald-500/60 transition-all flex flex-col justify-between shadow-xs group"
+                  >
+                    <div>
+                      {/* REAL EBAY PRODUCT PHOTO */}
+                      <div className="relative h-44 w-full bg-white dark:bg-zinc-900 border-b flex items-center justify-center overflow-hidden p-2">
+                        {deal.imageUrl ? (
                           <a
                             href={buyNowUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold text-xs text-foreground hover:text-primary hover:underline line-clamp-2 leading-snug"
-                            title={deal.title}
+                            className="w-full h-full flex items-center justify-center"
                           >
-                            {deal.title}
+                            <img
+                              src={deal.imageUrl}
+                              alt={deal.title}
+                              loading="lazy"
+                              className="max-h-40 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  'https://i.ebayimg.com/images/g/yicAAeSwVgFqtb1C/s-l500.jpg';
+                              }}
+                            />
                           </a>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                            <span>Tienda:</span>
-                            <a
-                              href={`https://www.ebay.com/str/${deal.sellerUsername}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline font-semibold flex items-center gap-0.5"
-                            >
-                              <Store className="h-3 w-3" />
-                              <span>{deal.sellerUsername}</span>
-                            </a>
-                            <span className="text-[10px] text-slate-400">({deal.sellerFeedback})</span>
-                          </div>
-                        </div>
-
-                        {/* Promo Description */}
-                        {deal.promoDescription && (
-                          <div className="mt-2 p-1.5 rounded bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                            <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-                            <span className="truncate">{deal.promoDescription}</span>
-                            {deal.couponCode && (
-                              <button
-                                onClick={() => handleCopy(deal.couponCode!, deal.id)}
-                                className="ml-auto text-[10px] font-bold text-purple-700 dark:text-purple-300 hover:underline shrink-0"
-                              >
-                                {copiedCode === deal.id ? '✓ Copiado' : 'Copiar Cupón'}
-                              </button>
-                            )}
-                          </div>
+                        ) : (
+                          <Package className="h-12 w-12 text-muted-foreground/30" />
                         )}
 
-                        {/* Pricing Grid */}
-                        <div className="mt-3 p-2.5 rounded-lg bg-muted/40 border">
-                          <div className="flex items-baseline justify-between">
-                            <span className="text-xs text-muted-foreground">Precio en Oferta:</span>
-                            <div className="flex items-baseline gap-1.5">
-                              {deal.originalPriceUsd && (
-                                <span className="text-xs text-muted-foreground line-through font-mono">
-                                  ${deal.originalPriceUsd.toFixed(2)}
-                                </span>
-                              )}
-                              <span className="text-lg font-extrabold text-foreground font-mono">
-                                ${deal.currentPriceUsd.toFixed(2)} USD
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] pt-1 border-t mt-1.5 text-muted-foreground">
-                            <span>Llegada a Perú (3.40):</span>
-                            <span className="font-bold text-blue-600 dark:text-blue-400 font-mono">
-                              S/ {landedCostPen.toFixed(2)} PEN
-                            </span>
-                          </div>
-
-                          {savingsUsd > 0 && (
-                            <div className="flex items-center justify-between text-[11px] pt-0.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                              <span>Ahorro Directo:</span>
-                              <span className="font-bold font-mono">-${savingsUsd.toFixed(2)} USD</span>
-                            </div>
-                          )}
+                        {/* Floating Discount Badge */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1">
+                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 gap-0.5 shadow-sm">
+                            <TrendingDown className="h-3 w-3" />
+                            {deal.discountPct ? `-${deal.discountPct}%` : 'OFERTA'}
+                          </Badge>
                         </div>
+
+                        {/* Floating Favorite & Dismiss */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 bg-background/85 backdrop-blur-xs rounded-full px-1.5 py-0.5 border shadow-2xs">
+                          <button
+                            onClick={() => handleToggleStarDeal(deal)}
+                            className="p-0.5 text-muted-foreground hover:text-yellow-500 transition-colors"
+                            title="Favorito"
+                          >
+                            <Star className={`h-3.5 w-3.5 ${deal.isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                          </button>
+                          <button
+                            onClick={() => handleDismissDeal(deal.id)}
+                            className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Ocultar"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Condition Pill */}
+                        <span className="absolute bottom-1.5 right-2 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded font-medium">
+                          {deal.condition}
+                        </span>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="mt-3 pt-2 border-t space-y-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            size="sm"
-                            onClick={() => window.open(buyNowUrl, '_blank')}
-                            className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
-                            title="Abrir resultados reales y activos en eBay (Cómpralo Ya)"
-                          >
-                            <ShoppingCart className="h-3.5 w-3.5" />
-                            <span>Ver Ofertas en eBay</span>
-                            <ExternalLink className="h-3 w-3 opacity-70 ml-0.5" />
-                          </Button>
+                      {/* Compact Visual Info */}
+                      <div className="p-3 space-y-2">
+                        <a
+                          href={buyNowUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-xs text-foreground hover:text-emerald-600 hover:underline line-clamp-2 leading-snug block min-h-[32px]"
+                          title={deal.title}
+                        >
+                          {deal.title}
+                        </a>
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleImportDealToProduct(deal)}
-                            disabled={importingDealId === deal.id}
-                            className="h-8 text-xs font-semibold gap-1 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-                            title="Pre-registrar este producto en compras e inventario"
-                          >
-                            <Package className="h-3.5 w-3.5 text-emerald-600" />
-                            <span>Registrar</span>
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] px-1 text-muted-foreground">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                           <a
                             href={`https://www.ebay.com/str/${deal.sellerUsername}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1 text-[10px]"
+                            className="text-blue-600 hover:underline font-semibold flex items-center gap-1 truncate"
                           >
-                            <Store className="h-2.5 w-2.5" />
-                            <span>Ver Tienda {deal.sellerUsername}</span>
+                            <Store className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{deal.sellerUsername}</span>
                           </a>
-                          <span className="text-[10px] text-slate-400">Garantía eBay</span>
+                          <span className="text-[10px] text-slate-400 shrink-0">{deal.sellerFeedback}</span>
+                        </div>
+
+                        {/* Price Box */}
+                        <div className="p-2 rounded-lg bg-muted/40 border flex items-center justify-between">
+                          <div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-base font-extrabold text-foreground font-mono">
+                                ${deal.currentPriceUsd.toFixed(2)}
+                              </span>
+                              {deal.originalPriceUsd && (
+                                <span className="text-[11px] text-muted-foreground line-through font-mono">
+                                  ${deal.originalPriceUsd.toFixed(0)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 font-mono">
+                              S/ {landedCostPen.toFixed(0)} PEN
+                            </span>
+                          </div>
+
+                          {savingsUsd > 0 && (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 font-mono text-[10px]">
+                              Ahorras ${savingsUsd.toFixed(0)}
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    </div>
+
+                    {/* 1-Click Action Bar */}
+                    <div className="px-3 pb-3 pt-1 flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(buyNowUrl, '_blank')}
+                        className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
+                      >
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                        <span>Ver en eBay</span>
+                        <ExternalLink className="h-3 w-3 opacity-70" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleImportDealToProduct(deal)}
+                        disabled={importingDealId === deal.id}
+                        className="h-8 px-2.5 text-xs font-semibold hover:bg-emerald-50 hover:text-emerald-700"
+                        title="Pre-registrar en inventario"
+                      >
+                        <Package className="h-3.5 w-3.5 text-emerald-600" />
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

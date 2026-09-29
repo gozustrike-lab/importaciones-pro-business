@@ -154,6 +154,47 @@ export function SyncHiddenDialog({
     }
   };
 
+  const handleKeepOnlyActive = async () => {
+    if (detectedOrders.length === 0) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch('/api/products/archive-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumbers: detectedOrders,
+          keepOnlyActive: true,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al sincronizar activos');
+      }
+
+      toast({
+        title: `✨ Inventario Sincronizado (${data.activeKeptCount} Activos)`,
+        description: `Se mantuvieron exactamente tus ${data.activeKeptCount} compras activas de eBay y se movieron ${data.archivedCount} al archivo.`,
+      });
+
+      setInputText('');
+      if (onSyncCompleted) {
+        onSyncCompleted();
+      }
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: 'Error en Modo Espejo',
+        description: error.message || 'No se pudo sincronizar la lista de activos',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
@@ -254,11 +295,11 @@ export function SyncHiddenDialog({
               </div>
             </TabsContent>
 
-            {/* TAB 2: Archivar Ocultos */}
+            {/* TAB 2: Archivar Ocultos / Modo Espejo */}
             <TabsContent value="archive" className="space-y-4 m-0">
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                  <span>Pega órdenes o texto de compras ocultas / embarcadas a Perú:</span>
+                  <span>Pega el texto de tus páginas de Compras en eBay (Ctrl+A y Ctrl+C):</span>
                   <a
                     href="https://www.ebay.com/mye/myebay/purchase"
                     target="_blank"
@@ -271,11 +312,10 @@ export function SyncHiddenDialog({
                 <Textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Ejemplo:
-Order number: 18-15136-37713
-Order number: 26-15141-31231
-
-(O simplemente selecciona todo el texto con Ctrl+A en tu pantalla de eBay Hidden items y pégalo aquí)"
+                  placeholder="¡Súper fácil!
+1. En eBay Purchase History (Página 1 y Página 2 de tus compras activas), presiona Ctrl+A (seleccionar todo) y Ctrl+C (copiar).
+2. Pégalo aquí con Ctrl+V.
+3. Haz clic abajo en '✨ Dejar SOLO estas como Activas' para que tu sistema quede 100% idéntico a tus compras activas de eBay."
                   rows={5}
                   className="font-mono text-xs"
                 />
@@ -285,13 +325,13 @@ Order number: 26-15141-31231
               <div className="p-3 rounded-lg border bg-muted/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground">
-                    Órdenes a archivar:
+                    Órdenes detectadas en el texto pegado:
                   </span>
                   <Badge
                     variant="outline"
                     className={`font-mono text-xs ${
                       detectedOrders.length > 0
-                        ? 'bg-slate-100 text-slate-800 border-slate-300 font-bold'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
@@ -303,14 +343,14 @@ Order number: 26-15141-31231
                   <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-background rounded border">
                     {detectedOrders.map((ord) => (
                       <Badge key={ord} variant="secondary" className="font-mono text-[11px] gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-slate-600" />
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                         {ord}
                       </Badge>
                     ))}
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground italic">
-                    Pega texto arriba para archivar compras que ya fueron enviadas a Perú.
+                    Pega aquí el texto de tus 2 páginas de compras activas de eBay para dejar exactamente tus 32 activos.
                   </p>
                 )}
               </div>
@@ -387,7 +427,7 @@ Order number: 26-15141-31231
         </div>
 
         {/* Footer */}
-        <DialogFooter className="p-4 border-t bg-card flex items-center justify-between">
+        <DialogFooter className="p-4 border-t bg-card flex items-center justify-between flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
@@ -405,15 +445,27 @@ Order number: 26-15141-31231
           )}
 
           {activeTab === 'archive' && (
-            <Button
-              size="sm"
-              onClick={handleArchiveOrders}
-              disabled={loading || detectedOrders.length === 0}
-              className="gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs"
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Archive className="h-3.5 w-3.5" />}
-              Archivar {detectedOrders.length} Compras en Mi Sistema
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleArchiveOrders}
+                disabled={loading || detectedOrders.length === 0}
+                className="gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Archive className="h-3.5 w-3.5" />}
+                Archivar estas {detectedOrders.length}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleKeepOnlyActive}
+                disabled={loading || detectedOrders.length === 0}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                ✨ Dejar SOLO estas {detectedOrders.length} como Activas
+              </Button>
+            </div>
           )}
 
           {activeTab === 'bookmarklet' && (

@@ -69,9 +69,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const idsToUpdate = matchingProducts.map((p) => p.id);
+    const idsMatched = matchingProducts.map((p) => p.id);
+
+    // Mirror mode: Keep ONLY matching products as Active, archive everything else!
+    if (body.keepOnlyActive === true) {
+      const [unarchivedRes, archivedRes] = await Promise.all([
+        db.product.updateMany({
+          where: { id: { in: idsMatched } },
+          data: { isArchived: false, archivedAt: null },
+        }),
+        db.product.updateMany({
+          where: {
+            ...tenantFilter,
+            id: { notIn: idsMatched },
+            isArchived: false,
+          },
+          data: { isArchived: true, archivedAt: new Date() },
+        }),
+      ]);
+
+      return NextResponse.json(
+        {
+          success: true,
+          keepOnlyActive: true,
+          activeKeptCount: unarchivedRes.count,
+          archivedCount: archivedRes.count,
+          updatedCount: archivedRes.count,
+          matchedOrders: matchingProducts.map((p) => p.orderNumber),
+        },
+        { status: 200, headers: { "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
     const updateResult = await db.product.updateMany({
-      where: { id: { in: idsToUpdate } },
+      where: { id: { in: idsMatched } },
       data: {
         isArchived,
         archivedAt: isArchived ? new Date() : null,

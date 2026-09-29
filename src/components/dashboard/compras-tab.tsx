@@ -77,6 +77,7 @@ export interface PurchaseItem {
   importerProfile: string;
   orderUrl?: string;
   itemUrl?: string;
+  imageUrl?: string;
 }
 
 const MONTH_ORDER = [
@@ -105,6 +106,15 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const [years, setYears] = useState<string[]>(['2026', '2025']);
   const [monthsStructure, setMonthsStructure] = useState<Record<string, string[]>>({});
 
+  // View Mode: Smart Interactive Table with eBay Photos vs Embedded Real Excel (.xlsx)
+  const [viewMode, setViewMode] = useState<'smart' | 'excel'>('smart');
+  const [excelOwner, setExcelOwner] = useState<'fabio' | 'liliana'>('fabio');
+  const [excelSheets, setExcelSheets] = useState<string[]>([]);
+  const [activeExcelSheet, setActiveExcelSheet] = useState<string>('');
+  const [excelRows, setExcelRows] = useState<any[][]>([]);
+  const [excelFileName, setExcelFileName] = useState<string>('Compras Ebay FABIO.xlsx');
+  const [loadingExcel, setLoadingExcel] = useState(false);
+
   // Navigation Filter State
   const [selectedYear, setSelectedYear] = useState<string>('2026');
   const [selectedMonth, setSelectedMonth] = useState<string>('SEPTIEMBRE');
@@ -112,12 +122,33 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Live Auto-Save State
-  // editBuffer holds local typed values keyed by `${productId}_${field}`
   const [editBuffer, setEditBuffer] = useState<Record<string, string>>({});
-  // saveStatus holds saving / saved / error state keyed by `${productId}_${field}`
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
   const [syncingExcel, setSyncingExcel] = useState(false);
+
+  const loadWorkbook = async (owner: 'fabio' | 'liliana', sheet = '') => {
+    try {
+      setLoadingExcel(true);
+      const q = new URLSearchParams({ mode: 'workbook', owner });
+      if (sheet) q.set('sheet', sheet);
+      const res = await fetch(`/api/compras/excel?${q.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al leer archivo Excel');
+      setExcelSheets(data.sheets || []);
+      setActiveExcelSheet(data.activeSheet || '');
+      setExcelRows(data.rows || []);
+      setExcelFileName(data.fileName || `Compras Ebay ${owner.toUpperCase()}.xlsx`);
+    } catch (err: any) {
+      toast({
+        title: 'Error leyendo Excel',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingExcel(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -131,7 +162,6 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       setYears(data.years || ['2026', '2025']);
       setMonthsStructure(data.monthsStructure || {});
 
-      // Preserve active month if it exists in selected year, else pick first
       const yearMonths = data.monthsStructure?.[selectedYear] || [];
       if (!yearMonths.includes(selectedMonth) && yearMonths.length > 0) {
         setSelectedMonth(yearMonths[0]);
@@ -586,8 +616,182 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
         </Card>
       </div>
 
+      {/* View Mode Switcher: Tabla Inteligente con Fotos vs Excel Real Embebido (.xlsx) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-900">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button
+            size="sm"
+            variant={viewMode === 'smart' ? 'default' : 'outline'}
+            onClick={() => setViewMode('smart')}
+            className={`h-8 text-xs font-bold gap-1.5 ${
+              viewMode === 'smart'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                : 'bg-background'
+            }`}
+          >
+            <Package className="h-3.5 w-3.5" />
+            <span>⚡ Tabla Visual + Fotos eBay (Tiempo Real)</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant={viewMode === 'excel' && excelOwner === 'fabio' ? 'default' : 'outline'}
+            onClick={() => {
+              setViewMode('excel');
+              setExcelOwner('fabio');
+              loadWorkbook('fabio');
+            }}
+            className={`h-8 text-xs font-bold gap-1.5 ${
+              viewMode === 'excel' && excelOwner === 'fabio'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                : 'bg-background text-blue-700 dark:text-blue-300 border-blue-200'
+            }`}
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            <span>📊 Ver Excel Real FABIO (.xlsx)</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant={viewMode === 'excel' && excelOwner === 'liliana' ? 'default' : 'outline'}
+            onClick={() => {
+              setViewMode('excel');
+              setExcelOwner('liliana');
+              loadWorkbook('liliana');
+            }}
+            className={`h-8 text-xs font-bold gap-1.5 ${
+              viewMode === 'excel' && excelOwner === 'liliana'
+                ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs'
+                : 'bg-background text-purple-700 dark:text-purple-300 border-purple-200'
+            }`}
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            <span>📊 Ver Excel Real LILIANA (.xlsx)</span>
+          </Button>
+        </div>
+
+        <span className="text-[11px] text-muted-foreground hidden md:inline">
+          {viewMode === 'smart'
+            ? 'Edita cualquier celda y se autoguarda en BD + Excels de Google Drive'
+            : `Viendo documento real en vivo: ${excelFileName}`}
+        </span>
+      </div>
+
+      {/* EMBEDDED REAL EXCEL (.XLSX) VIEWER */}
+      {viewMode === 'excel' && (
+        <Card className="border-2 border-emerald-600/30 overflow-hidden shadow-sm">
+          {/* Excel Top Ribbon Bar */}
+          <div className="bg-emerald-700 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="font-bold text-xs">{excelFileName}</span>
+              <Badge className="bg-white/20 text-white text-[10px] py-0">
+                Google Drive Sincronizado
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => loadWorkbook(excelOwner, activeExcelSheet)}
+                disabled={loadingExcel}
+                className="h-7 text-xs font-semibold gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${loadingExcel ? 'animate-spin' : ''}`} />
+                Refrescar Hoja
+              </Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const res = await fetch(`/api/compras/excel?owner=${excelOwner}`, { method: 'POST' });
+                  if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = excelFileName;
+                    a.click();
+                  }
+                }}
+                className="h-7 text-xs font-bold bg-white text-emerald-800 hover:bg-emerald-50 gap-1"
+              >
+                <Download className="h-3 w-3" />
+                Descargar este .xlsx
+              </Button>
+            </div>
+          </div>
+
+          {/* Sheet Tabs Bar (like Excel) */}
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-muted/70 border-b overflow-x-auto">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground mr-1">Pestañas:</span>
+            {excelSheets.map((sh) => (
+              <button
+                key={sh}
+                onClick={() => loadWorkbook(excelOwner, sh)}
+                className={`px-3 py-1 rounded-t-md text-xs font-mono transition-colors shrink-0 border-b-2 ${
+                  activeExcelSheet === sh
+                    ? 'bg-background text-emerald-700 dark:text-emerald-400 font-bold border-emerald-600 shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-background/50'
+                }`}
+              >
+                {sh}
+              </button>
+            ))}
+          </div>
+
+          {/* Excel Grid Content */}
+          <div className="overflow-x-auto max-h-[68vh]">
+            {loadingExcel ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-emerald-600" />
+                <p className="text-xs font-medium">Leyendo celdas reales de {excelFileName}...</p>
+              </div>
+            ) : (
+              <table className="w-full border-collapse text-xs font-mono">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-900 text-muted-foreground border-b">
+                    <th className="border-r px-2 py-1 text-center w-10 bg-slate-200/70 dark:bg-slate-800">#</th>
+                    {Array.from({ length: 12 }).map((_, cIdx) => (
+                      <th key={cIdx} className="border-r px-2.5 py-1 text-center font-bold">
+                        {String.fromCharCode(65 + cIdx)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {excelRows.map((row, rIdx) => {
+                    const isHeaderRow = rIdx === 0 || String(row[0] || '').toLowerCase().includes('fecha');
+                    return (
+                      <tr
+                        key={rIdx}
+                        className={`border-b hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 ${
+                          isHeaderRow ? 'bg-emerald-600/10 font-bold text-foreground' : ''
+                        }`}
+                      >
+                        <td className="border-r px-2 py-1 text-center text-[10px] text-muted-foreground bg-slate-50 dark:bg-slate-900/50">
+                          {rIdx + 1}
+                        </td>
+                        {Array.from({ length: 12 }).map((_, cIdx) => (
+                          <td
+                            key={cIdx}
+                            className="border-r px-2.5 py-1.5 whitespace-nowrap max-w-[260px] truncate"
+                            title={String(row[cIdx] ?? '')}
+                          >
+                            {row[cIdx] ?? ''}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Navigation Controls: Year Tabs & Month Tabs */}
-      <div className="space-y-2 pt-1">
+      <div className={viewMode === 'excel' ? 'hidden' : 'space-y-2 pt-1'}>
         {/* Row 1: Year Selector */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted/30 p-2.5 rounded-lg border">
           <div className="flex items-center gap-2">
@@ -726,7 +930,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       </div>
 
       {/* Spreadsheet Table with Inline Real-Time Auto-Save */}
-      <div className="rounded-lg border bg-card overflow-hidden shadow-xs">
+      <div className={viewMode === 'excel' ? 'hidden' : 'rounded-lg border bg-card overflow-hidden shadow-xs'}>
         <div className="overflow-x-auto max-h-[70vh]">
           <Table className="text-xs">
             <TableHeader className="bg-muted/70 sticky top-0 z-10 text-[11px]">
@@ -739,7 +943,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                 <TableHead className="w-[65px] text-center">Courier</TableHead>
                 <TableHead className="w-[155px]">Tracking</TableHead>
                 <TableHead className="w-[95px]">Proveedor</TableHead>
-                <TableHead className="min-w-[220px]">Descripción</TableHead>
+                <TableHead className="min-w-[260px]">Foto & Producto eBay</TableHead>
                 <TableHead className="w-[100px] text-center bg-amber-50/50 dark:bg-amber-950/20 font-bold text-amber-900 dark:text-amber-300">
                   Modelo (SUNAT)
                 </TableHead>
@@ -921,11 +1125,29 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                         )}
                       </TableCell>
 
-                      {/* Descripción */}
+                      {/* Foto & Descripción */}
                       <TableCell>
-                        <p className="line-clamp-2 text-[11px] leading-tight text-foreground/90" title={r.description}>
-                          {r.description}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          {r.imageUrl && (
+                            <a
+                              href={r.itemUrl || r.imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 h-9 w-9 rounded border bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-0.5 hover:ring-2 hover:ring-emerald-500 transition-all"
+                              title="Ver foto original en eBay"
+                            >
+                              <img
+                                src={r.imageUrl}
+                                alt={r.description}
+                                loading="lazy"
+                                className="max-h-8 max-w-8 object-contain"
+                              />
+                            </a>
+                          )}
+                          <p className="line-clamp-2 text-[11px] leading-tight text-foreground/90 font-medium" title={r.description}>
+                            {r.description}
+                          </p>
+                        </div>
                       </TableCell>
 
                       {/* MODELO (SUNAT) - INLINE EDITABLE CON AUTOGUARDADO EN BD */}

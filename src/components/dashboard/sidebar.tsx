@@ -64,18 +64,18 @@ const navItems: {
   adminOnly?: boolean;
   badge?: string;
 }[] = [
-  { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Logística & Ventas' },
-  { key: 'productos', label: 'Inventario & Importaciones', icon: Package, section: 'Logística & Ventas' },
-  { key: 'compras', label: 'Registro Compras & Excel', icon: FileSpreadsheet, section: 'Logística & Ventas', badge: 'Nuevo' },
-  { key: 'clientes', label: 'CRM Clientes', icon: Users, section: 'Logística & Ventas' },
-  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Logística & Ventas' },
-  { key: 'dashboard', label: 'Panel General', icon: LayoutDashboard, section: 'Logística & Ventas' },
-  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Fiscal' },
-  { key: 'impuestos', label: 'Impuestos', icon: Receipt, section: 'Fiscal' },
-  { key: 'tracking', label: 'Tracking USA', icon: Truck, section: 'Herramientas' },
-  { key: 'calidad', label: 'Control Calidad', icon: CheckSquare, section: 'Herramientas' },
-  { key: 'analitica', label: 'Analítica Utilidad', icon: BarChart3, section: 'Herramientas' },
-  { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Herramientas', badge: 'Radar' },
+  { key: 'productos', label: 'Inventario & Importaciones', icon: Package, section: 'Principal', badge: 'Live' },
+  { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Principal' },
+  { key: 'compras', label: 'Registro Compras & Excel', icon: FileSpreadsheet, section: 'Principal' },
+  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Principal' },
+  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Principal' },
+  { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Principal' },
+  { key: 'dashboard', label: 'Panel General', icon: LayoutDashboard, section: 'Secundario' },
+  { key: 'clientes', label: 'CRM Clientes', icon: Users, section: 'Secundario' },
+  { key: 'impuestos', label: 'Impuestos', icon: Receipt, section: 'Secundario' },
+  { key: 'tracking', label: 'Tracking USA', icon: Truck, section: 'Secundario' },
+  { key: 'calidad', label: 'Control Calidad', icon: CheckSquare, section: 'Secundario' },
+  { key: 'analitica', label: 'Analítica Utilidad', icon: BarChart3, section: 'Secundario' },
   { key: 'admin', label: 'Super Admin', icon: Shield, section: 'Admin', adminOnly: true },
 ];
 
@@ -201,12 +201,13 @@ function SidebarContent({
   const filteredItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   // Group items by section
-  const mainItems = filteredItems.filter(
-    (i) => i.section === 'Logística & Ventas' || (!i.section && !i.adminOnly)
-  );
-  const fiscalItems = filteredItems.filter((i) => i.section === 'Fiscal');
-  const toolsItems = filteredItems.filter((i) => i.section === 'Herramientas');
+  const mainItems = filteredItems.filter((i) => i.section === 'Principal');
+  const secondaryItems = filteredItems.filter((i) => i.section === 'Secundario');
   const adminItems = filteredItems.filter((i) => i.section === 'Admin');
+
+  const isSecondaryActive = secondaryItems.some((i) => i.key === activeTab);
+  const [showMore, setShowMore] = useState(false);
+  const expandedMore = showMore || isSecondaryActive;
 
   return (
     <div className="flex h-full flex-col">
@@ -262,7 +263,7 @@ function SidebarContent({
       <nav className={cn('flex-1 space-y-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
         {!collapsed && (
           <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 px-3 mb-1.5 mt-1">
-            Logística & Ventas
+            Operación Diaria
           </p>
         )}
         {mainItems.map((item) => (
@@ -275,39 +276,40 @@ function SidebarContent({
           />
         ))}
 
-        {collapsed ? (
-          <Separator className="my-2" />
-        ) : (
-          <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3 mt-4 mb-1.5">
-            Fiscal & SUNAT
-          </p>
-        )}
-        {fiscalItems.map((item) => (
-          <NavItem
-            key={item.key}
-            item={item}
-            active={activeTab === item.key}
-            collapsed={collapsed}
-            onClick={() => onTabChange(item.key)}
-          />
-        ))}
+        {/* Collapsible Secondary Modules ("Menos es Más") */}
+        <div className="pt-2">
+          {collapsed ? (
+            <Separator className="my-2" />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowMore((prev) => !prev)}
+              className="flex w-full items-center justify-between px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+            >
+              <span>Más Herramientas ({secondaryItems.length})</span>
+              <ChevronDown
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform duration-200',
+                  expandedMore && 'rotate-180'
+                )}
+              />
+            </button>
+          )}
 
-        {collapsed ? (
-          <Separator className="my-2" />
-        ) : (
-          <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3 mt-4 mb-1.5">
-            Herramientas
-          </p>
-        )}
-        {toolsItems.map((item) => (
-          <NavItem
-            key={item.key}
-            item={item}
-            active={activeTab === item.key}
-            collapsed={collapsed}
-            onClick={() => onTabChange(item.key)}
-          />
-        ))}
+          {(expandedMore || collapsed) && (
+            <div className={cn('space-y-1', !collapsed && 'mt-1 pl-1 border-l border-border/60 ml-2')}>
+              {secondaryItems.map((item) => (
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  active={activeTab === item.key}
+                  collapsed={collapsed}
+                  onClick={() => onTabChange(item.key)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         {isAdmin && adminItems.length > 0 && (
           <>

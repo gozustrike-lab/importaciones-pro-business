@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { XMLParser } from "fast-xml-parser";
 import { appendPurchaseToEbayExcel } from "@/lib/excel-compras-writer";
 import { inferTechnicalModel } from "@/lib/shipper-classification";
+import { fetchEbayItemImage } from "@/lib/ebay";
 
 if (process.env.NODE_ENV !== "production" || process.platform === "win32") {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -130,7 +131,16 @@ export async function POST(request: NextRequest) {
     let newlyImportedCount = 0;
 
     for (const ord of orderList) {
-      const orderId = ord.OrderID;
+      const orderId = String(ord.OrderID || "");
+      // Skip cancelled/inactive orders or legacy non-standard IDs
+      if (
+        ord.OrderStatus === "Cancelled" ||
+        ord.OrderStatus === "Inactive" ||
+        ord.CancelStatus === "CancelComplete" ||
+        orderId.length > 20
+      ) {
+        continue;
+      }
       const rawTx = ord.TransactionArray?.Transaction;
       const transactions = Array.isArray(rawTx) ? rawTx : rawTx ? [rawTx] : [];
 
@@ -201,6 +211,7 @@ export async function POST(request: NextRequest) {
           const itemId = tx?.Item?.ItemID || "";
           const targetStatus = isDelivered ? "USA" : "TRANSITO_USA";
           const exchangeRate = 3.4;
+          const imageUrl = await fetchEbayItemImage(itemId, title);
 
           await db.product.create({
             data: {
@@ -225,6 +236,7 @@ export async function POST(request: NextRequest) {
               notes: [
                 itemId ? `ItemID: ${itemId}` : "",
                 ord.BuyerCheckoutMessage ? `Nota: ${ord.BuyerCheckoutMessage}` : "",
+                imageUrl ? `Img: ${imageUrl}` : "",
               ]
                 .filter(Boolean)
                 .join(" | "),

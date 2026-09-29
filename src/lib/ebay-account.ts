@@ -12,7 +12,7 @@ const PRD_DEV_ID = Buffer.from("M2FiMmJhYmYtZTYxZC00ZGZlLThjZGItMjg3NzEwNDE3ZWFh
 const PRD_RU_NAME = Buffer.from("RmFiaW9fSGVycmVyYS1GYWJpb0hlci1JbXBvcnQta2ZubnZraXI=", "base64").toString("utf-8");
 
 export function getEbayConfig() {
-  const isSandbox = process.env.EBAY_SANDBOX === "true";
+  const isSandbox = process.env.EBAY_FORCE_SANDBOX === "true";
   let appId = process.env.EBAY_APP_ID || "";
   let certId = process.env.EBAY_CERT_ID || "";
   let devId = process.env.EBAY_DEV_ID || "";
@@ -37,7 +37,7 @@ export function getEbayConfig() {
 }
 
 function getEbayTokenUrl(): string {
-  return process.env.EBAY_SANDBOX === "true"
+  return process.env.EBAY_FORCE_SANDBOX === "true"
     ? "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
     : "https://api.ebay.com/identity/v1/oauth2/token";
 }

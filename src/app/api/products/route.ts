@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
       // Extract ItemID if present in notes or description
       const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
       const itemId = itemMatch ? itemMatch[1] : undefined;
+      const imgMatch = p.notes?.match(/Img:\s*(https?:\/\/[^\s|]+)/i);
+      const imageUrl = imgMatch ? imgMatch[1] : undefined;
 
       let itemUrl: string | undefined = undefined;
       let orderUrl: string | undefined = undefined;
@@ -111,12 +113,13 @@ export async function GET(request: NextRequest) {
         importerProfile: p.importerProfile || 'fabio',
         recipientName: p.recipientName || '',
         ebayAccount: p.ebayAccount || 'gozustrike@gmail.com',
-        notes: p.notes || '',
+        notes: (p.notes || '').replace(/\s*\|\s*Img:\s*https?:\/\/[^\s|]+/gi, '').replace(/^Img:\s*https?:\/\/[^\s|]+\s*\|?\s*/gi, ''),
         isArchived: p.isArchived,
         archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
         itemId,
         itemUrl,
         orderUrl,
+        imageUrl,
         // Order Total = item price + shipping (total real pagado a eBay)
         orderTotalUSD: p.purchasePriceUsd + p.shippingCostUsd,
         screenOk: p.qualityChecks[0]?.screenOk ?? false,
