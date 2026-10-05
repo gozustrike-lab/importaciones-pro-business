@@ -24,38 +24,77 @@ export async function GET(request: NextRequest) {
     const mode = searchParams.get('mode'); // 'workbook' for live real .xlsx sheet view
 
     if (mode === 'workbook') {
-      const owner = searchParams.get('owner') === 'liliana' ? 'liliana' : 'fabio';
+      const ownerParam = (searchParams.get('owner') || '').toLowerCase();
+      const isLiliana = ownerParam === 'liliana' || ownerParam === 'peggy';
+      const owner = isLiliana ? 'liliana' : 'fabio';
+      const year = searchParams.get('year') || '2026';
       const requestedSheet = searchParams.get('sheet') || '';
-      const filePath = getExcelWorkbookPath(owner === 'liliana');
+      const filePath = getExcelWorkbookPath(isLiliana, year);
 
       if (!fs.existsSync(filePath)) {
-        return NextResponse.json({ error: `Archivo Excel de ${owner} no encontrado en ${filePath}` }, { status: 404 });
+        return NextResponse.json({ error: `Archivo Excel de ${isLiliana ? 'Peggy / Liliana' : 'Fabio'} (${year}) no encontrado en ${filePath}` }, { status: 404 });
       }
 
-      const buf = fs.readFileSync(filePath);
-      const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
-      const sheets = wb.SheetNames || [];
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.readFile(filePath);
+      const sheets = wb.worksheets.map((ws) => ws.name);
       const activeSheet = requestedSheet && sheets.includes(requestedSheet)
         ? requestedSheet
-        : sheets.find((s) => s.toLowerCase().includes('sept')) || sheets[0] || '';
+        : sheets[0] || '';
 
-      const ws = wb.Sheets[activeSheet];
-      const rawRows: any[][] = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) : [];
-      // Filter out completely empty trailing rows
-      const cleanRows = rawRows
-        .filter((r) => Array.isArray(r) && r.some((cell) => cell !== '' && cell !== null && cell !== undefined))
-        .slice(0, 120)
-        .map((r) =>
-          r.slice(0, 14).map((cell) => {
-            if (cell instanceof Date) {
-              return cell.toLocaleDateString('es-PE');
+      const ws = wb.getWorksheet(activeSheet);
+      const cleanRows: any[][] = [];
+      if (ws) {
+        for (let r = 1; r <= Math.min(ws.rowCount, 120); r++) {
+          const row = ws.getRow(r);
+          const rowValues: any[] = [];
+          let hasContent = false;
+          for (let c = 1; c <= 24; c++) {
+            const cell = row.getCell(c);
+            const val = cell.value;
+            if (val !== null && val !== undefined && val !== '') {
+              hasContent = true;
             }
-            if (typeof cell === 'number') {
-              return Math.round(cell * 100) / 100;
+            if (val instanceof Date) {
+              rowValues.push(val.toLocaleDateString('es-PE'));
+            } else if (val && typeof val === 'object') {
+              if ('hyperlink' in val) {
+                rowValues.push({
+                  text: (val as any).text || '',
+                  hyperlink: (val as any).hyperlink || '',
+                });
+              } else if ('result' in val) {
+                const res = (val as any).result;
+                if (typeof res === 'number') {
+                  rowValues.push(Math.round(res * 100) / 100);
+                } else {
+                  rowValues.push(String(res ?? ''));
+                }
+              } else if (Array.isArray((val as any).richText)) {
+                rowValues.push((val as any).richText.map((t: any) => t.text || '').join(''));
+              } else if ('formula' in val) {
+                const res = (val as any).result;
+                if (typeof res === 'number') {
+                  rowValues.push(Math.round(res * 100) / 100);
+                } else if (res !== undefined && res !== null) {
+                  rowValues.push(String(res));
+                } else {
+                  rowValues.push('');
+                }
+              } else {
+                rowValues.push('');
+              }
+            } else if (typeof val === 'number') {
+              rowValues.push(Math.round(val * 100) / 100);
+            } else {
+              rowValues.push(String(val ?? ''));
             }
-            return String(cell ?? '');
-          })
-        );
+          }
+          if (hasContent) {
+            cleanRows.push(rowValues);
+          }
+        }
+      }
 
       return NextResponse.json({
         success: true,
@@ -81,20 +120,28 @@ export async function GET(request: NextRequest) {
       const monthName = MONTH_NAMES[monthIdx];
       const orderTotalUsd = (p.purchasePriceUsd || 0) + (p.shippingCostUsd || 0);
 
-      // Order URL, Item URL & Real eBay Product Image URL
-      let itemUrl: string | undefined = undefined;
+      // Order URL & Item URL strictly separated
       let orderUrl: string | undefined = undefined;
-      if (p.orderNumber && p.orderNumber.includes('-')) {
+      if (p.orderNumber && (p.orderNumber.includes('-') || /^\d{10,}$/.test(p.orderNumber))) {
         orderUrl = `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`;
       }
+
+      let itemUrl: string | undefined = undefined;
       const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
       if (itemMatch) {
         itemUrl = `https://www.ebay.com/itm/${itemMatch[1]}`;
-      } else if (orderUrl) {
-        itemUrl = orderUrl;
       }
+
       const imgMatch = p.notes?.match(/Img:\s*(https?:\/\/[^\s|]+)/i);
       const imageUrl = imgMatch ? imgMatch[1] : undefined;
+
+      const rawSupplier = (p.supplier || '').trim();
+      const isGenericSupplier =
+        !rawSupplier ||
+        ['ebay', 'usps', 'ups', 'fedex', 'dhl', 'desconocido'].includes(rawSupplier.toLowerCase());
+      const supplierUrl = isGenericSupplier
+        ? 'https://www.ebay.com'
+        : `https://www.ebay.com/usr/${encodeURIComponent(rawSupplier)}`;
 
       return {
         id: p.id,
@@ -116,7 +163,7 @@ export async function GET(request: NextRequest) {
         shipperTracking: p.shipperTracking || '',
         shipperConfirmed: p.shipperConfirmed ?? false,
         supplier: p.supplier || 'eBay',
-        supplierUrl: p.supplier ? `https://www.ebay.com/usr/${p.supplier}` : 'https://www.ebay.com',
+        supplierUrl,
         description: p.description,
         model: p.model || '',
         category: p.category || '',
@@ -134,6 +181,7 @@ export async function GET(request: NextRequest) {
         shippingStatus: p.shippingStatus,
         isArchived: p.isArchived,
         importerProfile: p.importerProfile || 'fabio',
+        recipientName: p.recipientName || '',
         orderUrl,
         itemUrl,
         imageUrl,
@@ -177,8 +225,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const owner = searchParams.get('owner');
-    let filePath = getExcelWorkbookPath(owner === 'liliana');
+    const ownerParam = (searchParams.get('owner') || '').toLowerCase();
+    const isLiliana = ownerParam === 'liliana' || ownerParam === 'peggy';
+    const year = searchParams.get('year') || '2026';
+    let filePath = getExcelWorkbookPath(isLiliana, year);
 
     if (!fs.existsSync(filePath)) {
       filePath = path.join(
@@ -194,7 +244,7 @@ export async function POST(request: NextRequest) {
 
     const fileBuffer = fs.readFileSync(filePath);
     const dateStr = new Date().toISOString().slice(0, 10);
-    const label = owner === 'liliana' ? 'LILIANA' : 'FABIO';
+    const label = isLiliana ? 'LILIANA' : 'FABIO';
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {

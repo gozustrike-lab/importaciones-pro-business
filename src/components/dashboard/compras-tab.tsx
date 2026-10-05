@@ -21,6 +21,8 @@ import {
   Loader2,
   ShieldCheck,
   CheckCheck,
+  User,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,9 +77,23 @@ export interface PurchaseItem {
   shippingStatus: string;
   isArchived: boolean;
   importerProfile: string;
+  recipientName?: string;
   orderUrl?: string;
   itemUrl?: string;
   imageUrl?: string;
+}
+
+export function isPeggyItem(item: { importerProfile?: string; recipientName?: string }): boolean {
+  const imp = (item.importerProfile || '').toLowerCase();
+  const rec = (item.recipientName || '').toLowerCase();
+  return (
+    imp === 'peggy' ||
+    imp === 'liliana' ||
+    rec.includes('peggy') ||
+    rec.includes('liliana') ||
+    rec.includes('orduna') ||
+    rec.includes('orduña')
+  );
 }
 
 const MONTH_ORDER = [
@@ -115,7 +131,8 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const [excelFileName, setExcelFileName] = useState<string>('Compras Ebay FABIO.xlsx');
   const [loadingExcel, setLoadingExcel] = useState(false);
 
-  // Navigation Filter State
+  // Navigation Filter State: Owner (Fabio vs Peggy vs All), Year, Month, Search
+  const [selectedOwner, setSelectedOwner] = useState<'all' | 'fabio' | 'peggy'>('fabio');
   const [selectedYear, setSelectedYear] = useState<string>('2026');
   const [selectedMonth, setSelectedMonth] = useState<string>('SEPTIEMBRE');
   const [search, setSearch] = useState('');
@@ -127,10 +144,16 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
   const [syncingExcel, setSyncingExcel] = useState(false);
 
-  const loadWorkbook = async (owner: 'fabio' | 'liliana', sheet = '') => {
+  const [selectedExcelYear, setSelectedExcelYear] = useState<'2026' | '2025'>('2026');
+
+  const loadWorkbook = async (
+    owner: 'fabio' | 'liliana',
+    sheet = '',
+    year: '2026' | '2025' = selectedExcelYear
+  ) => {
     try {
       setLoadingExcel(true);
-      const q = new URLSearchParams({ mode: 'workbook', owner });
+      const q = new URLSearchParams({ mode: 'workbook', owner, year });
       if (sheet) q.set('sheet', sheet);
       const res = await fetch(`/api/compras/excel?${q.toString()}`);
       const data = await res.json();
@@ -138,7 +161,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       setExcelSheets(data.sheets || []);
       setActiveExcelSheet(data.activeSheet || '');
       setExcelRows(data.rows || []);
-      setExcelFileName(data.fileName || `Compras Ebay ${owner.toUpperCase()}.xlsx`);
+      setExcelFileName(data.fileName || `Compras Ebay ${owner.toUpperCase()}${year === '2025' ? ' 2025' : ''}.xlsx`);
     } catch (err: any) {
       toast({
         title: 'Error leyendo Excel',
@@ -214,7 +237,9 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const handleDownloadExcel = async () => {
     try {
       setDownloading(true);
-      const res = await fetch('/api/compras/excel', { method: 'POST' });
+      const ownerParam = selectedOwner === 'peggy' ? 'liliana' : 'fabio';
+      const yearParam = selectedYear === '2025' ? '2025' : '2026';
+      const res = await fetch(`/api/compras/excel?owner=${ownerParam}&year=${yearParam}`, { method: 'POST' });
       if (!res.ok) throw new Error('Error al descargar el archivo Excel');
 
       const blob = await res.blob();
@@ -222,7 +247,8 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       const a = document.createElement('a');
       a.href = url;
       const dateStr = new Date().toISOString().slice(0, 10);
-      a.download = `COMPRAS_EBAY_CONTABILIDAD_${dateStr}.xlsx`;
+      const label = selectedOwner === 'peggy' ? 'LILIANA' : (selectedOwner === 'fabio' ? 'FABIO' : 'CONSOLIDADO');
+      a.download = `COMPRAS_EBAY_${label}_${yearParam}_${dateStr}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -230,7 +256,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
 
       toast({
         title: '📥 Excel Descargado',
-        description: 'Se descargó el libro completo de compras con todas las pestañas y fórmulas.',
+        description: `Se descargó el libro de compras de ${label} (${yearParam}) con todas las pestañas y fórmulas.`,
       });
     } catch (err: any) {
       console.error(err);
@@ -384,19 +410,109 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
     }
   };
 
-  // 4. Available Months for Selected Year
-  const availableMonths = useMemo(() => {
-    if (selectedYear === 'ALL') {
-      const set = new Set<string>();
-      products.forEach((p) => set.add(p.monthName));
-      return Array.from(set).sort((a, b) => MONTH_ORDER.indexOf(b) - MONTH_ORDER.indexOf(a));
+  // 3.1 Toggle Archived / Reactivate
+  const handleToggleArchived = async (item: PurchaseItem) => {
+    const newArchived = !item.isArchived;
+    try {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, isArchived: newArchived } : p))
+      );
+
+      const res = await fetch(`/api/products/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isArchived: newArchived }),
+      });
+
+      if (!res.ok) throw new Error('Error al actualizar estado');
+
+      toast({
+        title: newArchived ? '📦 Marcado como Embarcado' : '🔄 Reactivado en Miami (Listo para Embarcar)',
+        description: `Producto ${item.orderNumber} ${newArchived ? 'marcado como embarcado a Perú' : 'reactivado en almacén de Miami'}.`,
+      });
+    } catch (err: any) {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, isArchived: !newArchived } : p))
+      );
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
-    return monthsStructure[selectedYear] || [];
-  }, [selectedYear, monthsStructure, products]);
+  };
+
+  // Owner counts (for currently selected year, and overall)
+  const ownerCountsForYear = useMemo(() => {
+    const yearProds = selectedYear === 'ALL' ? products : products.filter((p) => p.year === selectedYear);
+    let fabioCount = 0;
+    let peggyCount = 0;
+    yearProds.forEach((p) => {
+      if (isPeggyItem(p)) {
+        peggyCount++;
+      } else {
+        fabioCount++;
+      }
+    });
+    return {
+      all: yearProds.length,
+      fabio: fabioCount,
+      peggy: peggyCount,
+    };
+  }, [products, selectedYear]);
+
+  const ownerCountsTotal = useMemo(() => {
+    let fabioCount = 0;
+    let peggyCount = 0;
+    products.forEach((p) => {
+      if (isPeggyItem(p)) {
+        peggyCount++;
+      } else {
+        fabioCount++;
+      }
+    });
+    return {
+      all: products.length,
+      fabio: fabioCount,
+      peggy: peggyCount,
+    };
+  }, [products]);
+
+  // 4. Available Months for Selected Year & Selected Owner
+  const availableMonths = useMemo(() => {
+    let list = products;
+    if (selectedOwner === 'fabio') {
+      list = list.filter((p) => !isPeggyItem(p));
+    } else if (selectedOwner === 'peggy') {
+      list = list.filter((p) => isPeggyItem(p));
+    }
+
+    if (selectedYear !== 'ALL') {
+      list = list.filter((p) => p.year === selectedYear);
+    }
+
+    const set = new Set<string>();
+    list.forEach((p) => set.add(p.monthName));
+    return Array.from(set).sort((a, b) => MONTH_ORDER.indexOf(b) - MONTH_ORDER.indexOf(a));
+  }, [products, selectedOwner, selectedYear]);
+
+  // Automatically adjust month if current month is not in available months
+  useEffect(() => {
+    if (selectedMonth !== 'ALL' && availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+      if (selectedYear === '2026' && availableMonths.includes('SEPTIEMBRE')) {
+        setSelectedMonth('SEPTIEMBRE');
+      } else {
+        setSelectedMonth(availableMonths[0]);
+      }
+    }
+  }, [availableMonths, selectedMonth, selectedYear]);
 
   // 5. Filtered Rows Calculation
   const filteredRows = useMemo(() => {
     let list = products;
+
+    // Filter by Owner (Fabio vs Peggy vs All)
+    if (selectedOwner === 'fabio') {
+      list = list.filter((p) => !isPeggyItem(p));
+    } else if (selectedOwner === 'peggy') {
+      list = list.filter((p) => isPeggyItem(p));
+    }
 
     // Filter by year
     if (selectedYear !== 'ALL') {
@@ -418,12 +534,14 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           (p.trackingNumber || '').toLowerCase().includes(q) ||
           (p.supplier || '').toLowerCase().includes(q) ||
           (p.model || '').toLowerCase().includes(q) ||
-          (p.courier || '').toLowerCase().includes(q)
+          (p.courier || '').toLowerCase().includes(q) ||
+          (p.importerProfile || '').toLowerCase().includes(q) ||
+          (p.recipientName || '').toLowerCase().includes(q)
       );
     }
 
     return list;
-  }, [products, selectedYear, selectedMonth, search]);
+  }, [products, selectedOwner, selectedYear, selectedMonth, search]);
 
   // 6. Metrics Summary
   const metrics = useMemo(() => {
@@ -450,14 +568,21 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
     };
   }, [filteredRows]);
 
-  // Year counts
+  // Year counts filtered by selected owner
   const yearCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: products.length };
+    let list = products;
+    if (selectedOwner === 'fabio') {
+      list = list.filter((p) => !isPeggyItem(p));
+    } else if (selectedOwner === 'peggy') {
+      list = list.filter((p) => isPeggyItem(p));
+    }
+
+    const counts: Record<string, number> = { ALL: list.length };
     years.forEach((y) => {
-      counts[y] = products.filter((p) => p.year === y).length;
+      counts[y] = list.filter((p) => p.year === y).length;
     });
     return counts;
-  }, [products, years]);
+  }, [products, years, selectedOwner]);
 
   return (
     <div className="space-y-4">
@@ -534,8 +659,125 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs"
           >
             <Download className="h-3.5 w-3.5" />
-            Descargar Excel Completo (.xlsx)
+            {selectedOwner === 'peggy'
+              ? 'Descargar Excel PEGGY (.xlsx)'
+              : selectedOwner === 'fabio'
+              ? 'Descargar Excel FABIO (.xlsx)'
+              : 'Descargar Excel (.xlsx)'}
           </Button>
+        </div>
+      </div>
+
+      {/* Selector Principal de Titular: FABIO vs PEGGY vs CONSOLIDADO */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-xl bg-card border shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mr-1">
+            <User className="h-4 w-4 text-primary" />
+            <span>Titular de Compras:</span>
+          </span>
+
+          {/* Botón FABIO */}
+          <Button
+            size="sm"
+            variant={selectedOwner === 'fabio' ? 'default' : 'outline'}
+            onClick={() => {
+              setSelectedOwner('fabio');
+              if (viewMode === 'excel') {
+                setExcelOwner('fabio');
+                loadWorkbook('fabio', '', selectedExcelYear);
+              }
+            }}
+            className={`h-9 px-3.5 text-xs font-bold gap-2 transition-all ${
+              selectedOwner === 'fabio'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                : 'hover:bg-blue-50 text-blue-700 dark:text-blue-300 border-blue-200'
+            }`}
+          >
+            <span>👤 Compras FABIO</span>
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 ${
+                selectedOwner === 'fabio' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'
+              }`}
+            >
+              {ownerCountsForYear.fabio}
+            </Badge>
+          </Button>
+
+          {/* Botón PEGGY (LILIANA) */}
+          <Button
+            size="sm"
+            variant={selectedOwner === 'peggy' ? 'default' : 'outline'}
+            onClick={() => {
+              setSelectedOwner('peggy');
+              if (viewMode === 'excel') {
+                setExcelOwner('liliana');
+                loadWorkbook('liliana', '', selectedExcelYear);
+              }
+            }}
+            className={`h-9 px-3.5 text-xs font-bold gap-2 transition-all ${
+              selectedOwner === 'peggy'
+                ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs'
+                : 'hover:bg-purple-50 text-purple-700 dark:text-purple-300 border-purple-200'
+            }`}
+          >
+            <span>👩 Compras PEGGY (Liliana)</span>
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 ${
+                selectedOwner === 'peggy' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'
+              }`}
+            >
+              {ownerCountsForYear.peggy}
+            </Badge>
+          </Button>
+
+          {/* Botón CONSOLIDADO (AMBOS) */}
+          <Button
+            size="sm"
+            variant={selectedOwner === 'all' ? 'default' : 'outline'}
+            onClick={() => setSelectedOwner('all')}
+            className={`h-9 px-3 text-xs font-bold gap-1.5 transition-all ${
+              selectedOwner === 'all'
+                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs'
+                : 'hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>👥 Ambos (Consolidado)</span>
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 ${
+                selectedOwner === 'all'
+                  ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
+                  : 'bg-muted-foreground/10 text-muted-foreground'
+              }`}
+            >
+              {ownerCountsForYear.all}
+            </Badge>
+          </Button>
+        </div>
+
+        {/* Info lateral del titular activo */}
+        <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+          {selectedOwner === 'fabio' && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-blue-700 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-950/40 px-2.5 py-1 rounded border border-blue-200 dark:border-blue-900">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              Titular: <strong>Fabio César Herrera Bonilla</strong> <span className="font-mono text-[10px] opacity-75">(RUC 10762026835)</span>
+            </span>
+          )}
+          {selectedOwner === 'peggy' && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-purple-700 dark:text-purple-400 bg-purple-50/60 dark:bg-purple-950/40 px-2.5 py-1 rounded border border-purple-200 dark:border-purple-900">
+              <span className="h-2 w-2 rounded-full bg-purple-500" />
+              Titular: <strong>Peggy Liliana Bonilla Orduña</strong> <span className="font-mono text-[10px] opacity-75">(RUC 10091870911)</span>
+            </span>
+          )}
+          {selectedOwner === 'all' && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-300">
+              <span className="h-2 w-2 rounded-full bg-slate-500" />
+              Vista consolidada: <strong>Fabio + Peggy</strong>
+            </span>
+          )}
         </div>
       </div>
 
@@ -639,7 +881,8 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             onClick={() => {
               setViewMode('excel');
               setExcelOwner('fabio');
-              loadWorkbook('fabio');
+              setSelectedOwner('fabio');
+              loadWorkbook('fabio', '', selectedExcelYear);
             }}
             className={`h-8 text-xs font-bold gap-1.5 ${
               viewMode === 'excel' && excelOwner === 'fabio'
@@ -657,7 +900,8 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             onClick={() => {
               setViewMode('excel');
               setExcelOwner('liliana');
-              loadWorkbook('liliana');
+              setSelectedOwner('peggy');
+              loadWorkbook('liliana', '', selectedExcelYear);
             }}
             className={`h-8 text-xs font-bold gap-1.5 ${
               viewMode === 'excel' && excelOwner === 'liliana'
@@ -685,6 +929,39 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="h-4 w-4" />
               <span className="font-bold text-xs">{excelFileName}</span>
+
+              {/* Selector de Año para el Excel Real */}
+              <div className="flex items-center bg-black/25 rounded-md p-0.5 ml-2 border border-white/20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedExcelYear('2026');
+                    loadWorkbook(excelOwner, '', '2026');
+                  }}
+                  className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                    selectedExcelYear === '2026'
+                      ? 'bg-white text-emerald-900 shadow-xs'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  2026 (Actual)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedExcelYear('2025');
+                    loadWorkbook(excelOwner, '', '2025');
+                  }}
+                  className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                    selectedExcelYear === '2025'
+                      ? 'bg-white text-emerald-900 shadow-xs'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  2025 (Histórico)
+                </button>
+              </div>
+
               <Badge className="bg-white/20 text-white text-[10px] py-0">
                 Google Drive Sincronizado
               </Badge>
@@ -693,7 +970,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={() => loadWorkbook(excelOwner, activeExcelSheet)}
+                onClick={() => loadWorkbook(excelOwner, activeExcelSheet, selectedExcelYear)}
                 disabled={loadingExcel}
                 className="h-7 text-xs font-semibold gap-1"
               >
@@ -703,7 +980,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
               <Button
                 size="sm"
                 onClick={async () => {
-                  const res = await fetch(`/api/compras/excel?owner=${excelOwner}`, { method: 'POST' });
+                  const res = await fetch(`/api/compras/excel?owner=${excelOwner}&year=${selectedExcelYear}`, { method: 'POST' });
                   if (res.ok) {
                     const blob = await res.blob();
                     const url = window.URL.createObjectURL(blob);
@@ -727,7 +1004,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             {excelSheets.map((sh) => (
               <button
                 key={sh}
-                onClick={() => loadWorkbook(excelOwner, sh)}
+                onClick={() => loadWorkbook(excelOwner, sh, selectedExcelYear)}
                 className={`px-3 py-1 rounded-t-md text-xs font-mono transition-colors shrink-0 border-b-2 ${
                   activeExcelSheet === sh
                     ? 'bg-background text-emerald-700 dark:text-emerald-400 font-bold border-emerald-600 shadow-2xs'
@@ -751,16 +1028,20 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                 <thead>
                   <tr className="bg-slate-100 dark:bg-slate-900 text-muted-foreground border-b">
                     <th className="border-r px-2 py-1 text-center w-10 bg-slate-200/70 dark:bg-slate-800">#</th>
-                    {Array.from({ length: 12 }).map((_, cIdx) => (
-                      <th key={cIdx} className="border-r px-2.5 py-1 text-center font-bold">
-                        {String.fromCharCode(65 + cIdx)}
-                      </th>
-                    ))}
+                    {(() => {
+                      const colCount = excelRows.length > 0 ? Math.max(...excelRows.map((r) => r.length), 18) : 18;
+                      return Array.from({ length: colCount }).map((_, cIdx) => (
+                        <th key={cIdx} className="border-r px-2.5 py-1 text-center font-bold">
+                          {cIdx < 26 ? String.fromCharCode(65 + cIdx) : `A${String.fromCharCode(65 + cIdx - 26)}`}
+                        </th>
+                      ));
+                    })()}
                   </tr>
                 </thead>
                 <tbody>
                   {excelRows.map((row, rIdx) => {
                     const isHeaderRow = rIdx === 0 || String(row[0] || '').toLowerCase().includes('fecha');
+                    const colCount = excelRows.length > 0 ? Math.max(...excelRows.map((r) => r.length), 18) : 18;
                     return (
                       <tr
                         key={rIdx}
@@ -771,15 +1052,40 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                         <td className="border-r px-2 py-1 text-center text-[10px] text-muted-foreground bg-slate-50 dark:bg-slate-900/50">
                           {rIdx + 1}
                         </td>
-                        {Array.from({ length: 12 }).map((_, cIdx) => (
-                          <td
-                            key={cIdx}
-                            className="border-r px-2.5 py-1.5 whitespace-nowrap max-w-[260px] truncate"
-                            title={String(row[cIdx] ?? '')}
-                          >
-                            {row[cIdx] ?? ''}
-                          </td>
-                        ))}
+                        {Array.from({ length: colCount }).map((_, cIdx) => {
+                          const cell = row[cIdx];
+                          const isObj = cell && typeof cell === 'object' && 'hyperlink' in cell;
+                          const cellText = isObj ? cell.text : String(cell ?? '');
+                          const cellLink = isObj ? cell.hyperlink : null;
+
+                          return (
+                            <td
+                              key={cIdx}
+                              className={`border-r px-2.5 py-1.5 whitespace-nowrap max-w-[280px] truncate ${
+                                cIdx === 6
+                                  ? 'bg-slate-50/60 dark:bg-slate-900/40'
+                                  : cIdx === 7
+                                  ? 'bg-emerald-50/70 dark:bg-emerald-950/30 font-semibold text-emerald-900 dark:text-emerald-300'
+                                  : ''
+                              }`}
+                              title={cellText}
+                            >
+                              {cellLink ? (
+                                <a
+                                  href={cellLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                                >
+                                  <span>{cellText}</span>
+                                  <ExternalLink className="h-2.5 w-2.5 opacity-60 shrink-0" />
+                                </a>
+                              ) : (
+                                cellText
+                              )}
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })}
@@ -899,12 +1205,20 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           >
             <span>Todo {selectedYear === 'ALL' ? 'el Historial' : selectedYear}</span>
             <span className="text-[10px] opacity-75">
-              ({selectedYear === 'ALL' ? products.length : products.filter((p) => p.year === selectedYear).length})
+              ({(() => {
+                let list = products;
+                if (selectedOwner === 'fabio') list = list.filter((p) => !isPeggyItem(p));
+                else if (selectedOwner === 'peggy') list = list.filter((p) => isPeggyItem(p));
+                return selectedYear === 'ALL' ? list.length : list.filter((p) => p.year === selectedYear).length;
+              })()})
             </span>
           </Button>
 
           {availableMonths.map((m) => {
-            const count = products.filter(
+            let list = products;
+            if (selectedOwner === 'fabio') list = list.filter((p) => !isPeggyItem(p));
+            else if (selectedOwner === 'peggy') list = list.filter((p) => isPeggyItem(p));
+            const count = list.filter(
               (p) => (selectedYear === 'ALL' || p.year === selectedYear) && p.monthName === m
             ).length;
             const isSelected = selectedMonth === m;
@@ -937,11 +1251,22 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
               <TableRow>
                 <TableHead className="w-[36px] text-center font-bold">#</TableHead>
                 <TableHead className="w-[125px]">Fecha Compra</TableHead>
+                <TableHead className="w-[80px] text-center font-bold">Titular</TableHead>
                 <TableHead className="w-[50px] text-center">Sis.</TableHead>
                 <TableHead className="w-[95px] text-center">Shiper / Emb.</TableHead>
                 <TableHead className="w-[130px]">N° Orden</TableHead>
                 <TableHead className="w-[65px] text-center">Courier</TableHead>
-                <TableHead className="w-[155px]">Tracking</TableHead>
+                <TableHead className="w-[145px]">
+                  <span>Tracking Original</span>
+                  <span className="block text-[9px] font-normal text-muted-foreground">Carrier (Izquierda)</span>
+                </TableHead>
+                <TableHead className="w-[195px] bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-300 font-bold border-x border-emerald-200/50">
+                  <span className="flex items-center gap-1">
+                    <Check className="h-3 w-3 text-emerald-600" />
+                    Tracking Shiper (Embarque)
+                  </span>
+                  <span className="block text-[9px] font-normal text-emerald-700/80 dark:text-emerald-400/80">Para correo de embarque (Derecha)</span>
+                </TableHead>
                 <TableHead className="w-[95px]">Proveedor</TableHead>
                 <TableHead className="min-w-[260px]">Foto & Producto eBay</TableHead>
                 <TableHead className="w-[100px] text-center bg-amber-50/50 dark:bg-amber-950/20 font-bold text-amber-900 dark:text-amber-300">
@@ -961,7 +1286,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             <TableBody>
               {filteredRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={19} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={21} className="py-12 text-center text-muted-foreground">
                     <FileSpreadsheet className="h-8 w-8 mx-auto opacity-40 mb-2" />
                     <p className="font-medium">No hay compras registradas para este filtro.</p>
                   </TableCell>
@@ -1005,19 +1330,57 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                         {r.fechaCompraFormatted}
                       </TableCell>
 
+                      {/* Titular */}
+                      <TableCell className="text-center whitespace-nowrap">
+                        {isPeggyItem(r) ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800 text-[10px] px-1.5 py-0 font-bold"
+                          >
+                            👩 Peggy
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 text-[10px] px-1.5 py-0 font-bold"
+                          >
+                            👤 Fabio
+                          </Badge>
+                        )}
+                      </TableCell>
+
                       {/* Sistema */}
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] px-1 py-0">
-                          SI
-                        </Badge>
+                        {r.isArchived || r.shippingStatus === 'ENTREGADO_LIMA' || r.shipperConfirmed ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 text-[10px] px-1.5 py-0 font-bold"
+                            title="En sistema de almacén Miami (Verificado por Shiper)"
+                          >
+                            SI
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800 text-[10px] px-1.5 py-0 font-bold"
+                            title="No figura en sistema de almacén Miami (Aún no recibido por Shiper)"
+                          >
+                            NO
+                          </Badge>
+                        )}
                       </TableCell>
 
                       {/* Shiper / Embarcado - 1-Click Toggle */}
                       <TableCell className="text-center">
                         {r.isArchived ? (
-                          <Badge className="bg-slate-700 text-white text-[10px] px-1.5 py-0 font-medium">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleArchived(r)}
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700 hover:bg-slate-800 text-white cursor-pointer transition-colors"
+                            title="Marcado como Embarcado a Perú. Clic si fue un error para desmarcar y regresar a Miami (Activo)."
+                          >
                             ✓ Embarcado
-                          </Badge>
+                          </button>
                         ) : r.shipperConfirmed ? (
                           <button
                             type="button"
@@ -1044,9 +1407,9 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                       <TableCell>
                         <div className="flex items-center gap-1 font-mono text-xs">
                           <span className="font-semibold text-foreground">{r.orderNumber}</span>
-                          {r.itemUrl && (
+                          {(r.orderUrl || (r.orderNumber && (r.orderNumber.includes('-') || /^\d{10,}$/.test(r.orderNumber)))) && (
                             <a
-                              href={r.itemUrl}
+                              href={r.orderUrl || `https://order.ebay.com/ord/show?orderId=${r.orderNumber}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-orange-600 hover:text-orange-700 shrink-0"
@@ -1076,32 +1439,96 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                         </span>
                       </TableCell>
 
-                      {/* Tracking */}
+                      {/* Casilla Izquierda: Tracking Original (Carrier) */}
                       <TableCell>
-                        <div className="flex items-center gap-1 font-mono text-[11px] truncate max-w-[155px]">
-                          {r.trackingNumber ? (
+                        <div className="flex items-center gap-1 font-mono text-[11px] truncate max-w-[145px]">
+                          {r.originalTracking || r.trackingNumber ? (
                             <a
-                              href={trackingUrl}
+                              href={getCourierTrackingUrl(r.courier, r.originalTracking || r.trackingNumber)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-foreground hover:text-primary hover:underline truncate"
-                              title={`${r.trackingNumber} - Clic para rastrear en ${r.courier}`}
+                              title={`${r.originalTracking || r.trackingNumber} - Clic para rastrear en ${r.courier}`}
                             >
-                              {r.trackingNumber}
+                              {r.originalTracking || r.trackingNumber}
                             </a>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
-                          {r.trackingNumber && (
+                          {(r.originalTracking || r.trackingNumber) && (
                             <button
                               type="button"
-                              onClick={() => handleCopy(r.trackingNumber, `tr-${r.id}`, 'Tracking')}
+                              onClick={() =>
+                                handleCopy(
+                                  r.originalTracking || r.trackingNumber,
+                                  `tr-orig-${r.id}`,
+                                  'Tracking Original'
+                                )
+                              }
                               className="p-0.5 text-muted-foreground hover:text-foreground shrink-0"
+                              title="Copiar Tracking Original"
                             >
-                              {copiedId === `tr-${r.id}` ? (
+                              {copiedId === `tr-orig-${r.id}` ? (
                                 <Check className="h-2.5 w-2.5 text-emerald-600" />
                               ) : (
                                 <Copy className="h-2.5 w-2.5" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* Casilla Derecha: Tracking Shiper (Embarque) */}
+                      <TableCell className="bg-emerald-50/30 dark:bg-emerald-950/10 border-x border-emerald-200/40">
+                        <div className="flex items-center justify-between gap-1 font-mono text-[11px]">
+                          <div className="truncate max-w-[155px]">
+                            {r.shipperConfirmed || r.isArchived ? (
+                              r.shipperTracking ? (
+                                <div className="space-y-0.5">
+                                  <span
+                                    className={`truncate block font-semibold ${
+                                      r.shipperTracking !== (r.originalTracking || r.trackingNumber)
+                                        ? 'text-emerald-800 dark:text-emerald-300 font-bold'
+                                        : 'text-foreground'
+                                    }`}
+                                    title={`Tracking Shiper para correo de embarque: ${r.shipperTracking}`}
+                                  >
+                                    {r.shipperTracking}
+                                  </span>
+                                  {r.shipperTracking !== (r.originalTracking || r.trackingNumber) && (
+                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium block">
+                                      ★ Dígitos Shiper
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-foreground font-semibold">
+                                  {r.originalTracking || r.trackingNumber || '-'}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-rose-600 dark:text-rose-400 font-medium italic text-[10px]" title="No verificado por Shiper en Miami">
+                                No figura en sistema
+                              </span>
+                            )}
+                          </div>
+                          {(r.shipperConfirmed || r.isArchived) && (r.shipperTracking || r.originalTracking || r.trackingNumber) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopy(
+                                  r.shipperTracking || r.originalTracking || r.trackingNumber,
+                                  `tr-ship-${r.id}`,
+                                  'Tracking Shiper para Correo'
+                                )
+                              }
+                              className="p-1 text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 hover:bg-emerald-100 rounded shrink-0"
+                              title="Copiar Tracking Shiper para correo de embarque"
+                            >
+                              {copiedId === `tr-ship-${r.id}` ? (
+                                <Check className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
                               )}
                             </button>
                           )}
@@ -1134,7 +1561,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                               target="_blank"
                               rel="noopener noreferrer"
                               className="shrink-0 h-9 w-9 rounded border bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-0.5 hover:ring-2 hover:ring-emerald-500 transition-all"
-                              title="Ver foto original en eBay"
+                              title={r.itemUrl ? "Ver publicación del producto en eBay" : "Ver foto original"}
                             >
                               <img
                                 src={r.imageUrl}
@@ -1144,9 +1571,22 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
                               />
                             </a>
                           )}
-                          <p className="line-clamp-2 text-[11px] leading-tight text-foreground/90 font-medium" title={r.description}>
-                            {r.description}
-                          </p>
+                          {r.itemUrl ? (
+                            <a
+                              href={r.itemUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="line-clamp-2 text-[11px] leading-tight text-foreground hover:text-primary hover:underline font-medium inline-flex items-center gap-1 group/link"
+                              title={`Ver publicación en eBay: ${r.description}`}
+                            >
+                              <span>{r.description}</span>
+                              <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0 text-primary" />
+                            </a>
+                          ) : (
+                            <p className="line-clamp-2 text-[11px] leading-tight text-foreground/90 font-medium" title={r.description}>
+                              {r.description}
+                            </p>
+                          )}
                         </div>
                       </TableCell>
 

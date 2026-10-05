@@ -100,101 +100,82 @@ export interface TrackedDealItem {
   foundAt: string;
 }
 
-// ── Plantillas Rápidas basadas en Compras Reales en eBay ──
+// ── Plantillas Rápidas de Modelos en la Mira (Vendedores ≥ 95% · Menor a Mayor Precio) ──
 const QUICK_TEMPLATES = [
   {
-    id: 'ipad-pro-105',
-    label: '📱 iPad Pro 10.5 A1701 / A1709',
-    badge: 'Comprado $89-$100',
-    title: 'iPad Pro 10.5 A1701 64GB',
-    keywords: 'iPad Pro 10.5 A1701 64GB',
-    sellerUsername: 'itsworthmore',
-    sellerLink: 'https://www.ebay.com/str/itsworthmore',
-    maxPriceUsd: '110',
+    id: 'ipad-pro-105-256-unlocked',
+    label: '📱 iPad Pro 10.5 256GB Unlocked (4G Chip)',
+    badge: 'Desde $94.99',
+    title: 'iPad Pro 10.5 256GB Unlocked (4G Chip)',
+    keywords: 'Apple iPad Pro 10.5 256GB Unlocked',
+    sellerUsername: '',
+    sellerLink: '',
+    maxPriceUsd: '165',
+    minDiscountPct: '15',
+    category: 'Tablets',
+    condition: 'Used',
+  },
+  {
+    id: 'ipad-pro-105-256-wifi',
+    label: '📱 iPad Pro 10.5 256GB Wi-Fi A1701',
+    badge: 'Desde $94.99',
+    title: 'iPad Pro 10.5 256GB Wi-Fi A1701',
+    keywords: 'Apple iPad Pro 10.5 256GB Wi-Fi',
+    sellerUsername: '',
+    sellerLink: '',
+    maxPriceUsd: '145',
     minDiscountPct: '15',
     category: 'Tablets',
     condition: 'Used',
   },
   {
     id: 'ipad-9-64',
-    label: '📱 iPad 9na Gen A2603 (64GB)',
-    badge: 'Comprado $90-$99',
-    title: 'iPad 9th Gen A2603 64GB',
-    keywords: 'iPad 9th Gen A2603 64GB',
-    sellerUsername: 'wikiwoo',
-    sellerLink: 'https://www.ebay.com/str/wikiwoo',
-    maxPriceUsd: '99',
-    minDiscountPct: '15',
-    category: 'Tablets',
-    condition: 'Used',
-  },
-  {
-    id: 'macbook-pro',
-    label: '💻 MacBook Pro i7 16GB / 512GB',
-    badge: 'Comprado $160-$185',
-    title: 'MacBook Pro i7 16GB 512GB',
-    keywords: 'MacBook Pro 13 i7 16GB',
+    label: '📱 iPad 9th Gen 64GB A2602 / A2603',
+    badge: 'Desde $85.00',
+    title: 'iPad 9th Gen 64GB Wi-Fi A2602 / A2603',
+    keywords: 'Apple iPad 9th Gen 64GB',
     sellerUsername: '',
     sellerLink: '',
-    maxPriceUsd: '190',
-    minDiscountPct: '20',
-    category: 'Laptops',
-    condition: 'Used',
-  },
-  {
-    id: 'ipad-7-8',
-    label: '📱 iPad 7ma / 8va Gen A2200',
-    badge: 'Comprado $30-$45',
-    title: 'iPad 7 A2200 32GB',
-    keywords: 'iPad 7 A2200 32GB',
-    sellerUsername: 'preownedtech',
-    sellerLink: 'https://www.ebay.com/str/preownedtech',
-    maxPriceUsd: '55',
+    maxPriceUsd: '140',
     minDiscountPct: '15',
     category: 'Tablets',
     condition: 'Used',
   },
   {
     id: 'ipad-air-3',
-    label: '📱 iPad Air 3ra / 4ta Gen',
-    badge: 'Comprado $95-$119',
-    title: 'iPad Air 3rd Gen 256GB',
-    keywords: 'iPad Air 3rd Gen 256GB',
-    sellerUsername: 'smartresale',
-    sellerLink: 'https://www.ebay.com/str/smartresale',
-    maxPriceUsd: '120',
+    label: '📱 iPad Air 3rd Gen 256GB A2152',
+    badge: 'Desde $99.85',
+    title: 'iPad Air 3rd Gen 256GB A2152 / A2153',
+    keywords: 'Apple iPad Air 3rd Gen 256GB',
+    sellerUsername: '',
+    sellerLink: '',
+    maxPriceUsd: '155',
     minDiscountPct: '15',
     category: 'Tablets',
     condition: 'Used',
   },
   {
-    id: 'itsworthmore-outlet',
-    label: '🏪 Liquidaciones ItsWorthMore',
-    badge: '38 compras TOP',
-    title: 'Outlet Liquidaciones ItsWorthMore',
-    keywords: 'Apple iPad',
-    sellerUsername: 'itsworthmore',
-    sellerLink: 'https://www.ebay.com/str/itsworthmore',
-    maxPriceUsd: '150',
+    id: 'macbook-pro',
+    label: '💻 MacBook Pro 13 i7 16GB 512GB',
+    badge: 'Desde $154.95',
+    title: 'MacBook Pro 13 i7 16GB 512GB',
+    keywords: 'Apple MacBook Pro 13 i7 16GB 512GB',
+    sellerUsername: '',
+    sellerLink: '',
+    maxPriceUsd: '250',
     minDiscountPct: '20',
-    category: 'Tablets',
+    category: 'Laptops',
     condition: 'Used',
   },
 ];
 
-// Helper: Generates a guaranteed working live eBay search URL (NEVER 404!)
+// Helper: Redirecciona directamente al producto real de eBay (https://www.ebay.com/itm/...)
 function getBuyNowUrl(deal: TrackedDealItem): string {
-  if (deal.itemUrl && deal.itemUrl.includes('ebay.com/sch/')) {
+  if (deal.itemUrl && deal.itemUrl.startsWith('http')) {
     return deal.itemUrl;
   }
   const cleanQ = (deal.title || '')
     .replace(/Apple\s+/gi, '')
-    .replace(/-\s*Tested\s*100%\s*OK/gi, '')
-    .replace(/READ\s+DESCRIPTION/gi, '')
-    .replace(/\(Very Good\)/gi, '')
-    .replace(/\(Very Good Condition\)/gi, '')
-    .replace(/Excellent Condition/gi, '')
-    .replace(/Very Good Refurbished/gi, '')
     .replace(/[()[\]*]/g, ' ')
     .trim();
   const sellerParam = deal.sellerUsername ? `&_ssn=${encodeURIComponent(deal.sellerUsername)}` : '';
@@ -265,19 +246,21 @@ export function ProveedoresTab() {
 
   // Deal Trackers State
   const [trackers, setTrackers] = useState<DealTrackerItem[]>([]);
+  const [selectedTrackerId, setSelectedTrackerId] = useState<string>('all');
   const [trackersLoading, setTrackersLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [scanningAll, setScanningAll] = useState(false);
   const [scanningId, setScanningId] = useState<string | null>(null);
+  const [addingQuickModel, setAddingQuickModel] = useState(false);
   const [importingDealId, setImportingDealId] = useState<string | null>(null);
   const [dealFilter, setDealFilter] = useState<'all' | 'discount_20' | 'coupon' | 'starred'>('all');
   const [dealSearch, setDealSearch] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Live Real-Time Search Bar State
-  const [liveSeller, setLiveSeller] = useState<string>('itsworthmore');
-  const [liveKeywords, setLiveKeywords] = useState<string>('iPad Pro 10.5 A1701');
-  const [liveMaxPrice, setLiveMaxPrice] = useState<string>('110');
+  const [liveSeller, setLiveSeller] = useState<string>('all');
+  const [liveKeywords, setLiveKeywords] = useState<string>('iPad Pro 10.5 256GB Unlocked');
+  const [liveMaxPrice, setLiveMaxPrice] = useState<string>('165');
 
   // Tracker Modal State
   const [trackerModalOpen, setTrackerModalOpen] = useState(false);
@@ -371,9 +354,17 @@ export function ProveedoresTab() {
     loadSuppliers();
     loadTrackers();
     loadEbayStatus();
+
+    // Auto-trackear en segundo plano cada 5 minutos para mantener precios en vivo
+    const interval = setInterval(() => {
+      fetch('/api/deal-trackers/scan-all', { method: 'POST' })
+        .then(() => loadTrackers())
+        .catch(() => {});
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [loadSuppliers, loadTrackers, loadEbayStatus]);
 
-  // All deals aggregated across trackers
+  // All deals aggregated across trackers — ORDENADO ESTRICTAMENTE DE MENOR A MAYOR PRECIO
   const allDeals = useMemo(() => {
     const list: TrackedDealItem[] = [];
     trackers.forEach((t) => {
@@ -381,12 +372,16 @@ export function ProveedoresTab() {
         list.push(...t.deals);
       }
     });
-    return list.sort((a, b) => new Date(b.foundAt).getTime() - new Date(a.foundAt).getTime());
+    return list.sort((a, b) => a.currentPriceUsd - b.currentPriceUsd);
   }, [trackers]);
 
-  // Filtered Deals for the Feed
+  // Filtered Deals for the Feed — ORDENADO DE MENOR A MAYOR PRECIO
   const filteredDeals = useMemo(() => {
     let list = allDeals;
+
+    if (selectedTrackerId !== 'all') {
+      list = list.filter((d) => d.trackerId === selectedTrackerId);
+    }
 
     if (dealFilter === 'discount_20') {
       list = list.filter((d) => (d.discountPct || 0) >= 20);
@@ -406,8 +401,8 @@ export function ProveedoresTab() {
       );
     }
 
-    return list;
-  }, [allDeals, dealFilter, dealSearch]);
+    return [...list].sort((a, b) => a.currentPriceUsd - b.currentPriceUsd);
+  }, [allDeals, selectedTrackerId, dealFilter, dealSearch]);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -416,7 +411,7 @@ export function ProveedoresTab() {
     toast({ title: 'Copiado', description: 'Código de descuento copiado al portapapeles' });
   };
 
-  // Launch live search directly on eBay (100% active, zero 404!)
+  // Launch live search directly on eBay (sorted by Price + Shipping: lowest first = _sop=15)
   const handleLaunchLiveEbay = (seller?: string, query?: string, maxPrice?: string) => {
     const q = (query || 'iPad').trim();
     const s = (seller || '').trim();
@@ -433,28 +428,79 @@ export function ProveedoresTab() {
     window.open(url, '_blank');
   };
 
-  // Apply Quick Template
-  const handleApplyTemplate = (tmpl: (typeof QUICK_TEMPLATES)[number]) => {
+  // 1-Click: Agregar Modelo a la Mira y escanear vendedores >= 95% de menor a mayor precio
+  const handleQuickAddModel = async (customKeywords?: string, customTitle?: string, customMaxPrice?: string) => {
+    const kw = (customKeywords ?? liveKeywords).trim();
+    if (!kw) {
+      toast({ title: 'Escribe un modelo', description: 'Ejemplo: iPad Pro 10.5 256GB Unlocked', variant: 'destructive' });
+      return;
+    }
+
+    // Si ya existe en la mira, seleccionarlo y re-escanearlo en vivo
+    const existing = trackers.find(
+      (t) => t.keywords.toLowerCase() === kw.toLowerCase() || t.title.toLowerCase() === (customTitle || kw).toLowerCase()
+    );
+    if (existing) {
+      setSelectedTrackerId(existing.id);
+      await handleScanSingleTracker(existing.id);
+      return;
+    }
+
+    try {
+      setAddingQuickModel(true);
+      const res = await fetch('/api/deal-trackers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: customTitle || kw,
+          keywords: kw,
+          sellerLink: liveSeller !== 'all' ? liveSeller : '',
+          maxPriceUsd: customMaxPrice ?? liveMaxPrice,
+          minDiscountPct: '10',
+          condition: 'Used',
+          category: kw.toLowerCase().includes('macbook') ? 'Laptops' : 'Tablets',
+          notificationsEnabled: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al agregar modelo a la mira');
+
+      await loadTrackers();
+      if (data.tracker?.id) {
+        setSelectedTrackerId(data.tracker.id);
+      }
+      toast({
+        title: '🎯 Modelo en la Mira (Vendedores ≥ 95%)',
+        description: `Rastreando "${customTitle || kw}" ordenado de menor a mayor precio en tiempo real.`,
+      });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setAddingQuickModel(false);
+    }
+  };
+
+  // Eliminar un modelo de la mira
+  const handleDeleteTracker = async (trackerId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/deal-trackers/${trackerId}`, { method: 'DELETE' });
+      if (selectedTrackerId === trackerId) {
+        setSelectedTrackerId('all');
+      }
+      await loadTrackers();
+      toast({ title: 'Modelo quitado de la mira', description: 'Se eliminó el rastreador de búsqueda.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  // Apply Quick Template (selects or adds to Mira immediately)
+  const handleApplyTemplate = async (tmpl: (typeof QUICK_TEMPLATES)[number]) => {
     setLiveKeywords(tmpl.keywords);
     setLiveSeller(tmpl.sellerUsername || 'all');
     setLiveMaxPrice(tmpl.maxPriceUsd);
-
-    setTrackerForm({
-      title: tmpl.title,
-      keywords: tmpl.keywords,
-      sellerLink: tmpl.sellerLink,
-      supplierId: '',
-      maxPriceUsd: tmpl.maxPriceUsd,
-      minDiscountPct: tmpl.minDiscountPct,
-      condition: tmpl.condition,
-      category: tmpl.category,
-      notificationsEnabled: true,
-    });
-
-    toast({
-      title: '⚡ Plantilla Cargada',
-      description: `${tmpl.label} listo para buscar en vivo o guardar como rastreador.`,
-    });
+    await handleQuickAddModel(tmpl.keywords, tmpl.title, tmpl.maxPriceUsd);
   };
 
   // 4. Scan All Trackers for Deals
@@ -466,8 +512,8 @@ export function ProveedoresTab() {
       if (!res.ok) throw new Error(data.error || 'Error al escanear');
 
       toast({
-        title: '🎯 Escaneo Completado',
-        description: data.message || 'Se han actualizado las promociones y descuentos.',
+        title: '🎯 Precios Actualizados en Vivo',
+        description: data.message || 'Todos los modelos en la mira fueron actualizados de menor a mayor precio (Vendedores ≥ 95%).',
       });
       await loadTrackers();
     } catch (err: any) {
@@ -486,8 +532,8 @@ export function ProveedoresTab() {
       if (!res.ok) throw new Error(data.error || 'Error al escanear');
 
       toast({
-        title: '🔥 ¡Oferta Encontrada!',
-        description: data.message || 'Se encontró una nueva promoción para este buscador.',
+        title: '🔥 Precios Actualizados (Menor a Mayor)',
+        description: data.message || 'Se actualizaron los productos reales de eBay para este modelo.',
       });
       await loadTrackers();
     } catch (err: any) {
@@ -515,11 +561,14 @@ export function ProveedoresTab() {
       if (!res.ok) throw new Error(data.error || 'Error al crear buscador');
 
       toast({
-        title: '🎯 Buscador Activado',
-        description: `Rastreador "${trackerForm.title}" creado con alertas en tiempo real.`,
+        title: '🎯 Modelo en la Mira Activado',
+        description: `Rastreador "${trackerForm.title}" creado con filtro de vendedores ≥ 95% de menor a mayor precio.`,
       });
       setTrackerModalOpen(false);
       await loadTrackers();
+      if (data.tracker?.id) {
+        setSelectedTrackerId(data.tracker.id);
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -819,20 +868,36 @@ export function ProveedoresTab() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 1: RADAR DE OFERTAS & DESCUENTOS EN TIEMPO REAL (VISUAL)
+          TAB 1: ÁREA DE BÚSQUEDAS / MODELOS EN LA MIRA (VENDEDORES ≥ 95% · MENOR A MAYOR PRECIO)
       ───────────────────────────────────────────────────────────── */}
       {activeTab === 'radar' && (
         <div className="space-y-3.5">
-          {/* COMPACT VISUAL SEARCH & QUICK CHIPS BAR ("Menos Texto, Más Visual") */}
-          <Card className="p-3 bg-card border shadow-xs space-y-2.5">
+          {/* 1. BUSCADOR EN TIEMPO REAL + AGREGAR A LA MIRA */}
+          <Card className="p-3.5 bg-card border-2 border-emerald-500/30 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className="bg-emerald-600 text-white font-bold text-[11px] px-2 py-0.5 gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Vendedores ≥ 95% Calificación
+                </Badge>
+                <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 font-bold text-[11px] px-2 py-0.5 gap-1">
+                  <TrendingDown className="h-3.5 w-3.5" />
+                  Orden Estricto: Precio Menor a Mayor
+                </Badge>
+                <span className="text-[11px] text-muted-foreground">
+                  Escribe cualquier modelo (ej. <strong>iPad Pro 10.5 256GB Unlocked</strong>) y el sistema rastrea los mejores precios reales de eBay automáticamente.
+                </span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-2">
                 <Select value={liveSeller} onValueChange={setLiveSeller}>
-                  <SelectTrigger className="h-8 text-xs bg-background">
+                  <SelectTrigger className="h-9 text-xs bg-background">
                     <SelectValue placeholder="Tienda eBay" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
-                    <SelectItem value="all">🔍 Todas las Tiendas eBay</SelectItem>
+                    <SelectItem value="all">🔍 Todos Vendedores ≥95%</SelectItem>
                     {suppliers.map((s) => (
                       <SelectItem key={s.id} value={s.name.toLowerCase()}>
                         {s.name} ({s.totalOrders})
@@ -842,12 +907,17 @@ export function ProveedoresTab() {
                 </Select>
               </div>
 
-              <div className="sm:col-span-6">
+              <div className="sm:col-span-5">
                 <Input
                   value={liveKeywords}
                   onChange={(e) => setLiveKeywords(e.target.value)}
-                  placeholder="Buscar modelo en vivo (ej: iPad Pro 10.5 A1701 64GB)..."
-                  className="h-8 text-xs font-mono bg-background"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleQuickAddModel();
+                    }
+                  }}
+                  placeholder="Escribe el modelo a rastrear (ej: iPad Pro 10.5 256GB Unlocked)..."
+                  className="h-9 text-xs font-mono bg-background border-emerald-500/40 focus-visible:ring-emerald-500"
                 />
               </div>
 
@@ -857,44 +927,162 @@ export function ProveedoresTab() {
                   value={liveMaxPrice}
                   onChange={(e) => setLiveMaxPrice(e.target.value)}
                   placeholder="Max $"
-                  title="Precio máximo USD"
-                  className="h-8 text-xs font-mono text-center bg-background"
+                  title="Precio tope USD (opcional)"
+                  className="h-9 text-xs font-mono text-center bg-background"
                 />
               </div>
 
-              <div className="sm:col-span-2 flex items-center gap-1.5">
+              <div className="sm:col-span-4 flex items-center gap-1.5">
                 <Button
                   size="sm"
-                  onClick={() => handleLaunchLiveEbay(liveSeller, liveKeywords, liveMaxPrice)}
-                  className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
+                  onClick={() => handleQuickAddModel()}
+                  disabled={addingQuickModel}
+                  className="flex-1 h-9 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-2xs"
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  <span>Buscar eBay</span>
+                  {addingQuickModel ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="h-3.5 w-3.5" />
+                  )}
+                  <span>{addingQuickModel ? 'Buscando en eBay...' : '🎯 Poner en la Mira (Trackear)'}</span>
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleLaunchLiveEbay(liveSeller, liveKeywords, liveMaxPrice)}
+                  className="h-9 px-2.5 text-xs font-bold border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-300 gap-1"
+                  title="Abrir búsqueda directa en eBay"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>eBay</span>
                 </Button>
               </div>
             </div>
 
-            {/* 1-Click Quick Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 border-t border-border/50">
+            {/* Plantillas Rápidas de 1 Clic */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1.5 border-t border-border/50">
               <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 shrink-0 flex items-center gap-1 mr-1">
-                <Zap className="h-3 w-3 fill-amber-500" /> 1-Clic:
+                <Zap className="h-3 w-3 fill-amber-500" /> Modelos Frecuentes:
               </span>
               {QUICK_TEMPLATES.map((tmpl) => (
                 <button
                   key={tmpl.id}
                   onClick={() => handleApplyTemplate(tmpl)}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/60 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-border/70 hover:border-amber-400 text-[11px] font-medium text-foreground transition-all shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 border border-border/70 hover:border-emerald-500 text-[11px] font-medium text-foreground transition-all shrink-0 cursor-pointer"
                 >
                   <span>{tmpl.label}</span>
-                  <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold">
-                    {tmpl.badge.replace('Comprado ', '')}
+                  <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 font-bold">
+                    {tmpl.badge}
                   </span>
                 </button>
               ))}
             </div>
           </Card>
 
-          {/* Filter & Search Bar */}
+          {/* 2. ÁREA DE BÚSQUEDAS ACTIVAS (PESTAÑAS DE MODELOS EN LA MIRA) */}
+          <div className="p-3 rounded-xl bg-slate-900/5 dark:bg-slate-900/50 border space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  🎯 Área de Búsquedas — Tus Modelos en la Mira ({trackers.length})
+                </span>
+                <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                  Haz clic en un modelo para ver sus mejores precios ordenados de menor a mayor:
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleScanAll}
+                disabled={scanningAll}
+                className="h-7 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${scanningAll ? 'animate-spin' : ''}`} />
+                {scanningAll ? 'Actualizando precios...' : 'Actualizar Todos en Vivo'}
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {/* Pestaña: Todos los Modelos */}
+              <button
+                onClick={() => setSelectedTrackerId('all')}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer border ${
+                  selectedTrackerId === 'all'
+                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 shadow-xs'
+                    : 'bg-card text-foreground hover:bg-muted border-border'
+                }`}
+              >
+                <span>🔥 Todos los Modelos</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                  {allDeals.length}
+                </Badge>
+              </button>
+
+              {/* Pestañas individuales por cada Modelo en la Mira */}
+              {trackers.map((t) => {
+                const isSelected = selectedTrackerId === t.id;
+                const dealsCount = t.deals?.length || 0;
+                const minPrice =
+                  dealsCount > 0
+                    ? Math.min(...t.deals.map((d) => d.currentPriceUsd))
+                    : null;
+
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setSelectedTrackerId(t.id)}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-card text-foreground hover:border-emerald-500/60 border-border'
+                    }`}
+                  >
+                    <span className="truncate max-w-[210px]">{t.title}</span>
+                    {minPrice !== null && (
+                      <span
+                        className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded ${
+                          isSelected
+                            ? 'bg-white/20 text-white'
+                            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300'
+                        }`}
+                      >
+                        Desde ${minPrice.toFixed(2)}
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-mono ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      ({dealsCount})
+                    </span>
+
+                    {/* Botón Refrescar este modelo */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScanSingleTracker(t.id);
+                      }}
+                      title="Actualizar precios en vivo de este modelo"
+                      className={`p-0.5 rounded hover:bg-black/10 ${isSelected ? 'text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <RefreshCw className={`h-3 w-3 ${scanningId === t.id ? 'animate-spin' : ''}`} />
+                    </button>
+
+                    {/* Botón Quitar de la mira */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTracker(t.id, e)}
+                      title="Quitar modelo de la mira"
+                      className={`p-0.5 rounded hover:bg-red-500/20 ${isSelected ? 'text-white/80 hover:text-white' : 'text-muted-foreground hover:text-red-500'}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. BARRA DE FILTROS RÁPIDOS */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-muted/30 p-2 rounded-lg border">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Button
@@ -903,7 +1091,7 @@ export function ProveedoresTab() {
                 onClick={() => setDealFilter('all')}
                 className="h-7 text-xs font-medium"
               >
-                Todas ({allDeals.length})
+                Todos ({filteredDeals.length})
               </Button>
               <Button
                 size="sm"
@@ -923,6 +1111,9 @@ export function ProveedoresTab() {
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                 Favoritos
               </Button>
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold ml-2 hidden md:inline">
+                ✓ Mostrando de Menor a Mayor Precio · Solo Vendedores ≥ 95% Calificación
+              </span>
             </div>
 
             <div className="relative w-full sm:w-64">
@@ -930,39 +1121,45 @@ export function ProveedoresTab() {
               <Input
                 value={dealSearch}
                 onChange={(e) => setDealSearch(e.target.value)}
-                placeholder="Filtrar catálogo visual..."
+                placeholder="Filtrar por GB, condición o vendedor..."
                 className="h-7 pl-8 text-xs bg-background"
               />
             </div>
           </div>
 
-          {/* VISUAL CATALOG GRID WITH REAL EBAY PHOTOS */}
+          {/* 4. CATÁLOGO VISUAL DE PRODUCTOS REALES EBAY (ORDENADO DE MENOR A MAYOR PRECIO) */}
           {filteredDeals.length === 0 ? (
             <div className="p-12 text-center border rounded-lg bg-card text-muted-foreground">
               <Flame className="h-10 w-10 mx-auto opacity-30 mb-2" />
-              <p className="font-semibold text-sm">No se encontraron ofertas con este filtro.</p>
+              <p className="font-semibold text-sm">No se encontraron productos para este filtro.</p>
               <Button
                 size="sm"
                 onClick={handleScanAll}
                 className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
               >
-                🔍 Buscar Ofertas Ahora
+                🔍 Buscar Productos Reales en eBay Ahora
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {filteredDeals.map((deal) => {
+              {filteredDeals.map((deal, idx) => {
                 const landedCostPen = deal.currentPriceUsd * 3.40;
                 const savingsUsd = deal.originalPriceUsd ? deal.originalPriceUsd - deal.currentPriceUsd : 0;
-                const buyNowUrl = deal.itemUrl || getBuyNowUrl(deal);
+                const buyNowUrl = getBuyNowUrl(deal);
+                const isBestPrice = idx === 0;
+                const isTop3 = idx < 3;
 
                 return (
                   <Card
                     key={deal.id}
-                    className="overflow-hidden bg-card border hover:border-emerald-500/60 transition-all flex flex-col justify-between shadow-xs group"
+                    className={`overflow-hidden bg-card border transition-all flex flex-col justify-between shadow-xs group ${
+                      isBestPrice
+                        ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20'
+                        : 'hover:border-emerald-500/60'
+                    }`}
                   >
                     <div>
-                      {/* REAL EBAY PRODUCT PHOTO */}
+                      {/* FOTO REAL DEL PRODUCTO EN EBAY (1-CLIC AL PRODUCTO REAL) */}
                       <div className="relative h-44 w-full bg-white dark:bg-zinc-900 border-b flex items-center justify-center overflow-hidden p-2">
                         {deal.imageUrl ? (
                           <a
@@ -970,6 +1167,7 @@ export function ProveedoresTab() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full h-full flex items-center justify-center"
+                            title="Clic para abrir el producto real en eBay"
                           >
                             <img
                               src={deal.imageUrl}
@@ -986,78 +1184,95 @@ export function ProveedoresTab() {
                           <Package className="h-12 w-12 text-muted-foreground/30" />
                         )}
 
-                        {/* Floating Discount Badge */}
-                        <div className="absolute top-2 left-2 flex items-center gap-1">
-                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 gap-0.5 shadow-sm">
-                            <TrendingDown className="h-3 w-3" />
-                            {deal.discountPct ? `-${deal.discountPct}%` : 'OFERTA'}
+                        {/* Badge de Ranking de Precio (Menor a Mayor) */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap">
+                          <Badge
+                            className={`font-extrabold text-[10px] px-2 py-0.5 shadow-sm ${
+                              isBestPrice
+                                ? 'bg-emerald-600 text-white'
+                                : isTop3
+                                ? 'bg-amber-500 text-slate-950'
+                                : 'bg-slate-800/85 text-white'
+                            }`}
+                          >
+                            {isBestPrice ? '🏆 #1 MEJOR PRECIO' : `#${idx + 1} Menor Precio`}
                           </Badge>
+                          {deal.discountPct && deal.discountPct > 0 && (
+                            <Badge className="bg-rose-600 text-white font-bold text-[10px] px-1.5 py-0.5 shadow-sm">
+                              -{deal.discountPct}%
+                            </Badge>
+                          )}
                         </div>
 
-                        {/* Floating Favorite & Dismiss */}
+                        {/* Favorito & Descartar */}
                         <div className="absolute top-2 right-2 flex items-center gap-1 bg-background/85 backdrop-blur-xs rounded-full px-1.5 py-0.5 border shadow-2xs">
                           <button
                             onClick={() => handleToggleStarDeal(deal)}
                             className="p-0.5 text-muted-foreground hover:text-yellow-500 transition-colors"
-                            title="Favorito"
+                            title="Guardar en Favoritos"
                           >
                             <Star className={`h-3.5 w-3.5 ${deal.isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                           </button>
                           <button
                             onClick={() => handleDismissDeal(deal.id)}
                             className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Ocultar"
+                            title="Descartar producto"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
 
-                        {/* Condition Pill */}
-                        <span className="absolute bottom-1.5 right-2 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded font-medium">
+                        {/* Condición del equipo */}
+                        <span className="absolute bottom-1.5 right-2 text-[10px] bg-black/75 text-white px-2 py-0.5 rounded font-medium">
                           {deal.condition}
                         </span>
                       </div>
 
-                      {/* Compact Visual Info */}
+                      {/* Información Visual Compacta */}
                       <div className="p-3 space-y-2">
                         <a
                           href={buyNowUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-bold text-xs text-foreground hover:text-emerald-600 hover:underline line-clamp-2 leading-snug block min-h-[32px]"
-                          title={deal.title}
+                          title={`Abrir en eBay: ${deal.title}`}
                         >
                           {deal.title}
                         </a>
 
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        {/* Vendedor + Calificación Verificada >= 95% */}
+                        <div className="flex items-center justify-between gap-1 text-[11px] bg-emerald-50/60 dark:bg-emerald-950/30 px-2 py-1 rounded border border-emerald-200/60 dark:border-emerald-800/50">
                           <a
                             href={`https://www.ebay.com/str/${deal.sellerUsername}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline font-semibold flex items-center gap-1 truncate"
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-1 truncate"
+                            title={`Tienda eBay: ${deal.sellerUsername}`}
                           >
                             <Store className="h-3 w-3 shrink-0" />
                             <span className="truncate">{deal.sellerUsername}</span>
                           </a>
-                          <span className="text-[10px] text-slate-400 shrink-0">{deal.sellerFeedback}</span>
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-0.5 shrink-0">
+                            <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                            {deal.sellerFeedback || '≥95% Positivo'}
+                          </span>
                         </div>
 
-                        {/* Price Box */}
+                        {/* Caja de Precio (USD + PEN) */}
                         <div className="p-2 rounded-lg bg-muted/40 border flex items-center justify-between">
                           <div>
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-base font-extrabold text-foreground font-mono">
+                              <span className="text-lg font-extrabold text-emerald-700 dark:text-emerald-400 font-mono">
                                 ${deal.currentPriceUsd.toFixed(2)}
                               </span>
-                              {deal.originalPriceUsd && (
+                              {deal.originalPriceUsd && deal.originalPriceUsd > deal.currentPriceUsd && (
                                 <span className="text-[11px] text-muted-foreground line-through font-mono">
                                   ${deal.originalPriceUsd.toFixed(0)}
                                 </span>
                               )}
                             </div>
                             <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 font-mono">
-                              S/ {landedCostPen.toFixed(0)} PEN
+                              ≈ S/ {landedCostPen.toFixed(0)} PEN
                             </span>
                           </div>
 
@@ -1070,16 +1285,16 @@ export function ProveedoresTab() {
                       </div>
                     </div>
 
-                    {/* 1-Click Action Bar */}
+                    {/* Botón 1-Clic al Producto Real de eBay */}
                     <div className="px-3 pb-3 pt-1 flex items-center gap-1.5">
                       <Button
                         size="sm"
                         onClick={() => window.open(buyNowUrl, '_blank')}
-                        className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 gap-1 shadow-2xs"
+                        className="flex-1 h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 gap-1.5 shadow-2xs"
                       >
                         <ShoppingCart className="h-3.5 w-3.5" />
-                        <span>Ver en eBay</span>
-                        <ExternalLink className="h-3 w-3 opacity-70" />
+                        <span>Ir al Producto Real eBay</span>
+                        <ExternalLink className="h-3 w-3 opacity-80" />
                       </Button>
 
                       <Button

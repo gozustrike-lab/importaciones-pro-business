@@ -31,6 +31,8 @@ export interface PurchaseRecordInput {
   purchaseDate: Date | string;
   courier?: string | null;
   trackingId?: string | null;
+  shipperTracking?: string | null;
+  shipperConfirmed?: boolean;
   supplier?: string | null;
   description: string;
   purchasePriceUsd: number;
@@ -40,6 +42,8 @@ export interface PurchaseRecordInput {
   orderTotalUsd?: number | null;
   exchangeRate?: number | null;
   notes?: string | null;
+  isArchived?: boolean | null;
+  shippingStatus?: string | null;
 }
 
 export interface SyncExcelResult {
@@ -71,14 +75,19 @@ export function isLilianaRecord(importerProfile?: string | null, recipientName?:
 }
 
 /**
- * Return absolute path to the target master Excel workbook
+ * Return absolute path to the target master Excel workbook for a specific year (2026 or 2025)
  */
-export function getExcelWorkbookPath(isLiliana: boolean): string {
+export function getExcelWorkbookPath(isLiliana: boolean, year: number | string = 2026): string {
   const baseDir = process.env.COMPRAS_EBAY_DIR || path.join(process.cwd(), 'COMPRAS EBAY');
-  if (isLiliana) {
-    return path.join(baseDir, 'COMPRAS EBAY LILIANA', 'Compras Ebay LILIANA.xlsx');
+  const ownerFolder = isLiliana ? 'COMPRAS EBAY LILIANA' : 'COMPRAS EBAY FABIO';
+  const person = isLiliana ? 'LILIANA' : 'FABIO';
+  const yStr = String(year);
+  if (yStr === '2025') {
+    const subPath = path.join(baseDir, ownerFolder, '2025', `Compras Ebay ${person} 2025.xlsx`);
+    if (fs.existsSync(subPath)) return subPath;
+    return path.join(baseDir, ownerFolder, `Compras Ebay ${person} 2025.xlsx`);
   }
-  return path.join(baseDir, 'COMPRAS EBAY FABIO', 'Compras Ebay FABIO.xlsx');
+  return path.join(baseDir, ownerFolder, `Compras Ebay ${person}.xlsx`);
 }
 
 /**
@@ -144,7 +153,8 @@ function getHeaderColumnMap(ws: ExcelJS.Worksheet): { headerRowIdx: number; colM
     else if (text.includes('EMBARCA') || text.includes('ENVIADO')) colMap['enviadoEmbarcacion'] = c;
     else if (text.includes('NUMERO DE ORDEN') || text.includes('ORDEN') || text === 'ORDER') colMap['numeroOrden'] = c;
     else if (text.includes('COURIER')) colMap['courier'] = c;
-    else if (text.includes('TRACKING')) colMap['tracking'] = c;
+    else if (text.includes('SHIPER') || text.includes('VERIFICADO') || (text.includes('TRACKING') && text.includes('EMBARQUE'))) colMap['trackingShiper'] = c;
+    else if (text.includes('TRACKING') || text.includes('GUIA')) colMap['tracking'] = c;
     else if (text.includes('PROVEEDOR') || text.includes('VENDEDOR') || text.includes('SELLER')) colMap['proveedor'] = c;
     else if (text.includes('DESCRIP') || text.includes('PRODUCTO') || text.includes('ITEM')) colMap['descripcion'] = c;
     else if (text.includes('PRECIO COMPRA $') || text === 'PRECIO $' || text === 'COSTO $') colMap['precioUsd'] = c;
@@ -286,6 +296,29 @@ function processPurchaseInWorkbook(
       changed = true;
     }
 
+    if (colMap['trackingShiper'] && purchase.shipperTracking) {
+      const cellShiper = row.getCell(colMap['trackingShiper']);
+      const curShiper = cleanTracking(String(cellShiper.value || ''));
+      if (curShiper !== purchase.shipperTracking) {
+        if (cellShiper.model) {
+          delete cellShiper.model.sharedFormula;
+          delete cellShiper.model.formula;
+        }
+        cellShiper.value = purchase.shipperTracking;
+        changed = true;
+      }
+    }
+
+    if (colMap['enviadoEmbarcacion']) {
+      const cellEmb = row.getCell(colMap['enviadoEmbarcacion']);
+      const isEmb = purchase.isArchived || purchase.shippingStatus === 'ENTREGADO_LIMA';
+      const desired = isEmb ? 'SI' : 'NO';
+      if (String(cellEmb.value || '') !== desired) {
+        cellEmb.value = desired;
+        changed = true;
+      }
+    }
+
     if (changed) {
       return { action: 'updated', sheetName: monthName, row: existingRowIdx };
     }
@@ -316,20 +349,28 @@ function processPurchaseInWorkbook(
   // Values
   row.getCell(colMap['fechaCompra']).value = formatPurchaseDateSpanish(validDate);
   row.getCell(colMap['sistema']).value = 'SI';
-  row.getCell(colMap['enviadoEmbarcacion']).value = 'NO';
+  const isNewEmb = purchase.isArchived || purchase.shippingStatus === 'ENTREGADO_LIMA';
+  row.getCell(colMap['enviadoEmbarcacion']).value = isNewEmb ? 'SI' : 'NO';
   row.getCell(colMap['numeroOrden']).value = purchase.orderNumber || '';
   row.getCell(colMap['courier']).value = (purchase.courier || 'USPS').toUpperCase();
   row.getCell(colMap['tracking']).value = targetTrack;
+  if (colMap['trackingShiper']) {
+    row.getCell(colMap['trackingShiper']).value = purchase.shipperTracking || targetTrack;
+  }
 
   // Supplier with hyperlink
-  const supplierName = purchase.supplier || 'eBay';
-  if (supplierName && supplierName !== 'eBay') {
+  const supplierName = (purchase.supplier || 'eBay').trim();
+  const isGeneric = ['ebay', 'usps', 'ups', 'fedex', 'dhl', 'desconocido'].includes(supplierName.toLowerCase());
+  if (!isGeneric) {
     row.getCell(colMap['proveedor']).value = {
       text: supplierName,
-      hyperlink: `https://www.ebay.com/usr/${supplierName}`,
+      hyperlink: `https://www.ebay.com/usr/${encodeURIComponent(supplierName)}`,
     };
   } else {
-    row.getCell(colMap['proveedor']).value = supplierName;
+    row.getCell(colMap['proveedor']).value = {
+      text: 'eBay',
+      hyperlink: 'https://www.ebay.com',
+    };
   }
 
   // Description with item hyperlink if itemId is available

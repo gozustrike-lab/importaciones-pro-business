@@ -58,16 +58,46 @@ export function inferTechnicalModel(title: string = '', rawModel?: string): stri
   if (match) return match[1].toUpperCase();
 
   const titleLower = (title || '').toLowerCase();
-  if (titleLower.includes('10.5')) return 'A1701';
+  
+  // iPads
+  if (titleLower.includes('10.5') || titleLower.includes('a1701')) return 'A1701';
+  if (titleLower.includes('12.9') && (titleLower.includes('3') || titleLower.includes('3rd') || titleLower.includes('3.ª'))) return 'A1876';
   if (titleLower.includes('12.9')) return 'A1670';
-  if (titleLower.includes('9th') || titleLower.includes('9na')) return 'A2603';
-  if (titleLower.includes('7th') || titleLower.includes('7ma')) return 'A2197';
-  if (titleLower.includes('8th') || titleLower.includes('8va')) return 'A2270';
-  if (titleLower.includes('air 3') || titleLower.includes('air (3rd')) return 'A2152';
+  if (titleLower.includes('11') && titleLower.includes('pro')) return 'A1980';
+  if (titleLower.includes('ipad 9') || titleLower.includes('9th') || titleLower.includes('9na')) return 'A2602';
+  if (titleLower.includes('ipad 8') || titleLower.includes('8th') || titleLower.includes('8va')) return 'A2270';
+  if (titleLower.includes('ipad 7') || titleLower.includes('7th') || titleLower.includes('7ma')) return 'A2197';
+  if (titleLower.includes('ipad 6') || titleLower.includes('6th') || titleLower.includes('6ta')) return 'A1893';
+  if (titleLower.includes('ipad 5') || titleLower.includes('5th') || titleLower.includes('5ta')) return 'A1822';
+  if (titleLower.includes('mini 4')) return 'A1538';
+  if (titleLower.includes('mini 5')) return 'A2133';
+  if (titleLower.includes('air 3') || titleLower.includes('air (3rd') || titleLower.includes('air 3rd')) return 'A2152';
   if (titleLower.includes('air 4') || titleLower.includes('air (4th')) return 'A2316';
   if (titleLower.includes('air 5') || titleLower.includes('air (5th')) return 'A2588';
+
+  // MacBooks
+  if (titleLower.includes('16') && (titleLower.includes('2019') || titleLower.includes('macbook'))) return 'A2141';
+  if (titleLower.includes('13') && titleLower.includes('2019')) return 'A1989';
+  if (titleLower.includes('13') && titleLower.includes('2020') && titleLower.includes('m1')) return 'A2338';
+  if (titleLower.includes('13') && titleLower.includes('2020')) return 'A2289';
+  if (titleLower.includes('macbook pro 13') || titleLower.includes('macbook 13')) return 'A1989';
+  if (titleLower.includes('macbook air 13') && titleLower.includes('m1')) return 'A2337';
+  if (titleLower.includes('macbook air 13') || titleLower.includes('air 13')) return 'A1466';
+  if (titleLower.includes('15') && (titleLower.includes('2018') || titleLower.includes('2019'))) return 'A1990';
+
+  // Accessories & iPhones
+  if (titleLower.includes('96w')) return 'A2166';
+  if (titleLower.includes('87w')) return 'A1719';
+  if (titleLower.includes('61w')) return 'A1947';
   if (titleLower.includes('se 3rd') || titleLower.includes('se 2022') || titleLower.includes('iphone se')) return 'A2783';
-  if (titleLower.includes('macbook')) return 'A1706';
+  if (titleLower.includes('12 pro max')) return 'A2411';
+  if (titleLower.includes('13 pro max')) return 'A2643';
+  if (titleLower.includes('14 pro max')) return 'A2894';
+
+  // Dell Laptops
+  if (titleLower.includes('latitude 3330') || titleLower.includes('dell 3330')) return 'Latitude 3330';
+  const dellMatch = titleLower.match(/latitude\s+([0-9]{4})/);
+  if (dellMatch) return `Latitude ${dellMatch[1]}`;
 
   return '';
 }
@@ -96,9 +126,9 @@ export function autoClassifyProduct(product: {
   } else if (desc.includes('iphone') || desc.includes('celular') || desc.includes('smartphone') || desc.includes('galaxy') || desc.includes('pixel')) {
     productoNombre = 'Teléfono Celular Inteligente';
     marca = desc.includes('galaxy') || desc.includes('samsung') ? 'Samsung' : desc.includes('pixel') ? 'Google' : 'Apple';
-  } else if (desc.includes('macbook') || desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad')) {
+  } else if (desc.includes('macbook') || desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('latitude') || desc.includes('dell')) {
     productoNombre = 'Computadora Portátil (Laptop)';
-    marca = desc.includes('thinkpad') || desc.includes('lenovo') ? 'Lenovo' : desc.includes('macbook') ? 'Apple' : 'HP';
+    marca = desc.includes('dell') ? 'Dell' : desc.includes('thinkpad') || desc.includes('lenovo') ? 'Lenovo' : desc.includes('macbook') ? 'Apple' : 'HP';
   } else if (desc.includes('watch') || desc.includes('reloj')) {
     productoNombre = 'Reloj Inteligente (Smartwatch)';
     marca = desc.includes('apple') ? 'Apple' : 'Samsung';

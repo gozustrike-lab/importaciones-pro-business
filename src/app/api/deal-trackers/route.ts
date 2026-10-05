@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
+import { scanLiveEbayDealsForQuery } from "@/lib/ebay";
 
 // Helper to extract seller username and clean store URL from an eBay link
 export function parseEbaySeller(input?: string): { sellerUsername?: string; storeUrl?: string } {
   if (!input || !input.trim()) return {};
   const str = input.trim();
 
-  // If it's a URL
   if (str.startsWith("http://") || str.startsWith("https://")) {
     const storeMatch = str.match(/ebay\.com\/str\/([a-zA-Z0-9._-]+)/i);
     if (storeMatch) {
@@ -27,15 +27,15 @@ export function parseEbaySeller(input?: string): { sellerUsername?: string; stor
     return { storeUrl: str };
   }
 
-  // Raw username (e.g. "itsworthmore" or "@itsworthmore")
   const cleanUser = str.replace(/^@/, "").trim();
+  if (cleanUser.toLowerCase() === "all") return {};
   return {
     sellerUsername: cleanUser,
     storeUrl: `https://www.ebay.com/str/${cleanUser}`,
   };
 }
 
-// GET /api/deal-trackers - List all deal trackers & recent deals
+// GET /api/deal-trackers - List all deal trackers & live deals sorted lowest-to-highest price
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
@@ -49,13 +49,12 @@ export async function GET(request: NextRequest) {
           select: { id: true, name: true, url: true, rating: true, totalOrders: true },
         },
         deals: {
-          orderBy: { foundAt: "desc" },
-          take: 20,
+          orderBy: { currentPriceUsd: "asc" },
+          take: 25,
         },
       },
     });
 
-    // Also get total unread alerts
     const allDeals = trackers.flatMap((t) => t.deals);
     const unreadCount = allDeals.filter((d) => !d.isRead).length;
 
@@ -74,7 +73,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/deal-trackers - Create new deal tracker
+// POST /api/deal-trackers - Create new deal tracker & immediately scan eBay live (Seller >= 95%, sorted by lowest price)
 export async function POST(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
@@ -85,27 +84,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, keywords, sellerLink, maxPriceUsd, minDiscountPct, condition, category, supplierId } = body;
 
-    if (!title || !keywords) {
+    const cleanKeywords = (keywords || title || "").trim();
+    const cleanTitle = (title || cleanKeywords).trim();
+
+    if (!cleanKeywords) {
       return NextResponse.json(
-        { error: "El título y las palabras clave de búsqueda son requeridos" },
+        { error: "Indica el modelo o palabras clave del producto a rastrear" },
         { status: 400 }
       );
     }
 
-    const parsed = parseEbaySeller(sellerLink);
-    const sellerUsername = body.sellerUsername || parsed.sellerUsername || null;
-    const storeUrl = body.storeUrl || parsed.storeUrl || (sellerUsername ? `https://www.ebay.com/str/${sellerUsername}` : null);
+    const parsed = parseEbaySeller(sellerLink || body.sellerUsername);
+    const sellerUsername = parsed.sellerUsername || null;
+    const storeUrl = parsed.storeUrl || (sellerUsername ? `https://www.ebay.com/str/${sellerUsername}` : null);
+    const parsedMaxPrice = maxPriceUsd ? parseFloat(maxPriceUsd) : null;
 
     const tracker = await db.dealTracker.create({
       data: {
-        title: title.trim(),
-        keywords: keywords.trim(),
+        title: cleanTitle,
+        keywords: cleanKeywords,
         sellerUsername,
         storeUrl,
         supplierId: supplierId || null,
         category: category || "Tablets",
-        maxPriceUsd: maxPriceUsd ? parseFloat(maxPriceUsd) : null,
-        minDiscountPct: minDiscountPct ? parseFloat(minDiscountPct) : 10,
+        maxPriceUsd: parsedMaxPrice,
+        minDiscountPct: minDiscountPct ? parseFloat(minDiscountPct) : 15,
         condition: condition || "Used",
         isActive: true,
         notificationsEnabled: true,
@@ -113,15 +116,57 @@ export async function POST(request: NextRequest) {
         lastCheckedAt: new Date(),
         lastFoundCount: 0,
       },
+    });
+
+    // Immediately scan live eBay for this model (Seller >= 95%, sorted by lowest price)
+    const liveDeals = await scanLiveEbayDealsForQuery({
+      keywords: cleanKeywords,
+      sellerUsername,
+      maxPriceUsd: parsedMaxPrice,
+      minFeedbackPct: 95.0,
+      limit: 8,
+    });
+
+    if (liveDeals.length > 0) {
+      await db.trackedDeal.createMany({
+        data: liveDeals.map((d) => ({
+          trackerId: tracker.id,
+          itemId: d.itemId,
+          title: d.title,
+          itemUrl: d.itemUrl,
+          imageUrl: d.imageUrl,
+          sellerUsername: d.sellerUsername,
+          sellerFeedback: d.sellerFeedback,
+          currentPriceUsd: d.currentPriceUsd,
+          originalPriceUsd: d.originalPriceUsd,
+          discountPct: d.discountPct,
+          couponCode: null,
+          promoDescription: d.promoDescription,
+          condition: d.condition,
+          isRead: false,
+          isStarred: false,
+          foundAt: new Date(),
+        })),
+      });
+
+      await db.dealTracker.update({
+        where: { id: tracker.id },
+        data: { lastFoundCount: liveDeals.length },
+      });
+    }
+
+    const fullTracker = await db.dealTracker.findUnique({
+      where: { id: tracker.id },
       include: {
         supplier: true,
-        deals: true,
+        deals: { orderBy: { currentPriceUsd: "asc" } },
       },
     });
 
     return NextResponse.json({
       success: true,
-      tracker,
+      tracker: fullTracker,
+      foundCount: liveDeals.length,
     });
   } catch (error: any) {
     console.error("Error creating deal tracker:", error);

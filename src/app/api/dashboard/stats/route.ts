@@ -389,13 +389,10 @@ export async function GET() {
       recentProducts: recentProducts.map((p) => {
         const itemMatch = p.notes?.match(/ItemID:\s*(\d+)/i) || p.description?.match(/#?(\d{12})/);
         const itemId = itemMatch ? itemMatch[1] : undefined;
-        let itemUrl = itemId ? `https://www.ebay.com/itm/${itemId}` : undefined;
-        let orderUrl = p.orderNumber && p.orderNumber.includes('-')
+        const itemUrl = itemId ? `https://www.ebay.com/itm/${itemId}` : undefined;
+        const orderUrl = p.orderNumber && (p.orderNumber.includes('-') || /^\d{10,}$/.test(p.orderNumber))
           ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`
           : undefined;
-        if (!itemUrl && orderUrl) {
-          itemUrl = orderUrl;
-        }
 
         return {
           id: p.id,

@@ -27,38 +27,39 @@ async function cleanDatabase() {
   });
   console.log(`✅ Eliminados ${deletedProducts.count} productos de prueba demo.`);
 
-  // Asegurar que el iPad de Peggy esté en la base de datos si aún no estaba
+  // Asegurar que el iPad Pro de 23-15114-36516 esté en la base de datos si aún no estaba
   const user = await db.user.findFirst({ where: { email: 'gozustrike@gmail.com' } });
   if (user && user.tenantId) {
-    const peggyItemExists = await db.product.findFirst({ where: { trackingId: '9400108205497721934380' } });
-    if (!peggyItemExists) {
+    const itemExists = await db.product.findFirst({ where: { orderNumber: '23-15114-36516' } });
+    if (!itemExists) {
       await db.product.create({
         data: {
-          purchaseDate: new Date('2026-09-10T15:30:00Z'),
+          purchaseDate: new Date('2026-09-08T01:46:52Z'),
           orderNumber: '23-15114-36516',
-          supplier: 'EBAY',
-          courier: 'USPS',
-          trackingId: '9400108205497721934380',
+          supplier: 'wikiwoo',
+          courier: 'UPS',
+          trackingId: '1Z0R2B760325209042',
+          shipperTracking: '1Z0R2B760325209042',
           shippingStatus: 'USA',
-          description: 'Apple iPad 7ma Generación 10.2 pulgadas 32GB Wi-Fi Space Gray',
+          description: 'Apple iPad Pro 10.5" 256GB WiFi Gris Espacial',
           category: 'Tabletas',
-          model: 'A2197 (iPad 7th Gen)',
+          model: 'A1701 (iPad Pro 10.5)',
           color: 'Gris Espacial',
-          capacity: '32 GB',
+          capacity: '256 GB',
           grade: 'B',
           condition: 'Usado',
           quantity: 1,
-          purchasePriceUsd: 110.0,
+          purchasePriceUsd: 89.95,
           shippingCostUsd: 0.0,
           exchangeRate: 3.40,
-          totalCostPen: 374.0,
+          totalCostPen: 305.83,
           salePricePen: 750.0,
           suggestedPricePen: 799.0,
           tenantId: user.tenantId,
-          notes: 'Compra real eBay - Casillero Shipper Doral FL (Peggy Liliana Bonilla)',
+          notes: 'ItemID: 158089540431 | Img: https://i.ebayimg.com/images/g/4YwAAOSw-tFa7Uf3/s-l500.jpg | Compra real eBay wikiwoo',
         },
       });
-      console.log('✅ Creado producto real de Peggy en DB.');
+      console.log('✅ Creado producto real 23-15114-36516 en DB.');
     }
   }
 

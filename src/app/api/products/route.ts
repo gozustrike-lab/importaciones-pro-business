@@ -78,14 +78,20 @@ export async function GET(request: NextRequest) {
 
       let itemUrl: string | undefined = undefined;
       let orderUrl: string | undefined = undefined;
-      if (p.orderNumber && p.orderNumber.includes('-')) {
+      if (p.orderNumber && (p.orderNumber.includes('-') || /^\d{10,}$/.test(p.orderNumber))) {
         orderUrl = `https://order.ebay.com/ord/show?orderId=${p.orderNumber}`;
       }
       if (itemId) {
         itemUrl = `https://www.ebay.com/itm/${itemId}`;
-      } else if (orderUrl) {
-        itemUrl = orderUrl;
       }
+
+      const rawSupplier = (p.supplier || '').trim();
+      const isGenericSupplier =
+        !rawSupplier ||
+        ['ebay', 'usps', 'ups', 'fedex', 'dhl', 'desconocido'].includes(rawSupplier.toLowerCase());
+      const supplierUrl = isGenericSupplier
+        ? 'https://www.ebay.com'
+        : `https://www.ebay.com/usr/${encodeURIComponent(rawSupplier)}`;
 
       return {
         id: p.id,
@@ -101,6 +107,7 @@ export async function GET(request: NextRequest) {
         condition: p.condition,
         status: p.shippingStatus,
         supplier: p.supplier,
+        supplierUrl,
         courier: p.courier,
         trackingNumber: p.trackingId,
         shipperTracking: p.shipperTracking || "",
