@@ -1,0 +1,807 @@
+[
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-STOCK-IPAD-MINI5-256",
+      "name": "Apple iPad Mini 5 256GB Retina A12 Bionic (WiFi) + Mica • Ord: 5-256",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-mini-5-256gb-retina-a12-bionic-wifi-mica-ord-5-256-5-256"
+      },
+      "sku": "STOCK-IPAD-MINI5-256",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 1200,
+      "compareAtPrice": 1380,
+      "description": "Apple iPad Mini 5 256GB WiFi con Chip A12 Bionic y pantalla Retina 7.9\". Seminuevo Grado A con mica de pantalla incluida.",
+      "features": [
+        "Grado A — Seminuevo en excelente estado",
+        "Pantalla Retina 7.9\" True Tone y amplia gama P3",
+        "Chip Apple A12 Bionic con Neural Engine",
+        "256GB de almacenamiento interno",
+        "Conectividad WiFi de alta velocidad",
+        "Incluye mica de pantalla instalada / de regalo",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 1,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-b737d4f68597ff767ffc14b10292eb2498654522-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-26-15269-64653",
+      "name": "Pantalla Completa Display Original Apple MacBook Pro 16\" (A2141) • Ord: 64653",
+      "slug": {
+        "_type": "slug",
+        "current": "pantalla-completa-display-original-apple-macbook-pro-16-a2141-ord-64653-64653"
+      },
+      "sku": "26-15269-64653",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-accesorios"
+      },
+      "collection": "Apple",
+      "price": 650,
+      "compareAtPrice": 850,
+      "description": "Ensamble de pantalla completo original Apple Retina 16\" IPS (3072 x 1920) 500 nits Space Gray para MacBook Pro A2141. Seminuevo original garantizado.",
+      "features": [
+        "Repuesto original Apple garantizado",
+        "Pantalla Retina 16\" IPS (3072 x 1920) 500 nits",
+        "Color Space Gray con cámara FaceTime HD integrada",
+        "Listo para ensamblaje e instalación",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 2,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-19-15240-96931",
+      "name": "Apple iPad Air 3ra Gen 10.5\" Retina (64GB) (WiFi + 4G LTE) • Ord: 96931",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-air-3ra-gen-105-retina-64gb-wifi-4g-lte-ord-96931-96931"
+      },
+      "sku": "19-15240-96931",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 699,
+      "compareAtPrice": 849,
+      "description": "Apple iPad Air 3ra Generación con pantalla laminada Retina 10.5\" True Tone, chip A12 Bionic con Neural Engine y 64GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado",
+        "Pantalla Retina laminada de 10.5\" True Tone con amplia gama P3",
+        "Chip Apple A12 Bionic de alta velocidad",
+        "64GB de capacidad de almacenamiento",
+        "Conectividad WiFi + 4G LTE libre de fábrica",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 3,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-06-15264-43780",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi (Silver) • Ord: 43780",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-silver-ord-43780-43780"
+      },
+      "sku": "06-15264-43780",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 950,
+      "compareAtPrice": 1150,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 4,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-11-15254-67047-1",
+      "name": "Apple iPad 9na Gen 10.2\" Chip A13 Bionic 64GB (WiFi + 4G) • Ord: 047-1",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-9na-gen-102-chip-a13-bionic-64gb-wifi-4g-ord-047-1-047-1"
+      },
+      "sku": "11-15254-67047-1",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 799,
+      "compareAtPrice": 950,
+      "description": "Apple iPad 9na Generación con pantalla Retina de 10.2\" True Tone, chip Apple A13 Bionic y cámara frontal Ultra Gran Angular de 12MP con Encuadre Centrado (Center Stage).",
+      "features": [
+        "Grado A — Seminuevo en excelente estado como nuevo",
+        "Pantalla Retina de 10.2 pulgadas con tecnología True Tone",
+        "Chip Apple A13 Bionic con arquitectura de 64 bits y Neural Engine",
+        "Cámara frontal de 12MP Ultra Gran Angular con Encuadre Centrado",
+        "64GB de capacidad de almacenamiento rápido",
+        "Conectividad WiFi + Celular 4G LTE",
+        "Batería con más de 90% de salud para todo el día",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 5,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-63bf9ccb9e99c6e6083505db50021f951372e596-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-08-15260-23950-1",
+      "name": "Laptop Dell Latitude 3330 13.3\" FHD Intel Core i5 11va Gen • Ord: 950-1",
+      "slug": {
+        "_type": "slug",
+        "current": "laptop-dell-latitude-3330-133-fhd-intel-core-i5-11va-gen-ord-950-1-950-1"
+      },
+      "sku": "08-15260-23950-1",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Dell",
+      "price": 1250,
+      "compareAtPrice": 1500,
+      "description": "Laptop Dell Latitude 3330 de 13.3\" Full HD Antirreflejo. Procesador Intel Core i5 de 11va Generación (hasta 4.5 GHz), 8GB RAM DDR4 y 256GB SSD M.2 NVMe. Gráficos Intel Iris Xe y Windows 11 Pro activado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo en impecable estado estético y operativo",
+        "Pantalla 13.3\" Full HD (1920 x 1080) Antirreflejo",
+        "Procesador Intel Core i5-1155G7 11va Generación (hasta 4.5 GHz)",
+        "8GB de memoria RAM DDR4",
+        "256GB SSD M.2 NVMe de alta velocidad",
+        "Gráficos Intel Iris Xe de alto rendimiento",
+        "Windows 11 Pro 64-bit activado y optimizado",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 6,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-d88826aa275949b471b93fffddbe5ee4f956d06c-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-06-15262-15918",
+      "name": "Apple MacBook Pro 13.3\" Retina Touch Bar Core i5 (8GB RAM / 256GB SSD) • Ord: 15918",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-133-retina-touch-bar-core-i5-8gb-ram-256gb-ssd-ord-15918-15918"
+      },
+      "sku": "06-15262-15918",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 1299,
+      "compareAtPrice": 1549,
+      "description": "Apple MacBook Pro 13.3\" Retina Touch Bar y Touch ID. Procesador Intel Core i5 Quad-Core, 8GB RAM y 256GB SSD NVMe. macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina 13.3\" True Tone P3 (2560 x 1600)",
+        "Procesador Intel Core i5 Quad-Core Turbo Boost",
+        "8GB de memoria RAM LPDDR3",
+        "256GB SSD NVMe ultrarrápido",
+        "Sistema Operativo macOS actualizado",
+        "Teclado retroiluminado con Touch Bar y Touch ID",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 7,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-940ca333729ad4dc48ad5006e109506e5614e187-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-02-15-27101205",
+      "name": "Laptop Dell Latitude 3330 13.3\" FHD Intel Core i5 11va Gen • Ord: 01205",
+      "slug": {
+        "_type": "slug",
+        "current": "laptop-dell-latitude-3330-133-fhd-intel-core-i5-11va-gen-ord-01205-01205"
+      },
+      "sku": "02-15-27101205",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Dell",
+      "price": 1250,
+      "compareAtPrice": 1500,
+      "description": "Laptop Dell Latitude 3330 de 13.3\" Full HD Antirreflejo. Procesador Intel Core i5 de 11va Generación (hasta 4.5 GHz), 8GB RAM DDR4 y 256GB SSD M.2 NVMe. Gráficos Intel Iris Xe y Windows 11 Pro activado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo en impecable estado estético y operativo",
+        "Pantalla 13.3\" Full HD (1920 x 1080) Antirreflejo",
+        "Procesador Intel Core i5-1155G7 11va Generación (hasta 4.5 GHz)",
+        "8GB de memoria RAM DDR4",
+        "256GB SSD M.2 NVMe de alta velocidad",
+        "Gráficos Intel Iris Xe de alto rendimiento",
+        "Windows 11 Pro 64-bit activado y optimizado",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 8,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-d88826aa275949b471b93fffddbe5ee4f956d06c-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-03-15265-33955",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi (Silver) • Ord: 33955",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-silver-ord-33955-33955"
+      },
+      "sku": "03-15265-33955",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 950,
+      "compareAtPrice": 1150,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 9,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-04-15263-53974",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi (Silver) • Ord: 53974",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-silver-ord-53974-53974"
+      },
+      "sku": "04-15263-53974",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 950,
+      "compareAtPrice": 1150,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 10,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-02-15-27101592",
+      "name": "Apple iPad 9na Gen 10.2\" Chip A13 Bionic 64GB (WiFi + 4G) • Ord: 01592",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-9na-gen-102-chip-a13-bionic-64gb-wifi-4g-ord-01592-01592"
+      },
+      "sku": "02-15-27101592",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 799,
+      "compareAtPrice": 950,
+      "description": "Apple iPad 9na Generación con pantalla Retina de 10.2\" True Tone, chip Apple A13 Bionic y cámara frontal Ultra Gran Angular de 12MP con Encuadre Centrado (Center Stage).",
+      "features": [
+        "Grado A — Seminuevo en excelente estado como nuevo",
+        "Pantalla Retina de 10.2 pulgadas con tecnología True Tone",
+        "Chip Apple A13 Bionic con arquitectura de 64 bits y Neural Engine",
+        "Cámara frontal de 12MP Ultra Gran Angular con Encuadre Centrado",
+        "64GB de capacidad de almacenamiento rápido",
+        "Conectividad WiFi + Celular 4G LTE",
+        "Batería con más de 90% de salud para todo el día",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 11,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-63bf9ccb9e99c6e6083505db50021f951372e596-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-137683196863-10085443667711",
+      "name": "Apple iPad 9na Gen 10.2\" Chip A13 Bionic 64GB (WiFi + 4G) • Ord: 67711",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-9na-gen-102-chip-a13-bionic-64gb-wifi-4g-ord-67711-67711"
+      },
+      "sku": "137683196863-10085443667711",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 799,
+      "compareAtPrice": 950,
+      "description": "Apple iPad 9na Generación con pantalla Retina de 10.2\" True Tone, chip Apple A13 Bionic y cámara frontal Ultra Gran Angular de 12MP con Encuadre Centrado (Center Stage).",
+      "features": [
+        "Grado A — Seminuevo en excelente estado como nuevo",
+        "Pantalla Retina de 10.2 pulgadas con tecnología True Tone",
+        "Chip Apple A13 Bionic con arquitectura de 64 bits y Neural Engine",
+        "Cámara frontal de 12MP Ultra Gran Angular con Encuadre Centrado",
+        "64GB de capacidad de almacenamiento rápido",
+        "Conectividad WiFi + Celular 4G LTE",
+        "Batería con más de 90% de salud para todo el día",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": true,
+      "order": 12,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-63bf9ccb9e99c6e6083505db50021f951372e596-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-137502273460-10088342194718",
+      "name": "Laptop Dell Latitude 3330 13.3\" FHD Intel Core i5 11va Gen • Ord: 94718",
+      "slug": {
+        "_type": "slug",
+        "current": "laptop-dell-latitude-3330-133-fhd-intel-core-i5-11va-gen-ord-94718-94718"
+      },
+      "sku": "137502273460-10088342194718",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Dell",
+      "price": 1250,
+      "compareAtPrice": 1500,
+      "description": "Laptop Dell Latitude 3330 de 13.3\" Full HD Antirreflejo. Procesador Intel Core i5 de 11va Generación (hasta 4.5 GHz), 8GB RAM DDR4 y 256GB SSD M.2 NVMe. Gráficos Intel Iris Xe y Windows 11 Pro activado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo en impecable estado estético y operativo",
+        "Pantalla 13.3\" Full HD (1920 x 1080) Antirreflejo",
+        "Procesador Intel Core i5-1155G7 11va Generación (hasta 4.5 GHz)",
+        "8GB de memoria RAM DDR4",
+        "256GB SSD M.2 NVMe de alta velocidad",
+        "Gráficos Intel Iris Xe de alto rendimiento",
+        "Windows 11 Pro 64-bit activado y optimizado",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 13,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-d88826aa275949b471b93fffddbe5ee4f956d06c-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-16-15233-27416",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi (Rose Gold) • Ord: 27416",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-rose-gold-ord-27416-27416"
+      },
+      "sku": "16-15233-27416",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 950,
+      "compareAtPrice": 1150,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 14,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-03-15241-27810",
+      "name": "Apple MacBook Pro 13.3\" Retina Touch Bar Core i5 (8GB RAM / 256GB SSD) • Ord: 27810",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-133-retina-touch-bar-core-i5-8gb-ram-256gb-ssd-ord-27810-27810"
+      },
+      "sku": "03-15241-27810",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 1299,
+      "compareAtPrice": 1549,
+      "description": "Apple MacBook Pro 13.3\" Retina Touch Bar y Touch ID. Procesador Intel Core i5 Quad-Core, 8GB RAM y 256GB SSD NVMe. macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina 13.3\" True Tone P3 (2560 x 1600)",
+        "Procesador Intel Core i5 Quad-Core Turbo Boost",
+        "8GB de memoria RAM LPDDR3",
+        "256GB SSD NVMe ultrarrápido",
+        "Sistema Operativo macOS actualizado",
+        "Teclado retroiluminado con Touch Bar y Touch ID",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 15,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-940ca333729ad4dc48ad5006e109506e5614e187-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-15-15216-85530",
+      "name": "Apple MacBook Pro 13.3\" Retina Touch Bar (2020) Core i7 16GB / 512GB SSD • Ord: 85530",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-133-retina-touch-bar-2020-core-i7-16gb-512gb-ssd-ord-85530-85530"
+      },
+      "sku": "15-15216-85530",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 1599,
+      "compareAtPrice": 1950,
+      "description": "Apple MacBook Pro 13.3\" Retina Touch Bar y Touch ID. Procesador Intel Core i7 10ma Generación Quad-Core, 16GB RAM LPDDR4X y 512GB SSD. 4 puertos Thunderbolt 3. macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado",
+        "Pantalla Retina 13.3\" True Tone P3 (2560 x 1600)",
+        "Procesador Intel Core i7 10ma Gen Quad-Core",
+        "16GB de memoria RAM LPDDR4X 3733 MHz de alta velocidad",
+        "512GB SSD NVMe de máxima velocidad",
+        "Sistema Operativo macOS actualizado",
+        "Teclado Magic Keyboard con Touch Bar y Touch ID",
+        "4 puertos Thunderbolt 3 (USB-C) de alta velocidad",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 16,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-940ca333729ad4dc48ad5006e109506e5614e187-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-07-15231-99734",
+      "name": "Apple MacBook Pro 13.3\" Retina Touch Bar Core i5 (8GB RAM / 512GB SSD) • Ord: 99734",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-133-retina-touch-bar-core-i5-8gb-ram-512gb-ssd-ord-99734-99734"
+      },
+      "sku": "07-15231-99734",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 1299,
+      "compareAtPrice": 1549,
+      "description": "Apple MacBook Pro 13.3\" Retina Touch Bar y Touch ID. Procesador Intel Core i5 Quad-Core, 8GB RAM y 512GB SSD NVMe. macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina 13.3\" True Tone P3 (2560 x 1600)",
+        "Procesador Intel Core i5 Quad-Core Turbo Boost",
+        "8GB de memoria RAM LPDDR3",
+        "512GB SSD NVMe ultrarrápido",
+        "Sistema Operativo macOS actualizado",
+        "Teclado retroiluminado con Touch Bar y Touch ID",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 17,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-940ca333729ad4dc48ad5006e109506e5614e187-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-20-15206-61373",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (512GB) WiFi + 4G Chip (Silver) • Ord: 61373",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-512gb-wifi-4g-chip-silver-ord-61373-61373"
+      },
+      "sku": "20-15206-61373",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 1050,
+      "compareAtPrice": 1250,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 512GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "512GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi + 4G LTE libre para cualquier operador",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 18,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-18-15208-57768",
+      "name": "Apple MacBook Pro 15.4\" Retina Touch Bar (2019) Core i7 16GB / 512GB SSD • Ord: 57768",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-154-retina-touch-bar-2019-core-i7-16gb-512gb-ssd-ord-57768-57768"
+      },
+      "sku": "18-15208-57768",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 2200,
+      "compareAtPrice": 2600,
+      "description": "Apple MacBook Pro 15.4\" Retina con Touch Bar y Touch ID. Procesador Intel Core i7 6-Core, 16GB RAM y 512GB SSD. Gráfica Dedicada AMD Radeon Pro + Intel UHD integrado, macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina 15.4\" IPS (2880 x 1800) True Tone P3",
+        "Procesador Intel Core i7 6 núcleos hasta 4.5 GHz",
+        "16GB de memoria RAM DDR4",
+        "512GB SSD NVMe ultrarrápido",
+        "Gráfica Dedicada AMD Radeon Pro + Intel UHD Graphics integrado",
+        "Sistema Operativo macOS actualizado",
+        "Teclado retroiluminado con Touch Bar y Touch ID",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 19,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-407623aa9ebc4d815fb5ca5a0f88ab09a6fd36a4-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-26-15191-50654",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi + 4G Chip • Ord: 50654",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-4g-chip-ord-50654-50654"
+      },
+      "sku": "26-15191-50654",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 1050,
+      "compareAtPrice": 1250,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi + 4G LTE libre para cualquier operador",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 20,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  }
+]

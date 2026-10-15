@@ -37,6 +37,7 @@ import {
   MessageCircle,
   Zap,
   CheckCircle2,
+  Smartphone,
 } from 'lucide-react';
 import {
   Card,
@@ -206,7 +207,7 @@ const EBAY_SORT_OPTIONS = [
   { value: 'newlyListed', label: 'Más recientes' },
 ];
 
-export function ProductosTab() {
+export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => void } = {}) {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [archivedProducts, setArchivedProducts] = useState<Product[]>([]);
@@ -973,6 +974,18 @@ export function ProductosTab() {
             <RefreshCw className={`h-4 w-4 text-emerald-600 ${refreshingStatus ? 'animate-spin' : ''}`} />
             <span>{refreshingStatus ? 'Sincronizando eBay...' : 'Sincronizar eBay'}</span>
           </Button>
+
+          {onNavigate && (
+            <Button
+              onClick={() => onNavigate('catalogo')}
+              variant="outline"
+              className="gap-2 border-emerald-500/60 text-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 min-h-[40px] font-bold shadow-xs text-xs"
+              title="Abrir Catálogo Oficial para TikTok Live y WhatsApp Business con fotos referenciales y fichas de venta"
+            >
+              <Smartphone className="h-4 w-4 text-emerald-600" />
+              <span>Catálogo TikTok & WA</span>
+            </Button>
+          )}
 
           <Button
             onClick={() => setEmbarqueDialogOpen(true)}

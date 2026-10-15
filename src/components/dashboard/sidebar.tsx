@@ -24,6 +24,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Bell,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -36,6 +37,7 @@ export type TabKey =
   | 'dashboard'
   | 'proveedores'
   | 'productos'
+  | 'catalogo'
   | 'compras'
   | 'clientes'
   | 'ventas'
@@ -65,6 +67,7 @@ const navItems: {
   badge?: string;
 }[] = [
   { key: 'productos', label: 'Inventario & Importaciones', icon: Package, section: 'Principal', badge: 'Live' },
+  { key: 'catalogo', label: 'Catálogo TikTok & WA', icon: Smartphone, section: 'Principal', badge: 'Catálogo' },
   { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Principal' },
   { key: 'compras', label: 'Registro Compras & Excel', icon: FileSpreadsheet, section: 'Principal' },
   { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Principal' },

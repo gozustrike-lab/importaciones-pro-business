@@ -1,0 +1,367 @@
+[
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-25-15169-10776",
+      "name": "Apple iPad 9na Gen 10.2\" Chip A13 Bionic 64GB (WiFi + 4G) • Ord: 10776",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-9na-gen-102-chip-a13-bionic-64gb-wifi-4g-ord-10776-10776"
+      },
+      "sku": "25-15169-10776",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 799,
+      "compareAtPrice": 950,
+      "description": "Apple iPad 9na Generación con pantalla Retina de 10.2\" True Tone, chip Apple A13 Bionic y cámara frontal Ultra Gran Angular de 12MP con Encuadre Centrado (Center Stage).",
+      "features": [
+        "Grado A — Seminuevo en excelente estado como nuevo",
+        "Pantalla Retina de 10.2 pulgadas con tecnología True Tone",
+        "Chip Apple A13 Bionic con arquitectura de 64 bits y Neural Engine",
+        "Cámara frontal de 12MP Ultra Gran Angular con Encuadre Centrado",
+        "64GB de capacidad de almacenamiento rápido",
+        "Conectividad WiFi + Celular 4G LTE",
+        "Batería con más de 90% de salud para todo el día",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 31,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-63bf9ccb9e99c6e6083505db50021f951372e596-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-11-15193-85571",
+      "name": "Apple MacBook Pro 13.3\" Retina Touch Bar Core i5 (16GB RAM / 512GB SSD) • Ord: 85571",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-133-retina-touch-bar-core-i5-16gb-ram-512gb-ssd-ord-85571-85571"
+      },
+      "sku": "11-15193-85571",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 1449,
+      "compareAtPrice": 1699,
+      "description": "Apple MacBook Pro 13.3\" Retina Touch Bar y Touch ID. Procesador Intel Core i5 Quad-Core, 16GB RAM y 512GB SSD NVMe. macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina 13.3\" True Tone P3 (2560 x 1600)",
+        "Procesador Intel Core i5 Quad-Core Turbo Boost",
+        "16GB de memoria RAM LPDDR3",
+        "512GB SSD NVMe ultrarrápido",
+        "Sistema Operativo macOS actualizado",
+        "Teclado retroiluminado con Touch Bar y Touch ID",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 32,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-940ca333729ad4dc48ad5006e109506e5614e187-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-16-15178-32110",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi + 4G Chip (Space Gray) • Ord: 32110",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-4g-chip-space-gray-ord-32110-32110"
+      },
+      "sku": "16-15178-32110",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 1050,
+      "compareAtPrice": 1250,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi + 4G LTE libre para cualquier operador",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 33,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-14-15181-25579",
+      "name": "Apple MacBook Pro 16\" Retina Touch Bar Core i7 (16GB RAM / 512GB SSD) • Ord: 25579",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-16-retina-touch-bar-core-i7-16gb-ram-512gb-ssd-ord-25579-25579"
+      },
+      "sku": "14-15181-25579",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 2300,
+      "compareAtPrice": 2700,
+      "description": "Apple MacBook Pro 16\" Retina Touch Bar (2019) Intel Core i7 16GB RAM y 512GB SSD. Doble gráfica con 4GB Video Dedicado AMD Radeon Pro + Intel UHD Graphics 630 integrado, macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado estético y operativo",
+        "Pantalla inmersiva Retina 16\" (3072 x 1920) 500 nits True Tone",
+        "Procesador Intel Core i7 6 núcleos hasta 4.5 GHz con Turbo Boost",
+        "16 GB de memoria RAM DDR4 2666 MHz",
+        "512 GB SSD NVMe ultrarrápido",
+        "Doble Gráfica: 4 GB Video Dedicado AMD Radeon Pro + Gráficos Integrados Intel UHD Graphics 630",
+        "Sistema Operativo macOS actualizado",
+        "Teclado Magic Keyboard con Touch Bar y Touch ID",
+        "Sistema de audio de 6 bocinas con sonido espacial",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 34,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-17-15174-59856",
+      "name": "Apple MacBook Pro 16\" Retina Touch Bar Core i7 (16GB RAM / 512GB SSD) • Ord: 59856",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-macbook-pro-16-retina-touch-bar-core-i7-16gb-ram-512gb-ssd-ord-59856-59856"
+      },
+      "sku": "17-15174-59856",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-laptops"
+      },
+      "collection": "Apple",
+      "price": 2300,
+      "compareAtPrice": 2700,
+      "description": "Apple MacBook Pro 16\" Retina Touch Bar (2019) Intel Core i7 16GB RAM y 512GB SSD. Doble gráfica con 4GB Video Dedicado AMD Radeon Pro + Intel UHD Graphics 630 integrado, macOS actualizado. 🎁 Incluye funda portalaptop nueva de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado estético y operativo",
+        "Pantalla inmersiva Retina 16\" (3072 x 1920) 500 nits True Tone",
+        "Procesador Intel Core i7 6 núcleos hasta 4.5 GHz con Turbo Boost",
+        "16 GB de memoria RAM DDR4 2666 MHz",
+        "512 GB SSD NVMe ultrarrápido",
+        "Doble Gráfica: 4 GB Video Dedicado AMD Radeon Pro + Gráficos Integrados Intel UHD Graphics 630",
+        "Sistema Operativo macOS actualizado",
+        "Teclado Magic Keyboard con Touch Bar y Touch ID",
+        "Sistema de audio de 6 bocinas con sonido espacial",
+        "🎁 INCLUYE: Funda portalaptop nueva de regalo + Cargador Original",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 35,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-27-15152-66235",
+      "name": "Apple iPad Air 3ra Gen 10.5\" Retina (256GB) (WiFi) • Ord: 66235",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-air-3ra-gen-105-retina-256gb-wifi-ord-66235-66235"
+      },
+      "sku": "27-15152-66235",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 879,
+      "compareAtPrice": 1029,
+      "description": "Apple iPad Air 3ra Generación con pantalla laminada Retina 10.5\" True Tone, chip A12 Bionic con Neural Engine y 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado",
+        "Pantalla Retina laminada de 10.5\" True Tone con amplia gama P3",
+        "Chip Apple A12 Bionic de alta velocidad",
+        "256GB de capacidad de almacenamiento",
+        "Conectividad WiFi de alta velocidad",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 36,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-21-15162-85891",
+      "name": "Apple iPad Air 3ra Gen 10.5\" Retina (256GB) (WiFi + 4G LTE) • Ord: 85891",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-air-3ra-gen-105-retina-256gb-wifi-4g-lte-ord-85891-85891"
+      },
+      "sku": "21-15162-85891",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 879,
+      "compareAtPrice": 1029,
+      "description": "Apple iPad Air 3ra Generación con pantalla laminada Retina 10.5\" True Tone, chip A12 Bionic con Neural Engine y 256GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en impecable estado",
+        "Pantalla Retina laminada de 10.5\" True Tone con amplia gama P3",
+        "Chip Apple A12 Bionic de alta velocidad",
+        "256GB de capacidad de almacenamiento",
+        "Conectividad WiFi + 4G LTE libre de fábrica",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 37,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-21-15150-22112",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (512GB) WiFi (Silver) • Ord: 22112",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-512gb-wifi-silver-ord-22112-22112"
+      },
+      "sku": "21-15150-22112",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 1050,
+      "compareAtPrice": 1250,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 512GB de almacenamiento.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "512GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "Compatible con Apple Pencil 1 y Smart Keyboard",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 38,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  },
+  {
+    "type": "product",
+    "content": {
+      "_id": "prod-25-15141-56007",
+      "name": "Apple iPad Pro 10.5\" Retina 120Hz ProMotion (256GB) WiFi (Rose Gold) • Ord: 56007",
+      "slug": {
+        "_type": "slug",
+        "current": "apple-ipad-pro-105-retina-120hz-promotion-256gb-wifi-rose-gold-ord-56007-56007"
+      },
+      "sku": "25-15141-56007",
+      "category": {
+        "_type": "reference",
+        "_ref": "category-tablets"
+      },
+      "collection": "Apple",
+      "price": 950,
+      "compareAtPrice": 1150,
+      "description": "Apple iPad Pro 10.5\" con pantalla fluida ProMotion de 120Hz Retina True Tone. Procesador Apple A10X Fusion Quad-Core, 256GB de almacenamiento. Incluye Apple Pencil de regalo.",
+      "features": [
+        "Grado A — Seminuevo certificado en excelente estado",
+        "Pantalla Retina fluida 120Hz ProMotion True Tone de 10.5 pulgadas",
+        "Chip Apple A10X Fusion de alta potencia gráfica",
+        "256GB de almacenamiento interno ultrarrápido",
+        "Conectividad WiFi de alta velocidad",
+        "4 parlantes estéreo Hi-Fi y cámara de 12MP con flash True Tone",
+        "🎁 Incluye Apple Pencil original de regalo",
+        "3 meses de garantía directa iTechPeru"
+      ],
+      "inStock": true,
+      "featured": false,
+      "order": 39,
+      "mainImage": {
+        "_type": "image",
+        "asset": {
+          "_type": "reference",
+          "_ref": "image-7011d8372143b4b46d82ffeec39fdadc570bac94-800x800-png"
+        }
+      }
+    }
+  }
+]

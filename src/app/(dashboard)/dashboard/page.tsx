@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 const DashboardTab = lazy(() => import('@/components/dashboard/dashboard-tab').then(m => ({ default: m.DashboardTab })));
 const ProveedoresTab = lazy(() => import('@/components/dashboard/proveedores-tab').then(m => ({ default: m.ProveedoresTab })));
 const ProductosTab = lazy(() => import('@/components/dashboard/productos-tab').then(m => ({ default: m.ProductosTab })));
+const CatalogoTab = lazy(() => import('@/components/dashboard/catalogo-tab').then(m => ({ default: m.CatalogoTab })));
 const ComprasTab = lazy(() => import('@/components/dashboard/compras-tab').then(m => ({ default: m.ComprasTab })));
 const ClientesTab = lazy(() => import('@/components/dashboard/clientes-tab').then(m => ({ default: m.ClientesTab })));
 const VentasTab = lazy(() => import('@/components/dashboard/ventas-tab').then(m => ({ default: m.VentasTab })));
@@ -26,6 +27,7 @@ const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: str
   dashboard: DashboardTab,
   proveedores: ProveedoresTab,
   productos: ProductosTab,
+  catalogo: CatalogoTab,
   compras: ComprasTab,
   clientes: ClientesTab,
   ventas: VentasTab,
@@ -42,6 +44,7 @@ const tabTitles: Record<TabKey, string> = {
   dashboard: 'Dashboard',
   proveedores: 'Proveedores',
   productos: 'Inventario',
+  catalogo: 'Catálogo TikTok Live & WhatsApp',
   compras: 'Registro Compras & Logística',
   clientes: 'CRM Clientes',
   ventas: 'Registro Ventas',

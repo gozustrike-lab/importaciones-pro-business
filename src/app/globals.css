@@ -123,3 +123,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 12mm 10mm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .catalog-print-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .catalog-page-break {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+}
+
