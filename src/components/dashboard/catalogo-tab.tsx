@@ -176,7 +176,7 @@ export function CatalogoTab() {
   };
 
   const handlePrint = () => {
-    window.print();
+    window.open('/catalogo-print', '_blank');
   };
 
   const handleSavePrice = async () => {
@@ -624,6 +624,20 @@ export function CatalogoTab() {
             const ts = imageTimestamps[`${modelKey}-${activeIdx + 1}`];
             const currentImg = ts ? `${rawImg}?t=${ts}` : rawImg;
 
+            const cdnFallback =
+              {
+                'ipad-mini-5': 'https://cdn.sanity.io/images/kqneikcb/production/b737d4f68597ff767ffc14b10292eb2498654522-800x800.png',
+                'ipad-pro-105': 'https://cdn.sanity.io/images/kqneikcb/production/7011d8372143b4b46d82ffeec39fdadc570bac94-800x800.png',
+                'ipad-pro-129': 'https://cdn.sanity.io/images/kqneikcb/production/9097efc98b761c70309a6ab9a4acbd698cb941e1-800x800.png',
+                'ipad-9': 'https://cdn.sanity.io/images/kqneikcb/production/63bf9ccb9e99c6e6083505db50021f951372e596-800x800.png',
+                'ipad-air-3': 'https://cdn.sanity.io/images/kqneikcb/production/53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800.png',
+                'macbook-pro-16': 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png',
+                'macbook-pro-15': 'https://cdn.sanity.io/images/kqneikcb/production/407623aa9ebc4d815fb5ca5a0f88ab09a6fd36a4-800x800.png',
+                'macbook-pro-13': 'https://cdn.sanity.io/images/kqneikcb/production/940ca333729ad4dc48ad5006e109506e5614e187-800x800.png',
+                'dell-latitude-3330': 'https://cdn.sanity.io/images/kqneikcb/production/d88826aa275949b471b93fffddbe5ee4f956d06c-800x800.png',
+                'charger-96w': 'https://cdn.sanity.io/images/kqneikcb/production/b73a6b11beaf76e29f2ed55bdcf934847911e337-800x800.png',
+              }[modelKey] || 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png';
+
             return (
               <Card
                 key={product.id}
@@ -662,6 +676,9 @@ export function CatalogoTab() {
                         src={currentImg}
                         alt={info.commercialTitle}
                         className="max-h-44 max-w-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300 rounded"
+                        onError={(e) => {
+                          e.currentTarget.src = cdnFallback;
+                        }}
                       />
                     </div>
 

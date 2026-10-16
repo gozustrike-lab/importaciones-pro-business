@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const currentUser = await getCurrentUser();
     const tenantFilter = getTenantFilter(currentUser);
 
-    const products = await db.product.findMany({
+    let products = await db.product.findMany({
       where: {
         ...tenantFilter,
         isArchived: false,
@@ -17,9 +17,15 @@ export async function GET(request: NextRequest) {
       orderBy: { purchaseDate: "desc" },
     });
 
-    const host = request.headers.get("host") || "localhost:3000";
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${host}`;
+    // Public / Meta crawler fallback
+    if (products.length === 0) {
+      products = await db.product.findMany({
+        where: { isArchived: false },
+        orderBy: { purchaseDate: "desc" },
+      });
+    }
+
+    const STORE_BASE_URL = "https://www.itechperu.shop";
 
     // Meta / WhatsApp Business Catalog standard CSV headers
     const headers = [
@@ -40,6 +46,19 @@ export async function GET(request: NextRequest) {
       return `"${val}"`;
     };
 
+    const cdnImageMap: Record<string, string> = {
+      'ipad-mini-5': 'https://cdn.sanity.io/images/kqneikcb/production/b737d4f68597ff767ffc14b10292eb2498654522-800x800.png',
+      'ipad-pro-105': 'https://cdn.sanity.io/images/kqneikcb/production/7011d8372143b4b46d82ffeec39fdadc570bac94-800x800.png',
+      'ipad-pro-129': 'https://cdn.sanity.io/images/kqneikcb/production/9097efc98b761c70309a6ab9a4acbd698cb941e1-800x800.png',
+      'ipad-9': 'https://cdn.sanity.io/images/kqneikcb/production/63bf9ccb9e99c6e6083505db50021f951372e596-800x800.png',
+      'ipad-air-3': 'https://cdn.sanity.io/images/kqneikcb/production/53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800.png',
+      'macbook-pro-16': 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png',
+      'macbook-pro-15': 'https://cdn.sanity.io/images/kqneikcb/production/407623aa9ebc4d815fb5ca5a0f88ab09a6fd36a4-800x800.png',
+      'macbook-pro-13': 'https://cdn.sanity.io/images/kqneikcb/production/940ca333729ad4dc48ad5006e109506e5614e187-800x800.png',
+      'dell-latitude-3330': 'https://cdn.sanity.io/images/kqneikcb/production/d88826aa275949b471b93fffddbe5ee4f956d06c-800x800.png',
+      'charger-96w': 'https://cdn.sanity.io/images/kqneikcb/production/b73a6b11beaf76e29f2ed55bdcf934847911e337-800x800.png',
+    };
+
     const rows = products.map((p) => {
       const info = getProductCatalogInfo(p);
       const isLaptop = info.category === "Laptops & MacBooks";
@@ -50,28 +69,13 @@ export async function GET(request: NextRequest) {
         ? "Electronics > Computers > Tablet Computers"
         : "Electronics > Electronics Accessories";
 
-      const fullDescription = `${info.displaySpecs} | ${info.cpuSpecs} | ${info.ramSpecs} | ${info.storageSpecs} | ${info.conditionLabel} | Garantía 3 meses directa. [FOTO REFERENCIAL: El equipo exacto se muestra en directo en nuestro TikTok Live]`;
+      const fullDescription = `${info.displaySpecs} | ${info.cpuSpecs} | ${info.ramSpecs} | ${info.storageSpecs} | ${info.conditionLabel} | Garantía 3 meses directa iTech Perú. [FOTO REFERENCIAL: Equipo original exhibido en TikTok Live • WhatsApp: +51 924 967 876]`;
 
-      const productLink = p.orderNumber
-        ? `https://wa.me/51999999999?text=${encodeURIComponent(`Hola, me interesa el equipo ${info.commercialTitle} (Código: ${p.orderNumber}) que vi en TikTok Live.`)}`
-        : baseUrl;
-
-      const cdnImageMap: Record<string, string> = {
-        'ipad-mini-5': 'https://cdn.sanity.io/images/kqneikcb/production/b737d4f68597ff767ffc14b10292eb2498654522-800x800.png',
-        'ipad-pro-105': 'https://cdn.sanity.io/images/kqneikcb/production/7011d8372143b4b46d82ffeec39fdadc570bac94-800x800.png',
-        'ipad-pro-129': 'https://cdn.sanity.io/images/kqneikcb/production/9097efc98b761c70309a6ab9a4acbd698cb941e1-800x800.png',
-        'ipad-9': 'https://cdn.sanity.io/images/kqneikcb/production/63bf9ccb9e99c6e6083505db50021f951372e596-800x800.png',
-        'ipad-air-3': 'https://cdn.sanity.io/images/kqneikcb/production/53bf215ec16b39bf7af3766dbb3b2cab62dfe919-800x800.png',
-        'macbook-pro-16': 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png',
-        'macbook-pro-15': 'https://cdn.sanity.io/images/kqneikcb/production/407623aa9ebc4d815fb5ca5a0f88ab09a6fd36a4-800x800.png',
-        'macbook-pro-13': 'https://cdn.sanity.io/images/kqneikcb/production/940ca333729ad4dc48ad5006e109506e5614e187-800x800.png',
-        'dell-latitude-3330': 'https://cdn.sanity.io/images/kqneikcb/production/d88826aa275949b471b93fffddbe5ee4f956d06c-800x800.png',
-        'charger-96w': 'https://cdn.sanity.io/images/kqneikcb/production/b73a6b11beaf76e29f2ed55bdcf934847911e337-800x800.png',
-      };
+      const productLink = `${STORE_BASE_URL}/coleccion`;
 
       const modelKeyMatch = info.referenceImage.match(/\/catalog\/([a-z0-9-]+?)(?:-\d)?\.png/i);
       const modelKey = modelKeyMatch ? modelKeyMatch[1] : '';
-      const imageUrl = cdnImageMap[modelKey] || `${baseUrl}${info.referenceImage}`;
+      const imageUrl = cdnImageMap[modelKey] || 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png';
 
       return [
         escapeCsv(p.orderNumber || p.id),
@@ -94,6 +98,8 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": 'attachment; filename="catalogo_whatsapp_business.csv"',
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=60, s-maxage=300",
       },
     });
   } catch (error: unknown) {

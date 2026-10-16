@@ -6,17 +6,32 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/register", "/api/auth", "/api/og"];
+  const publicRoutes = [
+    "/login",
+    "/register",
+    "/api/auth",
+    "/api/og",
+    "/api/catalog",
+    "/catalogo-print"
+  ];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-  // Static files and API routes (except protected ones)
+  // Static files and assets (never redirect to login)
   const isStaticFile =
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/catalog") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/og-image") ||
     pathname.startsWith("/logo") ||
     pathname.startsWith("/robots") ||
     pathname.startsWith("/sitemap") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".webp") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".csv") ||
+    pathname.endsWith(".pdf") ||
     pathname === "/";
   const isApiRoute = pathname.startsWith("/api");
 
