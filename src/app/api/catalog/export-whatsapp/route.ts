@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         ? "Electronics > Computers > Tablet Computers"
         : "Electronics > Electronics Accessories";
 
-      const fullDescription = `${info.displaySpecs} | ${info.cpuSpecs} | ${info.ramSpecs} | ${info.storageSpecs} | ${info.conditionLabel} | Garantía 3 meses directa iTech Perú. [FOTO REFERENCIAL: Equipo original exhibido en TikTok Live • WhatsApp: +51 924 967 876]`;
+      const fullDescription = `${info.displaySpecs} | ${info.cpuSpecs} | ${info.ramSpecs} | ${info.storageSpecs} | ${info.conditionLabel} | Emitimos Boleta de Venta | Testeado en 30 puntos técnicos (WiFi, audio, cámaras, pantalla, Touch ID, puertos y sensores). Detalles de segunda mano en observación. [FOTO REFERENCIAL: Equipo original exhibido en TikTok Live • WhatsApp: +51 907 674 693 / +51 924 967 876]`;
 
       const productLink = `${STORE_BASE_URL}/coleccion`;
 
@@ -77,9 +77,11 @@ export async function GET(request: NextRequest) {
       const modelKey = modelKeyMatch ? modelKeyMatch[1] : '';
       const imageUrl = cdnImageMap[modelKey] || 'https://cdn.sanity.io/images/kqneikcb/production/1189f3e9e0778c529d6fb8c59b5227fad2dc161d-800x800.png';
 
+      const cleanTitle = String(info.commercialTitle || '').replace(/\s*[•\-]\s*Ord:\s*[\w\-]+/gi, '').replace(/\\"/g, '"').trim();
+
       return [
         escapeCsv(p.orderNumber || p.id),
-        escapeCsv(info.commercialTitle),
+        escapeCsv(cleanTitle),
         escapeCsv(fullDescription),
         escapeCsv("in stock"),
         escapeCsv("refurbished"),

@@ -64,7 +64,7 @@ export function getProductCatalogInfo(product: {
       cpuSpecs: 'Intel Core i7 (6 núcleos hasta 4.5 GHz) • macOS actualizado',
       ramSpecs: is32Gb ? '32 GB DDR4 2666 MHz' : '16 GB DDR4 2666 MHz',
       storageSpecs: is32Gb ? '1 TB (1000 GB) SSD NVMe' : '512 GB SSD NVMe Ultrarrápido',
-      conditionLabel: 'Seminuevo Grado A • 🎁 INCLUYE: Funda portalaptop nueva de regalo',
+      conditionLabel: 'Seminuevo Grado A • 🎁 REGALO: Funda portalaptop nueva acolchada',
       salePricePen: is32Gb ? (product.salePricePen || 2550) : (product.salePricePen || 2300),
       regularPricePen: is32Gb ? 3200 : 2700,
     };
@@ -82,20 +82,20 @@ export function getProductCatalogInfo(product: {
         '/catalog/macbook-pro-15-2.png',
         '/catalog/macbook-pro-15-3.png',
       ],
-      displaySpecs: 'Retina 15.4" IPS (2880 x 1800) True Tone P3 • Gráfica Radeon Pro + Intel UHD',
-      cpuSpecs: 'Intel Core i7-9750H (6 núcleos) • macOS actualizado',
+      displaySpecs: 'Retina 15.4" IPS (2880 x 1800) True Tone P3 • Gráfica Dedicada 4GB Radeon Pro + Intel UHD',
+      cpuSpecs: 'Intel Core i7-9750H (6 núcleos hasta 4.5 GHz) • macOS actualizado',
       ramSpecs: '16 GB DDR4',
-      storageSpecs: '512 GB SSD NVMe',
-      conditionLabel: 'Seminuevo Grado A (Touch Bar + Touch ID) • 🎁 Funda portalaptop nueva de regalo',
-      salePricePen: rawPrice || 2200,
+      storageSpecs: '512 GB SSD NVMe Ultrarrápido',
+      conditionLabel: 'Seminuevo Grado A (Touch Bar + Touch ID) • 🎁 REGALO: Funda portalaptop nueva acolchada',
+      salePricePen: product.salePricePen || 2200,
       regularPricePen: 2600,
     };
   }
 
-  // 3. MacBook Pro 13" i7 10ma Gen (A2251)
-  if (desc.includes('1068ng7') || model.includes('A2251')) {
+  // 3. MacBook Pro 13" i7 10ma Gen (2020 - A2251)
+  if (desc.includes('1068ng7') || model.includes('A2251') || (desc.includes('macbook pro 13') && desc.includes('i7'))) {
     return {
-      commercialTitle: 'Apple MacBook Pro 13.3" Retina Touch Bar (2020) Intel Core i7 10ma Gen',
+      commercialTitle: 'Apple MacBook Pro 13.3" Retina Touch Bar (2020) Intel Core i7 16GB / 512GB SSD',
       category: 'Laptops & MacBooks',
       brand: 'Apple',
       referenceImage: '/catalog/macbook-pro-13-1.png',
@@ -104,13 +104,13 @@ export function getProductCatalogInfo(product: {
         '/catalog/macbook-pro-13-2.png',
         '/catalog/macbook-pro-13-3.png',
       ],
-      displaySpecs: 'Retina 13.3" True Tone P3 (2560 x 1600)',
-      cpuSpecs: 'Intel Core i7-1068NG7 10ma Gen Quad-Core • macOS actualizado',
-      ramSpecs: '16 GB LPDDR4X 3733 MHz',
-      storageSpecs: '512 GB SSD NVMe',
-      conditionLabel: 'Seminuevo Grado A (4 puertos Thunderbolt 3) • 🎁 Funda portalaptop nueva de regalo',
-      salePricePen: rawPrice || 1599,
-      regularPricePen: 1950,
+      displaySpecs: 'Retina 13.3" True Tone P3 (2560 x 1600) 500 nits',
+      cpuSpecs: 'Intel Core i7-1068NG7 10ma Gen Quad-Core (hasta 4.1 GHz) • macOS actualizado',
+      ramSpecs: '16 GB LPDDR4X 3733 MHz de alta velocidad',
+      storageSpecs: '512 GB SSD NVMe Ultrarrápido',
+      conditionLabel: 'Seminuevo Grado A (4 puertos Thunderbolt 3) • 🎁 REGALO: Funda portalaptop nueva acolchada',
+      salePricePen: product.salePricePen || 2500,
+      regularPricePen: 2800,
     };
   }
 
@@ -119,7 +119,7 @@ export function getProductCatalogInfo(product: {
     const is16Gb = desc.includes('16gb');
     const is512Gb = desc.includes('512gb');
     return {
-      commercialTitle: `Apple MacBook Pro 13.3" Retina Touch Bar (${is16Gb ? '16GB RAM' : '8GB RAM'})`,
+      commercialTitle: `Apple MacBook Pro 13.3" Retina Touch Bar Core i5 (${is16Gb ? '16GB RAM / 512GB SSD' : '8GB RAM / 256GB SSD'})`,
       category: 'Laptops & MacBooks',
       brand: 'Apple',
       referenceImage: '/catalog/macbook-pro-13-1.png',
@@ -132,9 +132,9 @@ export function getProductCatalogInfo(product: {
       cpuSpecs: 'Intel Core i5 Quad-Core Turbo Boost • macOS actualizado',
       ramSpecs: is16Gb ? '16 GB LPDDR3' : '8 GB LPDDR3',
       storageSpecs: is512Gb ? '512 GB SSD NVMe' : '256 GB SSD NVMe',
-      conditionLabel: 'Seminuevo Grado A (Touch Bar, Touch ID) • 🎁 Funda portalaptop nueva de regalo',
-      salePricePen: rawPrice || (is16Gb ? 1449 : 1299),
-      regularPricePen: (rawPrice || (is16Gb ? 1449 : 1299)) + 250,
+      conditionLabel: 'Seminuevo Grado A (Touch Bar + Touch ID) • 🎁 REGALO: Funda portalaptop nueva acolchada',
+      salePricePen: is16Gb ? (product.salePricePen || 1800) : (product.salePricePen || 1299),
+      regularPricePen: is16Gb ? 2400 : 1549,
     };
   }
 
@@ -153,9 +153,9 @@ export function getProductCatalogInfo(product: {
       displaySpecs: '13.3" Full HD Antirreflejo (1920 x 1080) • Gráficos Intel Iris Xe',
       cpuSpecs: 'Intel Core i5-1155G7 (4 núcleos / 8 hilos hasta 4.5 GHz) • Windows 11 Pro',
       ramSpecs: '8 GB DDR4',
-      storageSpecs: '256 GB SSD M.2 NVMe',
-      conditionLabel: 'Seminuevo Grado A (Trabajo & Universidad) • 🎁 Funda portalaptop nueva de regalo',
-      salePricePen: rawPrice || 1250,
+      storageSpecs: '256 GB SSD M.2 NVMe Ultrarrápido',
+      conditionLabel: 'Seminuevo Grado A (Trabajo & Universidad) • 🎁 REGALO: Funda portalaptop nueva acolchada',
+      salePricePen: product.salePricePen || 1250,
       regularPricePen: 1500,
     };
   }
@@ -163,7 +163,7 @@ export function getProductCatalogInfo(product: {
   // 6. iPad Pro 12.9" 2da Gen (A1670)
   if (desc.includes('12.9') || model.includes('A1670')) {
     return {
-      commercialTitle: 'Apple iPad Pro 12.9" 2da Gen Retina 120Hz ProMotion 256GB',
+      commercialTitle: 'Apple iPad Pro 12.9" 2da Gen Retina 120Hz ProMotion 256GB (WiFi)',
       category: 'iPads & Tablets',
       brand: 'Apple',
       referenceImage: '/catalog/ipad-pro-129-1.png',
@@ -172,21 +172,21 @@ export function getProductCatalogInfo(product: {
         '/catalog/ipad-pro-129-2.png',
         '/catalog/ipad-pro-129-3.png',
       ],
-      displaySpecs: 'Retina 12.9" 120Hz ProMotion (2732 x 2048)',
-      cpuSpecs: 'Chip Apple A10X Fusion con arquitectura de 64 bits',
+      displaySpecs: 'Retina 12.9" 120Hz ProMotion (2732 x 2048) True Tone',
+      cpuSpecs: 'Chip Apple A10X Fusion 64-bit con coprocesador M10 integrado',
       ramSpecs: '4 GB RAM',
       storageSpecs: '256 GB Almacenamiento',
-      conditionLabel: 'Seminuevo Grado A (Compatible con Apple Pencil 1)',
-      salePricePen: rawPrice || 1199,
-      regularPricePen: (rawPrice || 1199) + 180,
+      conditionLabel: 'Seminuevo Grado A • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos',
+      salePricePen: product.salePricePen || 1200,
+      regularPricePen: 1400,
     };
   }
 
   // 7. iPad Air 3ra Gen 10.5" (A2152 / A2153)
   if (desc.includes('ipad air 3') || desc.includes('air 3rd') || model.includes('A2152') || model.includes('A2153')) {
-    const isCellular = desc.includes('cellular') || desc.includes('4g') || desc.includes('lte') || model.includes('A2153');
+    const isCellular = desc.includes('cellular') || desc.includes('4g') || desc.includes('lte') || desc.includes('chip') || model.includes('A2153');
     return {
-      commercialTitle: `Apple iPad Air 3ra Gen 10.5" Retina 256GB ${isCellular ? '(WiFi + 4G LTE)' : '(WiFi)'}`,
+      commercialTitle: `Apple iPad Air 3ra Gen 10.5" Retina 256GB ${isCellular ? '(WiFi + 4G LTE Con Chip)' : '(WiFi)'}`,
       category: 'iPads & Tablets',
       brand: 'Apple',
       referenceImage: '/catalog/ipad-air-3-1.png',
@@ -195,13 +195,13 @@ export function getProductCatalogInfo(product: {
         '/catalog/ipad-air-3-2.png',
         '/catalog/ipad-air-3-3.png',
       ],
-      displaySpecs: 'Retina 10.5" True Tone Laminada (2224 x 1668)',
+      displaySpecs: 'Retina 10.5" True Tone Laminada con gama P3 (2224 x 1668)',
       cpuSpecs: 'Chip Apple A12 Bionic con Neural Engine',
       ramSpecs: '3 GB RAM',
       storageSpecs: '256 GB Almacenamiento',
-      conditionLabel: `Seminuevo Grado A ${isCellular ? 'Libre de fábrica para chip 4G' : 'WiFi'}`,
-      salePricePen: rawPrice || 879,
-      regularPricePen: (rawPrice || 879) + 120,
+      conditionLabel: `Seminuevo Grado A ${isCellular ? '(Libre para cualquier operador con chip 4G)' : '(Versión WiFi)'} • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos`,
+      salePricePen: isCellular ? (product.salePricePen || 1100) : (product.salePricePen || 879),
+      regularPricePen: isCellular ? 1300 : 1029,
     };
   }
 
@@ -209,7 +209,7 @@ export function getProductCatalogInfo(product: {
   if (desc.includes('ipad 9') || desc.includes('9th gen') || desc.includes('a2602') || desc.includes('a2603') || model.includes('A2602') || model.includes('A2603')) {
     const isCellular = desc.includes('cellular') || desc.includes('4g') || model.includes('A2603');
     return {
-      commercialTitle: `Apple iPad 9na Gen 10.2" Chip A13 Bionic 64GB ${isCellular ? '(WiFi + 4G)' : '(WiFi)'}`,
+      commercialTitle: `Apple iPad 9na Gen 10.2" Chip A13 Bionic 64GB ${isCellular ? '(WiFi + 4G Datos Móviles)' : '(WiFi)'}`,
       category: 'iPads & Tablets',
       brand: 'Apple',
       referenceImage: '/catalog/ipad-9-1.png',
@@ -218,21 +218,36 @@ export function getProductCatalogInfo(product: {
         '/catalog/ipad-9-2.png',
         '/catalog/ipad-9-3.png',
       ],
-      displaySpecs: 'Retina 10.2" con tecnología True Tone (2160 x 1620)',
-      cpuSpecs: 'Chip Apple A13 Bionic con arquitectura de 64 bits',
+      displaySpecs: 'Retina 10.2" True Tone (2160 x 1620) • Cámara 12MP Ultra Gran Angular Center Stage',
+      cpuSpecs: 'Chip Apple A13 Bionic con arquitectura de 64 bits y Neural Engine',
       ramSpecs: '3 GB RAM',
       storageSpecs: '64 GB Almacenamiento',
-      conditionLabel: 'Seminuevo Grado A (Cámara frontal 12MP Ultra Gran Angular Center Stage)',
-      salePricePen: rawPrice || 799,
-      regularPricePen: (rawPrice || 799) + 120,
+      conditionLabel: 'Seminuevo Grado A • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos',
+      salePricePen: product.salePricePen || 799,
+      regularPricePen: 950,
     };
   }
 
   // 9. iPad Pro 10.5" (A1701 / A1709)
   if (desc.includes('ipad pro 10.5') || desc.includes('10.5') || model.includes('A1701') || model.includes('A1709')) {
-    const is512Gb = desc.includes('512gb');
+    const is512Gb = desc.includes('512gb') || desc.includes('512 gb');
     const isCellular = desc.includes('cellular') || desc.includes('4g') || desc.includes('lte') || desc.includes('unlocked') || desc.includes('chip') || model.includes('A1709');
-    const defaultPrice = isCellular ? 1050 : 950;
+    
+    // Pricing rule as specified by user:
+    // 256GB WiFi: 950 (regular 1150)
+    // 256GB Chip: 1050 (regular 1250)
+    // 512GB WiFi: 1200 (regular 1500)
+    // 512GB Chip: 1300 (regular 1550)
+    let finalSalePrice = 950;
+    let finalRegPrice = 1150;
+    if (is512Gb) {
+      finalSalePrice = isCellular ? 1300 : 1200;
+      finalRegPrice = isCellular ? 1550 : 1500;
+    } else {
+      finalSalePrice = isCellular ? 1050 : 950;
+      finalRegPrice = isCellular ? 1250 : 1150;
+    }
+
     return {
       commercialTitle: `Apple iPad Pro 10.5" Retina 120Hz ProMotion ${is512Gb ? '512GB' : '256GB'} ${isCellular ? '(WiFi + Celular 4G Con Chip)' : '(WiFi)'}`,
       category: 'iPads & Tablets',
@@ -244,12 +259,12 @@ export function getProductCatalogInfo(product: {
         '/catalog/ipad-pro-105-3.png',
       ],
       displaySpecs: 'Retina 10.5" 120Hz ProMotion True Tone (2224 x 1668)',
-      cpuSpecs: 'Chip Apple A10X Fusion Quad-Core',
+      cpuSpecs: 'Chip Apple A10X Fusion Quad-Core de alto rendimiento',
       ramSpecs: '4 GB RAM',
       storageSpecs: is512Gb ? '512 GB Almacenamiento' : '256 GB Almacenamiento',
-      conditionLabel: `Seminuevo Grado A ${isCellular ? 'Libre para cualquier operador con chip / datos móviles' : 'Versión WiFi'} (Pantalla fluida 120Hz ProMotion)`,
-      salePricePen: product.salePricePen || product.suggestedPricePen || defaultPrice,
-      regularPricePen: (product.salePricePen || product.suggestedPricePen || defaultPrice) + 150,
+      conditionLabel: `Seminuevo Grado A ${isCellular ? '(Libre para chip 4G cualquier operador)' : '(Versión WiFi)'} • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos`,
+      salePricePen: product.salePricePen || finalSalePrice,
+      regularPricePen: finalRegPrice,
     };
   }
 
@@ -269,31 +284,31 @@ export function getProductCatalogInfo(product: {
       cpuSpecs: 'Chip Apple A12 Bionic con Neural Engine',
       ramSpecs: '3 GB RAM',
       storageSpecs: '256 GB Almacenamiento',
-      conditionLabel: 'Seminuevo Grado A (Incluye mica de pantalla instalada / de regalo)',
-      salePricePen: product.salePricePen || product.suggestedPricePen || 1200,
-      regularPricePen: (product.salePricePen || product.suggestedPricePen || 1200) + 180,
+      conditionLabel: 'Seminuevo Grado A • 🎁 PACK REGALO: Mica de Pantalla + Lápiz Óptico + Soporte + Cable Nuevos',
+      salePricePen: product.salePricePen || 1200,
+      regularPricePen: 1380,
     };
   }
 
-  // 10. Cargador 96W Apple
+  // 11. Cargador Rápido 96W USB-C (Nuevo compatible de alta calidad - NO Original Apple)
   if (desc.includes('charger') || desc.includes('cargador') || desc.includes('96w')) {
     return {
-      commercialTitle: 'Cargador Original Apple 96W USB-C Power Adapter',
+      commercialTitle: 'Cargador Rápido 96W USB-C Power Adapter (Nuevo)',
       category: 'Accesorios',
-      brand: 'Apple',
+      brand: 'iTech Compatible',
       referenceImage: '/catalog/charger-96w-1.png',
       images: [
         '/catalog/charger-96w-1.png',
         '/catalog/charger-96w-2.png',
         '/catalog/charger-96w-3.png',
       ],
-      displaySpecs: 'Potencia 96W USB-C PD (Carga Rápida)',
-      cpuSpecs: 'Voltaje Universal 100-240V',
-      ramSpecs: 'Cable no incluido / Conector USB-C',
-      storageSpecs: 'Original Apple Certificado',
-      conditionLabel: 'Nuevo / Seminuevo Original Garantizado',
-      salePricePen: rawPrice || 169,
-      regularPricePen: (rawPrice || 169) + 40,
+      displaySpecs: 'Potencia 96W Carga Rápida USB-C PD (Power Delivery)',
+      cpuSpecs: 'Voltaje universal 100-240V • Clavija plana americana estándar',
+      ramSpecs: 'Protección inteligente contra sobrecalentamiento y cortocircuitos',
+      storageSpecs: 'Compatible con MacBook Pro 16", 15", 13", iPad Pro y Laptops Tipo C',
+      conditionLabel: 'Producto 100% Nuevo en Caja (Compatible de alta calidad - No es original Apple)',
+      salePricePen: product.salePricePen || 180,
+      regularPricePen: 220,
     };
   }
 
@@ -308,8 +323,8 @@ export function getProductCatalogInfo(product: {
     cpuSpecs: 'Procesador multinúcleo',
     ramSpecs: 'Memoria optimizada',
     storageSpecs: product.capacity || 'Almacenamiento amplio',
-    conditionLabel: 'Seminuevo Grado A',
-    salePricePen: rawPrice || 799,
+    conditionLabel: 'Seminuevo Grado A • 🎁 PACK REGALO: Lápiz Óptico + Soporte + Cable Nuevos',
+    salePricePen: product.salePricePen || rawPrice || 799,
     regularPricePen: (rawPrice || 799) + 120,
   };
 }
@@ -327,10 +342,11 @@ export function generateWhatsAppMessage(item: CatalogItemInfo, siteUrl: string =
 • 🧠 *Memoria:* ${item.ramSpecs}
 • 💾 *Disco / Capacidad:* ${item.storageSpecs}
 • ✨ *Estado:* ${item.conditionLabel}
-${item.category === 'Laptops & MacBooks' ? '• 🎁 *Regalo Especial:* Funda portalaptop nueva de regalo incluida\n' : ''}• 🛡️ *Garantía:* 3 meses con soporte directo
+${item.category === 'Laptops & MacBooks' ? '• 🎁 *Regalo Incluido:* Funda portalaptop nueva acolchada de regalo\n' : ''}${item.category === 'iPads & Tablets' ? '• 🎁 *Pack Regalo:* Lápiz óptico + Soporte vertical/horizontal + Cable nuevos\n' : ''}• 🧾 *Comprobante:* Emitimos Boleta de Venta / Factura legal
+• 🔍 *Inspección:* Probado en 30 puntos técnicos (WiFi, audio, cámaras, Touch ID, pantalla, botones y sensores). Todo operativo; cualquier detalle de segunda mano se deja como observación previa.
 
-📸 *Fotos referenciales:* 3 vistas disponibles (frontal, ángulo y teclado)
-_(Nota: El equipo físico exacto se muestra en directo en nuestra transmisión de TikTok Live)_
+📸 *Fotos y Video:* Equipo físico exhibido en directo en TikTok Live (@itechperu)
+🌐 *Web Oficial:* https://www.itechperu.shop
 
-💬 _¿Deseas separar este equipo o coordinar el envío con nosotros?_`.trim();
+💬 _¿Deseas separar este equipo o coordinar el envío inmediato a tu domicilio o provincia?_`.trim();
 }
