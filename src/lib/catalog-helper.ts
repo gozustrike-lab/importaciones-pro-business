@@ -184,9 +184,9 @@ export function getProductCatalogInfo(product: {
 
   // 7. iPad Air 3ra Gen 10.5" (A2152 / A2153)
   if (desc.includes('ipad air 3') || desc.includes('air 3rd') || model.includes('A2152') || model.includes('A2153')) {
-    const isCellular = desc.includes('cellular') || desc.includes('4g') || desc.includes('lte') || desc.includes('chip') || model.includes('A2153');
+    const is64Gb = desc.includes('64gb');
     return {
-      commercialTitle: `Apple iPad Air 3ra Gen 10.5" Retina 256GB ${isCellular ? '(WiFi + 4G LTE Con Chip)' : '(WiFi)'}`,
+      commercialTitle: `Apple iPad Air 3ra Gen 10.5" Retina ${is64Gb ? '64GB' : '256GB'} (WiFi + 4G LTE Con Chip)`,
       category: 'iPads & Tablets',
       brand: 'Apple',
       referenceImage: '/catalog/ipad-air-3-1.png',
@@ -198,10 +198,10 @@ export function getProductCatalogInfo(product: {
       displaySpecs: 'Retina 10.5" True Tone Laminada con gama P3 (2224 x 1668)',
       cpuSpecs: 'Chip Apple A12 Bionic con Neural Engine',
       ramSpecs: '3 GB RAM',
-      storageSpecs: '256 GB Almacenamiento',
-      conditionLabel: `Seminuevo Grado A ${isCellular ? '(Libre para cualquier operador con chip 4G)' : '(Versión WiFi)'} • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos`,
-      salePricePen: isCellular ? (product.salePricePen || 1100) : (product.salePricePen || 879),
-      regularPricePen: isCellular ? 1300 : 1029,
+      storageSpecs: is64Gb ? '64 GB Almacenamiento' : '256 GB Almacenamiento',
+      conditionLabel: 'Seminuevo Grado A (Libre para cualquier operador con chip 4G LTE) • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos',
+      salePricePen: is64Gb ? (product.salePricePen || 699) : 1100,
+      regularPricePen: is64Gb ? 849 : 1300,
     };
   }
 
