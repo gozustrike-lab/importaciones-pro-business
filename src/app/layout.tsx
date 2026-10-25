@@ -21,10 +21,16 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#10B981",
+  themeColor: "#0F172A",
 };
 
 export const metadata: Metadata = {
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ImportHub',
+  },
   // ── Base ──────────────────────────────────────────────
   title: {
     default: "ImportHub Perú — ERP de Importaciones Inteligente",
@@ -72,9 +78,14 @@ export const metadata: Metadata = {
 
   // ── Icons ─────────────────────────────────────────────
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 
   // ── Open Graph (Facebook, LinkedIn, WhatsApp, Discord) ─
