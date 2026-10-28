@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 // Lazy load all tab components for performance
+const LogisticaSimpleTab = lazy(() => import('@/components/dashboard/logistica-simple-tab').then(m => ({ default: m.LogisticaSimpleTab })));
 const DashboardTab = lazy(() => import('@/components/dashboard/dashboard-tab').then(m => ({ default: m.DashboardTab })));
 const ProveedoresTab = lazy(() => import('@/components/dashboard/proveedores-tab').then(m => ({ default: m.ProveedoresTab })));
 const ProductosTab = lazy(() => import('@/components/dashboard/productos-tab').then(m => ({ default: m.ProductosTab })));
@@ -24,6 +25,7 @@ const ShipperTab = lazy(() => import('@/components/dashboard/shipper-tab').then(
 const AdminTab = lazy(() => import('@/components/dashboard/admin-tab').then(m => ({ default: m.AdminTab })));
 
 const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: string) => void }>> = {
+  logistica: LogisticaSimpleTab,
   dashboard: DashboardTab,
   proveedores: ProveedoresTab,
   productos: ProductosTab,
@@ -41,6 +43,7 @@ const tabComponents: Record<TabKey, React.ComponentType<{ onNavigate?: (tab: str
 };
 
 const tabTitles: Record<TabKey, string> = {
+  logistica: 'Control Logístico Simple',
   dashboard: 'Dashboard',
   proveedores: 'Proveedores',
   productos: 'Inventario',
@@ -82,7 +85,7 @@ function TabSkeleton() {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<TabKey>('productos');
+  const [activeTab, setActiveTab] = useState<TabKey>('logistica');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
 

@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useSession, signOut } from 'next-auth/react';
 import {
+  ShieldCheck,
   Package,
   LayoutDashboard,
   Receipt,
@@ -34,6 +35,7 @@ import { useTheme } from '@/components/theme-provider';
 import { NotificationsDialog } from '@/components/dashboard/notifications-dialog';
 
 export type TabKey =
+  | 'logistica'
   | 'dashboard'
   | 'proveedores'
   | 'productos'
@@ -66,13 +68,14 @@ const navItems: {
   adminOnly?: boolean;
   badge?: string;
 }[] = [
-  { key: 'productos', label: 'Inventario & Importaciones', icon: Package, section: 'Principal', badge: 'Live' },
-  { key: 'catalogo', label: 'Catálogo TikTok & WA', icon: Smartphone, section: 'Principal', badge: 'Catálogo' },
-  { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Principal' },
-  { key: 'compras', label: 'Registro Compras & Excel', icon: FileSpreadsheet, section: 'Principal' },
-  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Principal' },
-  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Principal' },
-  { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Principal' },
+  { key: 'logistica', label: '🎯 Control Logístico Simple', icon: ShieldCheck, section: 'Principal', badge: 'Simple' },
+  { key: 'compras', label: '📊 Registro Compras & Excel', icon: FileSpreadsheet, section: 'Principal', badge: 'Excel' },
+  { key: 'catalogo', label: '📱 Catálogo TikTok & WA', icon: Smartphone, section: 'Principal', badge: 'Catálogo' },
+  { key: 'productos', label: '📦 Inventario Completo', icon: Package, section: 'Principal' },
+  { key: 'shipper', label: '✈️ Bitácora & Shipper', icon: Plane, section: 'Secundario' },
+  { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Secundario' },
+  { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Secundario' },
+  { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Secundario' },
   { key: 'dashboard', label: 'Panel General', icon: LayoutDashboard, section: 'Secundario' },
   { key: 'clientes', label: 'CRM Clientes', icon: Users, section: 'Secundario' },
   { key: 'impuestos', label: 'Impuestos', icon: Receipt, section: 'Secundario' },

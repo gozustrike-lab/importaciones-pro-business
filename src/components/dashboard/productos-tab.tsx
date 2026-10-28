@@ -875,6 +875,32 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
 
   return (
     <div className="space-y-6">
+      {/* Quick Switcher to Logistica Simple Mode */}
+      <div className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-white">
+              ¿Mucha información o tablas confusas?
+            </h4>
+            <p className="text-xs text-slate-300">
+              Activa la vista simple: solo tus 3 preguntas clave (cantidad de compras, embarques y si todo es correcto).
+            </p>
+          </div>
+        </div>
+
+        <Button
+          onClick={() => onNavigate?.('logistica')}
+          size="sm"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md shrink-0"
+        >
+          <span>🎯 Cambiar a Vista Simple</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
