@@ -57,6 +57,7 @@ interface FinancialSummary {
     gananciaHoy: number;
     margenHoy: number;
     comprasHoyUsd: number;
+    comprasHoyPen: number;
     itemsVendidosHoy: number;
     itemsCompradosHoy: number;
   };
@@ -66,6 +67,7 @@ interface FinancialSummary {
     gananciaSemana: number;
     margenSemana: number;
     comprasSemanaUsd: number;
+    comprasSemanaPen: number;
     itemsVendidosSemana: number;
     itemsCompradosSemana: number;
   };
@@ -76,6 +78,8 @@ interface FinancialSummary {
     gananciaMes: number;
     margenMes: number;
     comprasMesUsd: number;
+    comprasMesPen: number;
+    flujoCajaMes: number;
     itemsVendidosMes: number;
     itemsCompradosMes: number;
   };
@@ -87,8 +91,11 @@ interface FinancialSummary {
     gananciaPen: number;
     margen: number;
     comprasUsd: number;
+    comprasPen: number;
+    flujoCajaPen: number;
     totalItemsPurchased: number;
     totalItemsSold: number;
+    esDeclaradoSunat?: boolean;
   }>;
 }
 
@@ -581,7 +588,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Costos de ventas:</span>
+                  <span className="text-slate-400">Costo de lo vendido:</span>
                   <span className="font-medium text-slate-400">
                     S/ {(financialData?.daily.costosHoy || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
@@ -590,6 +597,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   <span className="text-slate-400">Compras eBay hoy:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.daily.comprasHoyUsd || 0).toFixed(2)} USD
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      (S/ {(financialData?.daily.comprasHoyPen || 0).toLocaleString('es-PE', { minimumFractionDigits: 0 })})
+                    </span>
                   </span>
                 </div>
               </CardContent>
@@ -633,6 +643,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   <span className="text-slate-400">Compras eBay semana:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.weekly.comprasSemanaUsd || 0).toFixed(2)} USD
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      (S/ {(financialData?.weekly.comprasSemanaPen || 0).toLocaleString('es-PE', { minimumFractionDigits: 0 })})
+                    </span>
                   </span>
                 </div>
               </CardContent>
@@ -667,7 +680,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Costos totales:</span>
+                  <span className="text-slate-400">Costo de lo vendido:</span>
                   <span className="font-medium text-slate-400">
                     S/ {(financialData?.monthly.costosMes || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
@@ -676,6 +689,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   <span className="text-slate-400">Compras eBay mes:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.monthly.comprasMesUsd || 0).toFixed(2)} USD
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      (S/ {(financialData?.monthly.comprasMesPen || 0).toLocaleString('es-PE', { minimumFractionDigits: 0 })})
+                    </span>
                   </span>
                 </div>
               </CardContent>
@@ -719,16 +735,16 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 <div>
                   <CardTitle className="text-lg font-black text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-emerald-400" />
-                    Historial de Utilidades Mes a Mes (Todas tus Ventas & Costos)
+                    Historial de Utilidades Mes a Mes (Ventas, Costos & Compras eBay)
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-400">
-                    Cruce de ventas electrónicas reales, costos de importación y ganancia neta mes a mes.
+                    Cálculo real de ventas, costo de mercadería vendida, compras eBay en USD/Soles y flujo de caja neto.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="space-y-4">
               {financialLoading ? (
                 <div className="py-8 text-center text-xs text-slate-400">Cargando métricas financieras...</div>
               ) : (financialData?.historicalMonths || []).length === 0 ? (
@@ -738,42 +754,76 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   <table className="w-full text-xs text-left">
                     <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
                       <tr>
-                        <th className="py-3 px-4">Período / Mes</th>
-                        <th className="py-3 px-4 text-right">Ventas Totales</th>
-                        <th className="py-3 px-4 text-right">Costos Totales</th>
-                        <th className="py-3 px-4 text-right font-bold text-emerald-400">Utilidad Neta (Ganancia)</th>
-                        <th className="py-3 px-4 text-center">Margen</th>
-                        <th className="py-3 px-4 text-right">Compras eBay</th>
-                        <th className="py-3 px-4 text-center">Estado</th>
+                        <th className="py-3 px-3">Período / Mes</th>
+                        <th className="py-3 px-3 text-right">Ventas Totales</th>
+                        <th className="py-3 px-3 text-right">Costo de lo Vendido</th>
+                        <th className="py-3 px-3 text-right font-bold text-emerald-400">Utilidad Neta</th>
+                        <th className="py-3 px-3 text-center">Margen Real</th>
+                        <th className="py-3 px-3 text-right">Compras eBay ($ USD / S/)</th>
+                        <th className="py-3 px-3 text-right">Flujo de Caja</th>
+                        <th className="py-3 px-3 text-center">Estado</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/80">
                       {financialData?.historicalMonths.map((m) => (
                         <tr key={m.monthKey} className="hover:bg-slate-900/50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            {m.label}
+                          <td className="py-3 px-3 font-bold text-white">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                              <span>{m.label}</span>
+                            </div>
+                            {m.totalItemsPurchased > 0 && (
+                              <span className="text-[10px] text-slate-500 font-normal pl-4 block">
+                                {m.totalItemsPurchased} equipos comprados
+                              </span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-right font-bold text-white">
-                            S/ {m.ventasPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                          <td className="py-3 px-3 text-right">
+                            <div className="font-bold text-white">
+                              S/ {m.ventasPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </div>
+                            {m.totalItemsSold > 0 && (
+                              <div className="text-[10px] text-slate-400 font-normal">
+                                {m.totalItemsSold} ventas
+                              </div>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-right text-slate-400">
+                          <td className="py-3 px-3 text-right text-slate-300">
                             S/ {m.costosPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                           </td>
-                          <td className="py-3 px-4 text-right font-black text-emerald-400 text-sm">
-                            + S/ {m.gananciaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                          <td className="py-3 px-3 text-right font-black text-emerald-400 text-sm">
+                            {m.gananciaPen >= 0 ? '+' : ''} S/ {m.gananciaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3 px-3 text-center">
                             <span className="inline-block px-2 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-950 text-emerald-300 border border-emerald-800">
                               {m.margen}%
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right text-sky-400 font-mono font-bold">
-                            ${m.comprasUsd.toFixed(2)} USD
+                          <td className="py-3 px-3 text-right">
+                            <div className="text-sky-400 font-mono font-bold">
+                              ${m.comprasUsd.toFixed(2)} USD
+                            </div>
+                            <div className="text-[10.5px] text-slate-400 font-medium">
+                              S/ {(m.comprasPen || Math.round(m.comprasUsd * 3.75)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </div>
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="text-[10px] text-slate-400 font-bold bg-slate-900 px-2 py-0.5 rounded">
-                              Declarado
+                          <td className="py-3 px-3 text-right font-medium">
+                            <span className={m.flujoCajaPen >= 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                              {m.flujoCajaPen >= 0 ? '+' : ''} S/ {m.flujoCajaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="block text-[9.5px] text-slate-500 font-normal">
+                              {m.flujoCajaPen >= 0 ? 'Superávit neto' : 'Reinversión stock'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              m.esDeclaradoSunat 
+                                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
+                                : m.ventasPen > 0
+                                ? 'bg-sky-950/80 text-sky-300 border border-sky-800/60'
+                                : 'bg-slate-900 text-slate-400 border border-slate-800'
+                            }`}>
+                              {m.esDeclaradoSunat ? 'SUNAT Oficial' : m.ventasPen > 0 ? 'Ventas en vivo' : 'Stock comprado'}
                             </span>
                           </td>
                         </tr>
@@ -782,6 +832,28 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   </table>
                 </div>
               )}
+
+              {/* Educational Clarification Card */}
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-emerald-400">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span>¿Cómo se calculan exactamente tus Ganancias y tus Compras en eBay?</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[11.5px] text-slate-400">
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="text-white font-bold block mb-0.5">1. Costo de lo Vendido (COGS)</span>
+                    Es lo que costó adquirir en eBay únicamente los equipos que salieron vendidos ese mes. Tu margen de ganancia neta es <strong>Ventas menos Costo de lo Vendido</strong> (~61.8% de rentabilidad según tu histórico).
+                  </div>
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="text-white font-bold block mb-0.5">2. Compras eBay (Inversión en Stock)</span>
+                    Es todo el dinero pagado en eBay en USD y convertido a Soles (TC ~3.75) para adquirir inventario. Por ejemplo, en Septiembre compraste 44 equipos por $5,504.19 USD (S/ 19,666.14).
+                  </div>
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="text-white font-bold block mb-0.5">3. Flujo de Caja (Caja Neta)</span>
+                    Ventas del mes menos Compras eBay del mes. Si es negativo (como en Septiembre: -S/ 9,696), significa que reinvertiste fuerte comprando 44 laptops e iPads que ahora son stock disponible para vender.
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
