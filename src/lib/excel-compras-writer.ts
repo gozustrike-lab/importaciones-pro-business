@@ -631,3 +631,127 @@ export async function syncAllDbProductsToExcel(tenantId?: string | null): Promis
 
   return syncBatchPurchasesToExcel(inputs);
 }
+
+/**
+ * Updates an existing purchase row in the Excel workbook with sale information
+ * (Sale price, sale date, payment method, net profit and stock = 0).
+ */
+export async function recordSaleInEbayExcel(params: {
+  orderNumber: string;
+  salePricePen: number;
+  saleDate: Date | string;
+  paymentMethod?: string;
+  importerProfile?: string | null;
+  recipientName?: string | null;
+  netProfitPen?: number;
+}): Promise<{ success: boolean; sheet?: string; row?: number; message: string }> {
+  const isLiliana = isLilianaRecord(params.importerProfile, params.recipientName);
+  const filePath = getExcelWorkbookPath(isLiliana);
+  const lock = isLiliana ? lilianaLock : fabioLock;
+  const profileName = isLiliana ? 'Liliana / Peggy' : 'Fabio';
+
+  if (!fs.existsSync(filePath)) {
+    return {
+      success: false,
+      message: `No se encontró el archivo Excel de ${profileName} en ${filePath}`,
+    };
+  }
+
+  return lock.acquire(async () => {
+    try {
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.readFile(filePath);
+
+      const targetOrder = normalizeOrderNum(params.orderNumber);
+      let foundSheet: string | undefined;
+      let foundRow: number | undefined;
+
+      // Scan worksheets to find matching order
+      for (const ws of wb.worksheets) {
+        if (ws.name === 'TODO' || ws.name === 'RESUMEN') continue;
+        const { headerRowIdx, colMap } = getHeaderColumnMap(ws);
+        const orderCol = colMap['numeroOrden'] || 5;
+
+        for (let r = headerRowIdx + 1; r <= ws.rowCount; r++) {
+          const row = ws.getRow(r);
+          const cellOrderVal = normalizeOrderNum(String(row.getCell(orderCol).value || ''));
+
+          if (cellOrderVal && (cellOrderVal === targetOrder || cellOrderVal.startsWith(targetOrder) || targetOrder.startsWith(cellOrderVal))) {
+            foundSheet = ws.name;
+            foundRow = r;
+
+            // Col 13 (M): PRECIO DE VENTA
+            const cellSale = row.getCell(13);
+            if (cellSale.model) {
+              delete cellSale.model.sharedFormula;
+              delete cellSale.model.formula;
+            }
+            cellSale.value = params.salePricePen;
+            cellSale.numFmt = '"S/"#,##0.00;[Red]"S/"-#,##0.00;"-"';
+
+            // Col 17 (Q): STOCK (0 = Vendido)
+            const cellStock = row.getCell(17);
+            if (cellStock.model) {
+              delete cellStock.model.sharedFormula;
+              delete cellStock.model.formula;
+            }
+            cellStock.value = 0;
+
+            // Col 19 (S): FECHA VENTA
+            const sDate = params.saleDate instanceof Date ? params.saleDate : new Date(params.saleDate);
+            const validDate = isNaN(sDate.getTime()) ? new Date() : sDate;
+            const cellDate = row.getCell(19);
+            cellDate.value = formatPurchaseDateSpanish(validDate);
+
+            // Col 20 (T): METODO DE PAGO
+            if (params.paymentMethod) {
+              const cellMethod = row.getCell(20);
+              cellMethod.value = params.paymentMethod.toUpperCase();
+            }
+
+            // Col 16 (P): GANANCIA
+            const costPenCell = row.getCell(12);
+            const costPen = typeof costPenCell.value === 'number' ? costPenCell.value : (Number(costPenCell.value) || 0);
+            const profit = params.netProfitPen !== undefined ? params.netProfitPen : (params.salePricePen - costPen);
+
+            const cellProfit = row.getCell(16);
+            if (cellProfit.model) {
+              delete cellProfit.model.sharedFormula;
+              delete cellProfit.model.formula;
+            }
+            cellProfit.value = profit;
+            cellProfit.numFmt = '"S/"#,##0.00;[Red]"S/"-#,##0.00;"-"';
+
+            break;
+          }
+        }
+
+        if (foundRow) break;
+      }
+
+      if (foundRow && foundSheet) {
+        fs.copyFileSync(filePath, `${filePath}.bak`);
+        sanitizeSharedFormulas(wb);
+        await wb.xlsx.writeFile(filePath);
+
+        return {
+          success: true,
+          sheet: foundSheet,
+          row: foundRow,
+          message: `Venta registrada en fila ${foundRow} de pestaña ${foundSheet} (${profileName})`,
+        };
+      }
+
+      return {
+        success: false,
+        message: `Orden ${params.orderNumber} no encontrada en las pestañas del Excel de ${profileName}`,
+      };
+    } catch (err: any) {
+      console.error('Error updating sale in Excel:', err);
+      return {
+        success: false,
+        message: err.message || 'Error al actualizar venta en Excel',
+      };
+    }
+  });
+}
