@@ -37,6 +37,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { sanitizeSunatModel, inferTechnicalModel } from '@/lib/shipper-classification';
 
@@ -194,6 +202,12 @@ export function ShipperTab() {
   const [tempNotes, setTempNotes] = useState('');
   const [savingField, setSavingField] = useState<string | null>(null);
 
+  // WhatsApp Smart Parser State
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [whatsappInputText, setWhatsappInputText] = useState('');
+  const [whatsappSyncing, setWhatsappSyncing] = useState(false);
+  const [whatsappSyncResult, setWhatsappSyncResult] = useState<any>(null);
+
   // Preparation State
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
   const [syncingEbay, setSyncingEbay] = useState(false);
@@ -322,6 +336,33 @@ export function ShipperTab() {
       setLoadingShipments(false);
     }
   }, []);
+
+  // WhatsApp Smart Parser Handler
+  const handleSyncWhatsapp = async () => {
+    if (!whatsappInputText.trim()) {
+      toast.error('Pega el mensaje de WhatsApp');
+      return;
+    }
+    try {
+      setWhatsappSyncing(true);
+      const res = await fetch('/api/shipper/whatsapp-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: whatsappInputText, apply: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al procesar WhatsApp');
+
+      setWhatsappSyncResult(data.results);
+      toast.success('¡Mensaje de WhatsApp procesado y sincronizado con éxito!');
+      await fetchShipments();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Error al procesar mensaje');
+    } finally {
+      setWhatsappSyncing(false);
+    }
+  };
 
   // Filter items by active profile in preparation tab
   const profileItems = useMemo(() => {
@@ -817,6 +858,7 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
   // Active / KPI stats
   const activeFlightsCount = shipments.filter((s) => s.status === 'EN_VUELO' || s.status === 'CONFIRMADO_AWB' || s.status === 'ENVIADO').length;
   const pendingAwbCount = shipments.filter((s) => s.status === 'ENVIADO' && !s.awbNumber).length;
+  const inCustomsCount = shipments.filter((s) => s.status === 'EN_ADUANA').length;
   const inLimaCount = shipments.filter((s) => s.status === 'EN_LIMA').length;
   const receivedCount = shipments.filter((s) => s.status === 'RECIBIDO').length;
 
@@ -840,6 +882,16 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
 
         {/* Global Action buttons */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWhatsappModalOpen(true)}
+            className="gap-2 text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 font-semibold"
+          >
+            <MessageCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            Pegar WhatsApp ShiPer
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -895,6 +947,26 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
         {/* TAB 1: BITÁCORA & TRAZABILIDAD DE VUELOS                 */}
         {/* ======================================================== */}
         <TabsContent value="bitacora" className="space-y-6 pt-2">
+          {/* Canal Rojo / Aduanas Alert Banner */}
+          {inCustomsCount > 0 && (
+            <div className="p-3.5 rounded-xl border border-red-500/40 bg-red-500/10 dark:bg-red-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-red-700 dark:text-red-300 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 animate-pulse shrink-0" />
+                <div>
+                  <p className="font-bold text-sm text-red-800 dark:text-red-200">
+                    Alerta de Aduanas SUNAT: {inCustomsCount} Embarque en Revisión Física (Canal Rojo)
+                  </p>
+                  <p className="text-red-600 dark:text-red-300/90 text-xs mt-0.5">
+                    <strong>Peggy Bonilla (Vuelo 28/10)</strong> está actualmente en aforo físico en aduanas Lima. Pendiente de levante aduanero por ShiPer.
+                  </p>
+                </div>
+              </div>
+              <Badge variant="destructive" className="bg-red-600 text-white font-bold text-xs shrink-0 self-start sm:self-center">
+                🔴 Canal Rojo SUNAT
+              </Badge>
+            </div>
+          )}
+
           {/* Quick Metrics Cards */}
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
             <Card className="border-l-4 border-l-purple-500 bg-card shadow-sm">
@@ -1069,6 +1141,13 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
                         <Badge variant="outline" className={statusMeta.badgeClass}>
                           {statusMeta.label}
                         </Badge>
+
+                        {s.status === 'EN_ADUANA' && (
+                          <Badge variant="destructive" className="bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs gap-1 shadow-xs animate-pulse">
+                            <AlertTriangle className="h-3 w-3" />
+                            Canal Rojo (Revisión SUNAT)
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Main FOB and Quick Action */}
@@ -1219,9 +1298,24 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
                               </div>
                             </div>
                           ) : (
-                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border min-h-[50px]">
+                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border min-h-[50px] space-y-2">
                               {s.whatsappNotes ? (
-                                <p className="text-foreground leading-relaxed italic">{s.whatsappNotes}</p>
+                                <>
+                                  <p className="text-foreground leading-relaxed italic">{s.whatsappNotes}</p>
+                                  {s.whatsappNotes.includes('https://whs.shiper.pe') && (
+                                    <div className="pt-1">
+                                      <a
+                                        href={s.whatsappNotes.match(/https:\/\/whs\.shiper\.pe[^\s|]+/)?.[0]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 rounded border border-sky-300 dark:border-sky-800 transition-colors"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        Rastrear Guía en ShiPer
+                                      </a>
+                                    </div>
+                                  )}
+                                </>
                               ) : (
                                 <p className="text-muted-foreground/60 italic">Sin notas de WhatsApp aún. Registra aquí lo que te responda el courier.</p>
                               )}
@@ -1844,6 +1938,76 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal Dialog: Pegar WhatsApp ShiPer */}
+      <Dialog open={whatsappModalOpen} onOpenChange={setWhatsappModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <MessageCircle className="h-5 w-5 text-emerald-600" />
+              Sincronizador Inteligente WhatsApp ShiPer
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Pega aquí el aviso de llegada de ShiPer (ej: &quot;🇵🇪 ShiPer — Tus embarques llegaron a Lima...&quot;),
+              la confirmación de fecha de vuelo (ej: &quot;Que fecha es el embarque ? -&gt; 28/10&quot;), o el reporte de
+              verificación de almacén Miami. El sistema extraerá guías, bultos, liquidación y actualizará la base de datos automáticamente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <textarea
+              value={whatsappInputText}
+              onChange={(e) => setWhatsappInputText(e.target.value)}
+              placeholder="Pega aquí el mensaje tal cual lo recibiste en WhatsApp..."
+              rows={8}
+              className="w-full text-xs font-mono p-3 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+
+            {whatsappSyncResult && (
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-1">
+                <p className="font-bold text-emerald-800 dark:text-emerald-300">
+                  Resultado de la sincronización ({whatsappSyncResult.type}):
+                </p>
+                {whatsappSyncResult.appliedChanges?.map((c: string, idx: number) => (
+                  <p key={idx} className="text-emerald-700 dark:text-emerald-400">
+                    • {c}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setWhatsappModalOpen(false);
+                setWhatsappSyncResult(null);
+                setWhatsappInputText('');
+              }}
+            >
+              Cerrar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSyncWhatsapp}
+              disabled={whatsappSyncing || !whatsappInputText.trim()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-1.5"
+            >
+              {whatsappSyncing ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Procesando...
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" /> Procesar y Sincronizar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

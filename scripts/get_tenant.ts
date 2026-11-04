@@ -1,7 +1,12 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
-async function main() {
-  const tenant = await prisma.tenant.findFirst();
-  console.log('Tenant:', tenant?.id, tenant?.name);
+
+const dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+
+async function run() {
+  const tenants = await prisma.tenant.findMany();
+  console.log('Tenants:', tenants.map(t => ({ id: t.id, name: t.name, ruc: t.ruc })));
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+
+run().finally(() => prisma.$disconnect());
