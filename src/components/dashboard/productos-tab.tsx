@@ -854,7 +854,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
         shippingCostUSD: parseFloat(item.shippingCost) || 0,
         advertisingCostUSD: 0,
         extraCostsUSD: 0,
-        exchangeRate: 3.4,
+        exchangeRate: 3.45,
         salePricePEN: 0,
       };
 
@@ -1666,7 +1666,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
               (activeView === 'active' ? filteredProducts : filteredArchivedProducts).reduce(
                 (acc, cur) => acc + (cur.orderTotalUSD ?? (cur.purchasePriceUSD + (cur.shippingCostUSD || 0))),
                 0
-              ) * 3.40
+              ) * 3.45
             )}
           </strong>
         </div>
@@ -1728,7 +1728,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
               (p.orderNumber ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}` : null);
             const ebayPrimaryUrl = ebayItemUrl || ebayOrderUrl;
             const orderTotal = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
-            const orderTotalPEN = orderTotal * 3.40;
+            const orderTotalPEN = orderTotal * 3.45;
 
             return (
               <Card key={p.id} className={`border-border/70 shadow-sm overflow-hidden ${p.isArchived ? 'bg-slate-50/50 dark:bg-slate-950/30 border-slate-300 dark:border-slate-700' : ''}`}>
@@ -2135,7 +2135,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                         p.orderUrl || (p.orderNumber ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}` : null);
                       const ebayPrimaryUrl = ebayItemUrl || ebayOrderUrl;
                       const orderTotal = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
-                      const orderTotalPEN = orderTotal * 3.40;
+                      const orderTotalPEN = orderTotal * 3.45;
 
                       return (
                         <TableRow
@@ -2445,7 +2445,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                     p.orderUrl || (p.orderNumber ? `https://order.ebay.com/ord/show?orderId=${p.orderNumber}` : null);
                   const ebayPrimaryUrl = ebayItemUrl || ebayOrderUrl;
                   const orderTotal = p.orderTotalUSD ?? (p.purchasePriceUSD + (p.shippingCostUSD || 0));
-                  const orderTotalPEN = orderTotal * 3.40;
+                  const orderTotalPEN = orderTotal * 3.45;
 
                   return (
                     <Card key={p.id} className={`border shadow-xs hover:border-emerald-300 transition-all ${selectedIds.includes(p.id) ? 'border-emerald-500 bg-emerald-50/20' : ''}`}>
@@ -2637,9 +2637,9 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                   )}
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block">Total en Soles (T.C. 3.40):</span>
+                  <span className="text-xs text-muted-foreground block">Total en Soles (T.C. 3.45):</span>
                   <span className="text-base font-bold text-emerald-600 block mt-0.5">
-                    {formatPEN((viewProduct.orderTotalUSD ?? (viewProduct.purchasePriceUSD + (viewProduct.shippingCostUSD || 0))) * 3.40)}
+                    {formatPEN((viewProduct.orderTotalUSD ?? (viewProduct.purchasePriceUSD + (viewProduct.shippingCostUSD || 0))) * 3.45)}
                   </span>
                 </div>
               </div>

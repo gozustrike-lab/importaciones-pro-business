@@ -510,7 +510,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
   const estimatedCostPen = useMemo(() => {
     if (!selectedProductForSale) return 0;
     const usd = selectedProductForSale.purchasePriceUSD || 0;
-    return Math.round((usd + 15) * 3.75);
+    return Math.round((usd + 15) * 3.45);
   }, [selectedProductForSale]);
 
   const estimatedProfitPen = useMemo(() => {
@@ -881,7 +881,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                               ${m.comprasUsd.toFixed(2)} USD
                             </div>
                             <div className="text-[10.5px] text-slate-400 font-medium">
-                              S/ {(m.comprasPen || Math.round(m.comprasUsd * 3.75)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              S/ {(m.comprasPen || Math.round(m.comprasUsd * 3.45)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </div>
                           </td>
                           <td className="py-3 px-3 text-right font-medium">
@@ -923,7 +923,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   </div>
                   <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
                     <span className="text-white font-bold block mb-0.5">2. Compras eBay (Inversión en Stock)</span>
-                    Es todo el dinero pagado en eBay en USD y convertido a Soles (TC ~3.75) para adquirir inventario. Por ejemplo, en Septiembre compraste 44 equipos por $5,504.19 USD (S/ 19,666.14).
+                    Es todo el dinero pagado en eBay en USD y convertido a Soles (TC ~3.45) para adquirir inventario. Por ejemplo, en Septiembre compraste 44 equipos por $5,504.19 USD (S/ 19,666.14).
                   </div>
                   <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
                     <span className="text-white font-bold block mb-0.5">3. Flujo de Caja (Caja Neta)</span>

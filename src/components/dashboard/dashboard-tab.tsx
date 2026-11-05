@@ -356,7 +356,7 @@ export function DashboardTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   {formatPEN(activePurchaseStats.investedPen)}
                 </span>
-                <span className="text-[11px]">T.C. S/ 3.40</span>
+                <span className="text-[11px]">T.C. S/ 3.45</span>
               </div>
             </div>
           </CardContent>

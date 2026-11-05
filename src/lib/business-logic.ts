@@ -3,6 +3,8 @@
 // RUC: 10762026835
 // ============================================
 
+export const DEFAULT_EXCHANGE_RATE = 3.45;
+
 // --- Types ---
 
 export interface TaxBreakdown {

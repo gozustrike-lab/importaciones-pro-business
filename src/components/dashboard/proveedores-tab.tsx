@@ -1143,7 +1143,7 @@ export function ProveedoresTab() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
               {filteredDeals.map((deal, idx) => {
-                const landedCostPen = deal.currentPriceUsd * 3.40;
+                const landedCostPen = deal.currentPriceUsd * 3.45;
                 const savingsUsd = deal.originalPriceUsd ? deal.originalPriceUsd - deal.currentPriceUsd : 0;
                 const buyNowUrl = getBuyNowUrl(deal);
                 const isBestPrice = idx === 0;
@@ -1539,7 +1539,7 @@ export function ProveedoresTab() {
                             </>
                           )}
                           <span>•</span>
-                          <span className="text-[10px]">Llegada a Perú: S/ {(deal.currentPriceUsd * 3.40).toFixed(2)}</span>
+                          <span className="text-[10px]">Llegada a Perú: S/ {(deal.currentPriceUsd * 3.45).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

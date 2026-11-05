@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const result = calculateTaxes(
       fobUSD,
       shippingUSD || 0,
-      exchangeRate || 3.7
+      exchangeRate || 3.45
     );
 
     return NextResponse.json({

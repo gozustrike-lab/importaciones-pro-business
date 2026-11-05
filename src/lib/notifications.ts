@@ -261,7 +261,7 @@ export async function notifyRadarDeal(deal: {
   const savings = deal.originalPriceUsd && deal.originalPriceUsd > deal.currentPriceUsd
     ? `$${(deal.originalPriceUsd - deal.currentPriceUsd).toFixed(2)} USD`
     : null;
-  const landedPen = `S/ ${(deal.currentPriceUsd * 3.40).toFixed(2)}`;
+  const landedPen = `S/ ${(deal.currentPriceUsd * 3.45).toFixed(2)}`;
 
   // Telegram HTML version
   const telegramHtml = `🚨 <b>¡OFERTA RADAR DETECTADA (-${discount}% OFF)!</b>\n` +

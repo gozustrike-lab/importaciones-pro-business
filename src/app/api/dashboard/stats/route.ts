@@ -162,7 +162,7 @@ export async function GET() {
     for (const prod of allProducts) {
       const pDate = prod.purchaseDate || prod.createdAt;
       const usd = prod.purchasePriceUsd || 0;
-      const pen = prod.totalCostPen || Math.round(usd * 3.40 * 100) / 100;
+      const pen = prod.totalCostPen || Math.round(usd * 3.45 * 100) / 100;
 
       purchasesStats.total.investedUsd += usd;
       purchasesStats.total.investedPen += pen;
@@ -272,7 +272,7 @@ export async function GET() {
     const nrusStatus = getNRUSCategory(totalMonthlySalesPen, configData);
 
     const cat2Limit = nrusConfig?.cat2Threshold || 8000;
-    const TC = 3.40;
+    const TC = 3.45;
 
     let fabioPurchasesPenThisMonth = 0;
     let peggyPurchasesPenThisMonth = 0;

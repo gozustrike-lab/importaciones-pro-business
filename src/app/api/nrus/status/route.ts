@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
 import { getSunatDeadline } from "@/lib/sunat-calendar";
 
-const TC = 3.40;
+const TC = 3.45;
 
 const FABIO_RUC = '10762026835';
 const PEGGY_RUC = '10091870911';

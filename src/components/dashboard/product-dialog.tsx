@@ -62,7 +62,7 @@ const defaultForm: ProductFormData = {
   shippingCostUSD: 0,
   advertisingCostUSD: 0,
   extraCostsUSD: 0,
-  exchangeRate: 3.72,
+  exchangeRate: 3.45,
   salePricePEN: 0,
 };
 

@@ -338,7 +338,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           const adv = Number(field === 'advertisingCostUsd' ? updatedVal : updated.advertisingCostUsd) || 0;
           const extra = Number(field === 'extraCostsUsd' ? updatedVal : updated.extraCostsUsd) || 0;
           const buyPen = Number(updated.purchasePricePen) || 0;
-          const tc = Number(updated.exchangeRate) || 3.40;
+          const tc = Number(updated.exchangeRate) || 3.45;
           updated.profitPen = sale > 0 ? sale - buyPen - (adv + extra) * tc : 0;
           return updated;
         })
@@ -808,7 +808,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
 
         <Card className="p-3 bg-card border">
           <p className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-            <span>Inversión PEN (3.40)</span>
+            <span>Inversión PEN (3.45)</span>
             <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
           </p>
           <div className="mt-1">

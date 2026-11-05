@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
         const entry = ensureMonth(cleanKey, d.getFullYear(), d.getMonth());
 
         const usd = p.purchasePriceUsd || 0;
-        const pen = p.totalCostPen > 0 ? p.totalCostPen : Math.round(usd * (p.exchangeRate || 3.75) * 100) / 100;
+        const pen = p.totalCostPen > 0 ? p.totalCostPen : Math.round(usd * (p.exchangeRate || 3.45) * 100) / 100;
 
         entry.comprasUsd += usd;
         entry.comprasPen += pen;
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
     const margenHoy = ventasHoy > 0 ? (gananciaHoy / ventasHoy) * 100 : 0;
     const comprasHoyUsd = purchasesToday.reduce((acc, p) => acc + p.purchasePriceUsd, 0);
     const comprasHoyPen = purchasesToday.reduce(
-      (acc, p) => acc + (p.totalCostPen > 0 ? p.totalCostPen : p.purchasePriceUsd * (p.exchangeRate || 3.75)),
+      (acc, p) => acc + (p.totalCostPen > 0 ? p.totalCostPen : p.purchasePriceUsd * (p.exchangeRate || 3.45)),
       0
     );
 
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
     const margenSemana = ventasSemana > 0 ? (gananciaSemana / ventasSemana) * 100 : 0;
     const comprasSemanaUsd = purchasesWeek.reduce((acc, p) => acc + p.purchasePriceUsd, 0);
     const comprasSemanaPen = purchasesWeek.reduce(
-      (acc, p) => acc + (p.totalCostPen > 0 ? p.totalCostPen : p.purchasePriceUsd * (p.exchangeRate || 3.75)),
+      (acc, p) => acc + (p.totalCostPen > 0 ? p.totalCostPen : p.purchasePriceUsd * (p.exchangeRate || 3.45)),
       0
     );
 

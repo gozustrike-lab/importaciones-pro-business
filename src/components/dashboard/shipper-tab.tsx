@@ -1383,7 +1383,7 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
                                   <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm font-mono">
                                     ${prod.purchasePriceUsd?.toFixed(2)} USD
                                   </span>
-                                  <p className="text-[10px] text-muted-foreground">S/ {(prod.purchasePriceUsd * 3.40).toFixed(2)} PEN (T.C. 3.40)</p>
+                                  <p className="text-[10px] text-muted-foreground">S/ {(prod.purchasePriceUsd * 3.45).toFixed(2)} PEN (T.C. 3.45)</p>
                                 </div>
                               </div>
                             ))}
@@ -1591,7 +1591,7 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
               <CardContent className="space-y-2">
                 <div className="text-2xl font-black">{selectedProfileItems.length} <span className="text-xs font-normal text-muted-foreground">de {profileItems.length} paquetes</span></div>
                 <p className="text-xs text-muted-foreground">
-                  Valor en Soles: <span className="font-semibold text-foreground">S/ {(totalFobUsd * 3.40).toFixed(2)} PEN</span> (T.C. 3.40)
+                  Valor en Soles: <span className="font-semibold text-foreground">S/ {(totalFobUsd * 3.45).toFixed(2)} PEN</span> (T.C. 3.45)
                 </p>
               </CardContent>
             </Card>

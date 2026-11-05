@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     // Acquisition cost: purchase USD * exchange rate + estimated logistics
     let costAcquisitionPen = product.totalCostPen;
     if (!costAcquisitionPen || costAcquisitionPen <= 0) {
-      const tc = product.exchangeRate || 3.75;
+      const tc = product.exchangeRate || 3.45;
       const fleteUsd = product.shippingCostUsd || 15;
       costAcquisitionPen = Math.round((product.purchasePriceUsd + fleteUsd) * tc * 100) / 100;
     }

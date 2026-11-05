@@ -386,7 +386,7 @@ function processPurchaseInWorkbook(
 
   // Prices
   const priceUsd = Number(purchase.purchasePriceUsd) || 0;
-  const tc = purchase.exchangeRate || 3.40;
+  const tc = purchase.exchangeRate || 3.45;
   row.getCell(colMap['precioUsd']).value = priceUsd;
   row.getCell(colMap['precioPen']).value = Math.round(priceUsd * tc * 100) / 100;
   row.getCell(colMap['stock']).value = 1;

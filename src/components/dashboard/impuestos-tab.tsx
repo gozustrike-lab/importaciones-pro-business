@@ -33,7 +33,7 @@ export function ImpuestosTab() {
   const { toast } = useToast();
   const [fobUSD, setFobUSD] = useState('300');
   const [shippingUSD, setShippingUSD] = useState('30');
-  const [exchangeRate, setExchangeRate] = useState('3.72');
+  const [exchangeRate, setExchangeRate] = useState('3.45');
   const [result, setResult] = useState<TaxCalculation | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -121,7 +121,7 @@ export function ImpuestosTab() {
                 id="tc"
                 type="number"
                 step="0.01"
-                placeholder="Ej: 3.72"
+                placeholder="Ej: 3.45"
                 value={exchangeRate}
                 onChange={(e) => setExchangeRate(e.target.value)}
               />

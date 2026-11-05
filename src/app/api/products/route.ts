@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
 
     const financials = calculateProductFinancials(
       purchasePriceUSD, shippingCostUSD || 0, advertisingCostUSD || 0,
-      extraCostsUSD || 0, exchangeRate || 3.7, salePricePEN || 0, configData
+      extraCostsUSD || 0, exchangeRate || 3.45, salePricePEN || 0, configData
     );
 
     const product = await db.product.create({
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
         shippingCostUsd: shippingCostUSD || 0,
         advertisingCostUsd: advertisingCostUSD || 0,
         extraCostsUsd: extraCostsUSD || 0,
-        exchangeRate: exchangeRate || 3.7,
+        exchangeRate: exchangeRate || 3.45,
         totalCostPen: financials.totalCostPen,
         taxAmountPen: financials.taxAmountPen,
         adValoremPen: financials.adValoremPen,

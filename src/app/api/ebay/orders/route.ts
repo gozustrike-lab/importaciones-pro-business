@@ -270,7 +270,7 @@ export async function GET(request: Request) {
           : (isDelivered ? 'USA' : 'TRANSITO_USA');
 
         if (!existing) {
-          const exchangeRate = 3.40;
+          const exchangeRate = 3.45;
           await db.product.create({
             data: {
               tenantId: currentUser.tenantId,
@@ -311,7 +311,7 @@ export async function GET(request: Request) {
             importerProfile: ord.assignedProfile,
             recipientName: ord.recipientName,
             itemId: ord.itemId,
-            exchangeRate: 3.40,
+            exchangeRate: 3.45,
             notes: ord.buyerMessage,
           }).catch((err) => console.error('Error auto-appending to Excel:', err));
         } else {
@@ -391,7 +391,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se recibieron compras para importar' }, { status: 400 });
     }
 
-    const exchangeRate = 3.40;
+    const exchangeRate = 3.45;
     let imported = 0;
     let updated = 0;
 

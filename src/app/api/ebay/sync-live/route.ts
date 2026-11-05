@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
           const title = tx?.Item?.Title || `Artículo eBay (${ordIdToMatch})`;
           const itemId = tx?.Item?.ItemID || "";
           const targetStatus = isDelivered ? "USA" : "TRANSITO_USA";
-          const exchangeRate = 3.4;
+          const exchangeRate = 3.45;
           const imageUrl = await fetchEbayItemImage(itemId, title);
 
           await db.product.create({

@@ -70,7 +70,7 @@ export async function POST(
     const cleanModel = sanitizeSunatModel(deal.title);
     const purchaseUsd = deal.currentPriceUsd;
     const shippingUsd = 0;
-    const exchangeRate = 3.40;
+    const exchangeRate = 3.45;
     const totalCostPen = (purchaseUsd + shippingUsd) * exchangeRate;
     const suggestedPricePen = Math.round(totalCostPen * 1.35); // 35% margin markup
 

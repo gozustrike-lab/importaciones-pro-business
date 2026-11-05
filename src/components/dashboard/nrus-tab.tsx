@@ -116,7 +116,7 @@ IMPORTE TOTAL A PAGAR (505): S/ ${profile.guiaPagoFacil.importePagarPen}.00
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fecha Límite SUNAT: ${profile.guiaPagoFacil.fechaVencimiento || 'Según calendario'}
 Estado: ${profile.guiaPagoFacil.estadoPlazo || 'En regla'}
-T.C. Oficial Aplicado: S/ 3.40 (eBay USD a Soles)`;
+T.C. Oficial Aplicado: S/ 3.45 (eBay USD a Soles)`;
 
     navigator.clipboard.writeText(text);
     setCopiedKey(profile.importerKey);
@@ -275,7 +275,7 @@ T.C. Oficial Aplicado: S/ 3.40 (eBay USD a Soles)`;
           </div>
 
           <Badge variant="secondary" className="text-xs px-2.5 py-1 font-mono">
-            T.C. S/ 3.40
+            T.C. S/ 3.45
           </Badge>
 
           <Button
@@ -1245,7 +1245,7 @@ function ProfileNRUSSection({
                   <span>Total de adquisiciones o compras:</span>
                 </label>
                 <span className="text-[11px] text-muted-foreground block">
-                  {profile.purchasesCount} equipos importados ({formatUSD(profile.monthlyPurchasesUsd)} @ S/ 3.40)
+                  {profile.purchasesCount} equipos importados ({formatUSD(profile.monthlyPurchasesUsd)} @ S/ 3.45)
                 </span>
               </div>
 
