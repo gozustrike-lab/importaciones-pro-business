@@ -23,6 +23,10 @@ import {
   CheckCheck,
   User,
   Users,
+  Plane,
+  Mail,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +43,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeSunatModel } from '@/lib/shipper-classification';
 import { syncPurchasesToExcel } from '@/lib/api';
+import { EmbarqueDialog } from './embarque-dialog';
+import type { Product } from '@/lib/types';
 
 interface ComprasTabProps {
   onNavigate?: (tab: string) => void;
@@ -114,6 +120,41 @@ function getCourierTrackingUrl(courier: string, tracking: string): string {
   return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(t)}`;
 }
 
+export function purchaseItemToProduct(item: PurchaseItem): Product {
+  const isPeggy = isPeggyItem(item);
+  return {
+    id: item.id,
+    orderNumber: item.orderNumber,
+    description: item.description,
+    category: (item.category as any) || 'Tableta Electrónica',
+    model: item.model || '',
+    color: '',
+    capacity: '',
+    grade: 'A',
+    condition: 'Usado',
+    status: (item.shippingStatus as any) || 'USA',
+    supplier: item.supplier || 'eBay',
+    serialNumber: '',
+    quantity: item.quantity || 1,
+    courier: item.courier || 'USPS',
+    trackingNumber: item.trackingNumber || '',
+    shipperTracking: item.shipperTracking || '',
+    shipperConfirmed: item.shipperConfirmed ?? true,
+    estimatedArrival: '',
+    purchaseDate: item.purchaseDate,
+    purchasePriceUSD: item.purchasePriceUsd || 0,
+    shippingCostUSD: item.shippingCostUsd || 0,
+    orderTotalUSD: item.orderTotalUsd || (item.purchasePriceUsd + item.shippingCostUsd),
+    exchangeRate: item.exchangeRate || 3.45,
+    importerProfile: item.importerProfile || (isPeggy ? 'peggy' : 'fabio'),
+    recipientName: item.recipientName || (isPeggy ? 'BONILLA ORDUÑA PEGGY LILIANA' : 'FABIO CESAR HERRERA BONILLA'),
+    isArchived: item.isArchived ?? false,
+    itemUrl: item.itemUrl,
+    orderUrl: item.orderUrl,
+    imageUrl: item.imageUrl,
+  } as Product;
+}
+
 export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -132,9 +173,12 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const [loadingExcel, setLoadingExcel] = useState(false);
 
   // Navigation Filter State: Owner (Fabio vs Peggy vs All), Year, Month, Search
-  const [selectedOwner, setSelectedOwner] = useState<'all' | 'fabio' | 'peggy'>('fabio');
+  const [selectedOwner, setSelectedOwner] = useState<'all' | 'fabio' | 'peggy'>('all');
   const [selectedYear, setSelectedYear] = useState<string>('2026');
-  const [selectedMonth, setSelectedMonth] = useState<string>('SEPTIEMBRE');
+  const [selectedMonth, setSelectedMonth] = useState<string>('NOVIEMBRE');
+  const [isProximoEmbarqueActive, setIsProximoEmbarqueActive] = useState<boolean>(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [embarqueDialogOpen, setEmbarqueDialogOpen] = useState<boolean>(false);
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -492,16 +536,15 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
     return Array.from(set).sort((a, b) => MONTH_ORDER.indexOf(b) - MONTH_ORDER.indexOf(a));
   }, [products, selectedOwner, selectedYear]);
 
-  // Automatically adjust month if current month is not in available months
-  useEffect(() => {
-    if (selectedMonth !== 'ALL' && availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
-      if (selectedYear === '2026' && availableMonths.includes('SEPTIEMBRE')) {
-        setSelectedMonth('SEPTIEMBRE');
-      } else {
-        setSelectedMonth(availableMonths[0]);
-      }
-    }
-  }, [availableMonths, selectedMonth, selectedYear]);
+  // Total ready in Miami for this owner filter
+  const miamiReadyProducts = useMemo(() => {
+    let list = products.filter(
+      (p) => (p.shippingStatus === 'USA' && p.shipperConfirmed && !p.isArchived)
+    );
+    if (selectedOwner === 'fabio') list = list.filter((p) => !isPeggyItem(p));
+    else if (selectedOwner === 'peggy') list = list.filter((p) => isPeggyItem(p));
+    return list;
+  }, [products, selectedOwner]);
 
   // 5. Filtered Rows Calculation
   const filteredRows = useMemo(() => {
@@ -514,14 +557,19 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
       list = list.filter((p) => isPeggyItem(p));
     }
 
-    // Filter by year
-    if (selectedYear !== 'ALL') {
-      list = list.filter((p) => p.year === selectedYear);
-    }
+    if (isProximoEmbarqueActive) {
+      // PRIORITY MODE: Show ONLY confirmed packages in Miami ready for flight!
+      list = list.filter((p) => p.shippingStatus === 'USA' && p.shipperConfirmed && !p.isArchived);
+    } else {
+      // Filter by year
+      if (selectedYear !== 'ALL') {
+        list = list.filter((p) => p.year === selectedYear);
+      }
 
-    // Filter by month
-    if (selectedMonth !== 'ALL') {
-      list = list.filter((p) => p.monthName === selectedMonth);
+      // Filter by month
+      if (selectedMonth !== 'ALL') {
+        list = list.filter((p) => p.monthName === selectedMonth);
+      }
     }
 
     // Search filter
@@ -532,6 +580,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           (p.description || '').toLowerCase().includes(q) ||
           (p.orderNumber || '').toLowerCase().includes(q) ||
           (p.trackingNumber || '').toLowerCase().includes(q) ||
+          (p.shipperTracking || '').toLowerCase().includes(q) ||
           (p.supplier || '').toLowerCase().includes(q) ||
           (p.model || '').toLowerCase().includes(q) ||
           (p.courier || '').toLowerCase().includes(q) ||
@@ -541,7 +590,73 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
     }
 
     return list;
-  }, [products, selectedOwner, selectedYear, selectedMonth, search]);
+  }, [products, selectedOwner, selectedYear, selectedMonth, search, isProximoEmbarqueActive]);
+
+  const allFilteredSelected = useMemo(() => {
+    return filteredRows.length > 0 && filteredRows.every((p) => selectedIds.includes(p.id));
+  }, [filteredRows, selectedIds]);
+
+  const handleToggleSelectAll = () => {
+    if (allFilteredSelected) {
+      const currentIds = new Set(filteredRows.map((p) => p.id));
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.has(id)));
+    } else {
+      const newIds = new Set([...selectedIds, ...filteredRows.map((p) => p.id)]);
+      setSelectedIds(Array.from(newIds));
+    }
+  };
+
+  const handleToggleSelectRow = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectedProductsForDialog = useMemo(() => {
+    const targetIds = selectedIds.length > 0 ? selectedIds : filteredRows.map((p) => p.id);
+    return products
+      .filter((p) => targetIds.includes(p.id))
+      .map(purchaseItemToProduct);
+  }, [products, selectedIds, filteredRows]);
+
+  const handleCopyShiperEmail = () => {
+    const targetList = selectedIds.length > 0
+      ? products.filter((p) => selectedIds.includes(p.id))
+      : filteredRows;
+
+    if (targetList.length === 0) {
+      toast({ title: 'Sin productos', description: 'Selecciona al menos un producto para generar el correo.', variant: 'destructive' });
+      return;
+    }
+
+    const isPeggy = selectedOwner === 'peggy' || (selectedOwner === 'all' && targetList.every(isPeggyItem));
+    const consigneeName = isPeggy ? 'BONILLA ORDUÑA PEGGY LILIANA' : 'FABIO CESAR HERRERA BONILLA';
+    const consigneeRuc = isPeggy ? '10091870911' : '10762026835';
+    const totalFob = targetList.reduce((acc, it) => acc + (it.orderTotalUsd || (it.purchasePriceUsd + (it.shippingCostUsd || 0))), 0);
+    const totalUnits = targetList.reduce((acc, it) => acc + (it.quantity || 1), 0);
+
+    let text = `Estimado equipo de ShiPer Courier,\n\n`;
+    text += `Adjunto la Orden de Embarque y la Hoja de Traducción SUNAT correspondiente para el próximo vuelo hacia Lima, Perú.\n\n`;
+    text += `📌 DATOS DEL EMBARQUE:\n`;
+    text += `- Consignatario: ${consigneeName}\n`;
+    text += `- RUC: ${consigneeRuc}\n`;
+    text += `- Total de Paquetes: ${targetList.length} bulto(s)\n`;
+    text += `- Total Unidades: ${totalUnits} equipo(s)\n`;
+    text += `- Valor Total FOB: $${totalFob.toFixed(2)} USD\n\n`;
+    text += `📦 DETALLE DE TRACKINGS (RECEPCIÓN MIAMI CONFIRMADA):\n`;
+    targetList.forEach((it, idx) => {
+      const track = it.shipperTracking || it.trackingNumber || '-';
+      text += `${idx + 1}. [${it.courier || 'Courier'}] Tracking: ${track} | Orden: ${it.orderNumber} | ${it.description.slice(0, 48)}\n`;
+    });
+    text += `\nQuedo a la espera de la confirmación de embarque y la guía aérea (HAWB).\n\n`;
+    text += `Saludos cordiales,\n${consigneeName}`;
+
+    navigator.clipboard.writeText(text);
+    toast({
+      title: '📧 Correo de Embarque copiado',
+      description: `Se copió el formato oficial con ${targetList.length} paquetes para ${consigneeName} (Total FOB: $${totalFob.toFixed(2)} USD).`,
+    });
+  };
 
   // 6. Metrics Summary
   const metrics = useMemo(() => {
@@ -1193,12 +1308,43 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
 
         {/* Row 2: Month Sub-Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+          {/* PRIORITY TAB: Próxima Embarcación (Miami) */}
           <Button
             size="sm"
-            variant={selectedMonth === 'ALL' ? 'default' : 'outline'}
-            onClick={() => setSelectedMonth('ALL')}
+            variant={isProximoEmbarqueActive ? 'default' : 'outline'}
+            onClick={() => {
+              setIsProximoEmbarqueActive(true);
+              setSelectedMonth('ALL');
+            }}
+            className={`h-7 px-3 text-xs font-bold shrink-0 gap-1.5 transition-all shadow-xs ${
+              isProximoEmbarqueActive
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
+                : 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+            }`}
+          >
+            <Plane className={`h-3.5 w-3.5 ${isProximoEmbarqueActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
+            <span>✈️ Próxima Embarcación</span>
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 font-bold ${
+                isProximoEmbarqueActive
+                  ? 'bg-white/20 text-white'
+                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+              }`}
+            >
+              {miamiReadyProducts.length} en Miami
+            </Badge>
+          </Button>
+
+          <Button
+            size="sm"
+            variant={!isProximoEmbarqueActive && selectedMonth === 'ALL' ? 'default' : 'outline'}
+            onClick={() => {
+              setIsProximoEmbarqueActive(false);
+              setSelectedMonth('ALL');
+            }}
             className={`h-7 px-2.5 text-xs font-semibold shrink-0 gap-1 ${
-              selectedMonth === 'ALL'
+              !isProximoEmbarqueActive && selectedMonth === 'ALL'
                 ? 'bg-emerald-600 text-white'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -1221,14 +1367,17 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             const count = list.filter(
               (p) => (selectedYear === 'ALL' || p.year === selectedYear) && p.monthName === m
             ).length;
-            const isSelected = selectedMonth === m;
+            const isSelected = !isProximoEmbarqueActive && selectedMonth === m;
 
             return (
               <Button
                 key={m}
                 size="sm"
                 variant={isSelected ? 'default' : 'outline'}
-                onClick={() => setSelectedMonth(m)}
+                onClick={() => {
+                  setIsProximoEmbarqueActive(false);
+                  setSelectedMonth(m);
+                }}
                 className={`h-7 px-2.5 text-xs font-medium shrink-0 gap-1 ${
                   isSelected
                     ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold'
@@ -1243,12 +1392,87 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
         </div>
       </div>
 
+      {/* ACTION TOOLBAR: Consolidado de Embarque & Traducción SUNAT */}
+      {isProximoEmbarqueActive && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-emerald-600 text-white shadow-xs">
+              <Plane className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Próxima Embarcación a Lima
+                </span>
+                <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-400 font-bold">
+                  {filteredRows.length} paquetes listos en Miami
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Total FOB: <strong className="text-emerald-700 dark:text-emerald-400 font-mono">${filteredRows.reduce((a, b) => a + (b.orderTotalUsd || (b.purchasePriceUsd + (b.shippingCostUsd || 0))), 0).toFixed(2)} USD</strong> (S/ {(filteredRows.reduce((a, b) => a + (b.orderTotalUsd || (b.purchasePriceUsd + (b.shippingCostUsd || 0))), 0) * 3.45).toFixed(2)}) • {selectedIds.length > 0 ? `${selectedIds.length} seleccionado(s)` : 'Todos pre-seleccionados'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              onClick={handleToggleSelectAll}
+              variant="outline"
+              className="h-8 text-xs font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/50"
+            >
+              {allFilteredSelected ? (
+                <>
+                  <CheckSquare className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                  Deseleccionar Todos
+                </>
+              ) : (
+                <>
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Seleccionar los {filteredRows.length} de Miami
+                </>
+              )}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleCopyShiperEmail}
+              variant="outline"
+              className="h-8 text-xs font-semibold gap-1.5 bg-background shadow-xs hover:bg-muted"
+              title="Copiar texto listo para el correo a ShiPer con todos los trackings y datos"
+            >
+              <Mail className="h-3.5 w-3.5 text-blue-600" />
+              Copiar Correo ShiPer
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => setEmbarqueDialogOpen(true)}
+              className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+              title="Generar Hoja de Embarque y Hoja de Traducción SUNAT oficial"
+            >
+              <Plane className="h-3.5 w-3.5" />
+              Armar Embarque & Traducción ({selectedIds.length > 0 ? selectedIds.length : filteredRows.length})
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Spreadsheet Table with Inline Real-Time Auto-Save */}
       <div className={viewMode === 'excel' ? 'hidden' : 'rounded-lg border bg-card overflow-hidden shadow-xs'}>
         <div className="overflow-x-auto max-h-[70vh]">
           <Table className="text-xs">
             <TableHeader className="bg-muted/70 sticky top-0 z-10 text-[11px]">
               <TableRow>
+                <TableHead className="w-[36px] text-center">
+                  <input
+                    type="checkbox"
+                    aria-label="Seleccionar todos"
+                    checked={allFilteredSelected}
+                    onChange={handleToggleSelectAll}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                  />
+                </TableHead>
                 <TableHead className="w-[36px] text-center font-bold">#</TableHead>
                 <TableHead className="w-[125px]">Fecha Compra</TableHead>
                 <TableHead className="w-[80px] text-center font-bold">Titular</TableHead>
@@ -1286,7 +1510,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
             <TableBody>
               {filteredRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={21} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={22} className="py-12 text-center text-muted-foreground">
                     <FileSpreadsheet className="h-8 w-8 mx-auto opacity-40 mb-2" />
                     <p className="font-medium">No hay compras registradas para este filtro.</p>
                   </TableCell>
@@ -1320,6 +1544,17 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
 
                   return (
                     <TableRow key={r.id || idx} className="hover:bg-muted/40 transition-colors">
+                      {/* Checkbox Selección */}
+                      <TableCell className="text-center p-1">
+                        <input
+                          type="checkbox"
+                          aria-label={`Seleccionar compra ${r.orderNumber}`}
+                          checked={selectedIds.includes(r.id)}
+                          onChange={() => handleToggleSelectRow(r.id)}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                        />
+                      </TableCell>
+
                       {/* # */}
                       <TableCell className="text-center font-mono text-muted-foreground text-[11px] font-semibold">
                         {idx + 1}
@@ -1804,6 +2039,15 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
           </Table>
         </div>
       </div>
+
+      {/* Modal Oficial de Embarque, Traducción SUNAT y Correo ShiPer */}
+      <EmbarqueDialog
+        open={embarqueDialogOpen}
+        onOpenChange={setEmbarqueDialogOpen}
+        selectedProducts={selectedProductsForDialog}
+        onProductsUpdated={loadData}
+        onClearSelection={() => setSelectedIds([])}
+      />
     </div>
   );
 }
