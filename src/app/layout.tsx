@@ -134,7 +134,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className="dark" style={{ colorScheme: "dark" }} suppressHydrationWarning>
       <head>
         {/* Structured Data (JSON-LD) */}
         <script
@@ -179,7 +179,7 @@ export default function RootLayout({
         <meta property="og:image:type" content="image/png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#070D19] text-slate-100 min-h-screen`}
       >
         <ThemeProvider>
           <AuthProvider>

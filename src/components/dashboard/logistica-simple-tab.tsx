@@ -116,6 +116,19 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [selectedLocation, setSelectedLocation] = useState<'todos' | 'miami' | 'transito' | 'usa'>('todos');
 
+  // ── Quick Product Edit Modal State ──
+  const [editProductModalOpen, setEditProductModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editModel, setEditModel] = useState('');
+  const [editSalePricePen, setEditSalePricePen] = useState('');
+  const [editPurchasePriceUsd, setEditPurchasePriceUsd] = useState('');
+  const [editCourier, setEditCourier] = useState('');
+  const [editTracking, setEditTracking] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+  const [editImporterProfile, setEditImporterProfile] = useState<'fabio' | 'peggy'>('fabio');
+  const [savingProduct, setSavingProduct] = useState(false);
+
   // ── Voice & Quick Sale Modal State ──
   const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [selectedProductForSale, setSelectedProductForSale] = useState<Product | null>(null);
@@ -158,6 +171,16 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
   useEffect(() => {
     loadData();
     loadFinancialSummary();
+
+    const handleQuickSaleEvent = () => {
+      setSelectedProductForSale(null);
+      setSalePriceInput('');
+      setVoiceText('');
+      setLastSaleResult(null);
+      setSaleModalOpen(true);
+    };
+    window.addEventListener('open-quick-sale-modal', handleQuickSaleEvent);
+    return () => window.removeEventListener('open-quick-sale-modal', handleQuickSaleEvent);
   }, []);
 
   // Compute metrics
@@ -365,6 +388,60 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
           setSalePriceInput(String(match.salePricePEN || 1000));
         }
       }
+    }
+  };
+
+  // Save product quick edit
+  const handleSaveProductEdit = async () => {
+    if (!productToEdit) return;
+    try {
+      setSavingProduct(true);
+      const res = await fetch(`/api/products/${productToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: editDescription,
+          model: editModel,
+          salePricePEN: editSalePricePen ? parseFloat(editSalePricePen) : undefined,
+          purchasePriceUSD: editPurchasePriceUsd ? parseFloat(editPurchasePriceUsd) : undefined,
+          courier: editCourier,
+          trackingNumber: editTracking,
+          status: editStatus,
+          importerProfile: editImporterProfile,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Error al guardar producto');
+      }
+
+      toast.success('¡Producto actualizado con éxito!');
+      setEditProductModalOpen(false);
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productToEdit.id
+            ? {
+                ...p,
+                description: editDescription,
+                model: editModel,
+                salePricePEN: editSalePricePen ? parseFloat(editSalePricePen) : p.salePricePEN,
+                purchasePriceUSD: editPurchasePriceUsd ? parseFloat(editPurchasePriceUsd) : p.purchasePriceUSD,
+                courier: editCourier,
+                trackingNumber: editTracking,
+                status: editStatus as any,
+                importerProfile: editImporterProfile,
+                shipperConfirmed: editStatus === 'USA' || editStatus === 'Entregado',
+              } as Product
+            : p
+        )
+      );
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Error al actualizar el producto');
+    } finally {
+      setSavingProduct(false);
     }
   };
 
@@ -1251,6 +1328,30 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                               {p.salePricePEN ? `S/ ${p.salePricePEN}` : 'S/ 1,000'}
                             </span>
                           </div>
+
+                          <Button
+                            onClick={() => {
+                              setProductToEdit(p);
+                              setEditDescription(p.description || '');
+                              setEditModel(p.model || '');
+                              setEditSalePricePen(p.salePricePEN ? String(p.salePricePEN) : '');
+                              setEditPurchasePriceUsd(p.purchasePriceUSD ? String(p.purchasePriceUSD) : '');
+                              setEditCourier(p.courier || '');
+                              setEditTracking(p.trackingNumber || '');
+                              setEditStatus(p.status || 'USA');
+                              setEditImporterProfile(
+                                (p.importerProfile || '').toLowerCase() === 'peggy' ? 'peggy' : 'fabio'
+                              );
+                              setEditProductModalOpen(true);
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 font-bold text-xs px-2.5 h-8 rounded-xl gap-1"
+                            title="Editar datos, precio o estado"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Editar</span>
+                          </Button>
 
                           <Button
                             onClick={() => handleOpenSaleForProduct(p)}
