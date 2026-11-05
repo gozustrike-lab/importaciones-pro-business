@@ -36,7 +36,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#070D19] text-slate-100">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-[#070D19] dark:text-slate-100 transition-colors duration-150">
       {children}
     </div>
   );

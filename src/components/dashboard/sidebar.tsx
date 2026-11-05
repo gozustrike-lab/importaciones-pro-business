@@ -69,10 +69,10 @@ const navItems: {
   badge?: string;
 }[] = [
   { key: 'logistica', label: 'Control Logístico', icon: ShieldCheck, section: 'Principal', badge: 'Simple' },
+  { key: 'shipper', label: 'Embarques & Vuelos', icon: Plane, section: 'Principal', badge: 'ShiPer' },
   { key: 'compras', label: 'Registro Compras & Excel', icon: FileSpreadsheet, section: 'Principal', badge: 'Excel' },
   { key: 'catalogo', label: 'Catálogo TikTok & WA', icon: Smartphone, section: 'Principal', badge: 'Catálogo' },
   { key: 'productos', label: 'Inventario Completo', icon: Package, section: 'Principal' },
-  { key: 'shipper', label: 'Bitácora & Shipper', icon: Plane, section: 'Secundario' },
   { key: 'nrus', label: 'NRUS / SUNAT', icon: TrendingUp, section: 'Secundario' },
   { key: 'ventas', label: 'Registro Ventas', icon: ShoppingCart, section: 'Secundario' },
   { key: 'proveedores', label: 'Proveedores & Ofertas', icon: Store, section: 'Secundario' },
@@ -105,16 +105,16 @@ function NavItem({
         'flex w-full items-center rounded-xl text-xs font-semibold transition-all min-h-[42px]',
         collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5',
         active
-          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold shadow-sm'
-          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+          ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 font-bold shadow-xs'
+          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60'
       )}
     >
-      <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-emerald-400' : 'text-slate-400')} />
+      <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')} />
       {!collapsed && (
         <span className="truncate flex-1 text-left">{item.label}</span>
       )}
       {!collapsed && item.badge && (
-        <span className="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 px-2 py-0.5 rounded-full font-bold">
+        <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/80 px-2 py-0.5 rounded-full font-bold">
           {item.badge}
         </span>
       )}
@@ -143,9 +143,9 @@ function UserSection({
 
   if (collapsed) {
     return (
-      <div className="border-t border-slate-800/80 p-2 flex flex-col items-center gap-2">
+      <div className="border-t border-slate-200 dark:border-slate-800/80 p-2 flex flex-col items-center gap-2">
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-bold shrink-0 cursor-pointer border border-emerald-500/30"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-sm font-bold shrink-0 cursor-pointer border border-emerald-500/30"
           title={`${userName} (${roleLabels[userRole] || userRole})`}
         >
           {userName.charAt(0).toUpperCase()}
@@ -154,7 +154,7 @@ function UserSection({
           variant="ghost"
           size="icon"
           onClick={onLogout}
-          className="h-8 w-8 text-slate-400 hover:text-red-400 hover:bg-slate-800/60"
+          className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
           title="Cerrar sesión"
         >
           <LogOut className="h-4 w-4" />
@@ -164,29 +164,28 @@ function UserSection({
   }
 
   return (
-    <div className="border-t border-slate-800/80 p-3.5 bg-slate-950/40">
-      <div className="flex items-center gap-3 mb-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-bold shrink-0 border border-emerald-500/30">
+    <div className="border-t border-slate-200 dark:border-slate-800/80 p-3 flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-sm font-bold shrink-0 border border-emerald-500/30">
           {userName.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-100 truncate">{userName}</p>
-          <p className="text-[11px] text-slate-400 truncate">{userEmail}</p>
+          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{userName}</p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{userEmail}</p>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center rounded-md bg-slate-900 border border-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300">
+      <div className="flex items-center justify-between pt-1">
+        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
           {roleLabels[userRole] || userRole}
         </span>
         <Button
           variant="ghost"
           size="sm"
           onClick={onLogout}
-          className="h-7 px-2 text-slate-400 hover:text-red-400 hover:bg-slate-800/60 text-xs gap-1"
-          title="Cerrar sesión"
+          className="h-7 text-xs text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 gap-1.5 px-2"
         >
           <LogOut className="h-3.5 w-3.5" />
-          <span className="text-[11px]">Salir</span>
+          <span>Salir</span>
         </Button>
       </div>
     </div>
@@ -217,25 +216,25 @@ function SidebarContent({
   const expandedMore = showMore || isSecondaryActive;
 
   return (
-    <div className="flex h-full flex-col bg-[#0B1220] text-slate-100">
+    <div className="flex h-full flex-col bg-white dark:bg-[#0B1220] text-slate-900 dark:text-slate-100 transition-colors duration-150">
       {/* Header / Logo */}
-      <div className={cn('p-4 transition-all border-b border-slate-800/80', collapsed ? 'px-2 py-3.5' : 'p-4')}>
+      <div className={cn('p-4 transition-all border-b border-slate-200 dark:border-slate-800/80', collapsed ? 'px-2 py-3.5' : 'p-4')}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shrink-0 shadow-md shadow-emerald-950/40">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shrink-0 shadow-md shadow-emerald-950/20">
               <Package className="h-5 w-5 text-slate-950" />
             </div>
             {!collapsed && (
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-black text-white tracking-tight">
+                  <h1 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
                     ImportHub
                   </h1>
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
                     PERÚ
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">ERP Multi-Tenant</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-none mt-0.5">ERP Multi-Tenant</p>
               </div>
             )}
           </div>
@@ -244,10 +243,10 @@ function SidebarContent({
             {!collapsed && (
               <button
                 onClick={toggleTheme}
-                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
               </button>
             )}
 
@@ -255,11 +254,11 @@ function SidebarContent({
             {onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
-                className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title={collapsed ? 'Desplegar menú' : 'Plegar menú'}
               >
                 {collapsed ? (
-                  <PanelLeftOpen className="h-4 w-4 text-emerald-400" />
+                  <PanelLeftOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <PanelLeftClose className="h-4 w-4" />
                 )}
@@ -272,7 +271,7 @@ function SidebarContent({
       {/* Navigation */}
       <nav className={cn('flex-1 space-y-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
         {!collapsed && (
-          <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 px-3 mb-1.5 mt-1">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 px-3 mb-1.5 mt-1">
             Operación Diaria
           </p>
         )}
@@ -289,25 +288,25 @@ function SidebarContent({
         {/* Collapsible Secondary Modules */}
         <div className="pt-2">
           {collapsed ? (
-            <Separator className="my-2 bg-slate-800" />
+            <Separator className="my-2 bg-slate-200 dark:bg-slate-800" />
           ) : (
             <button
               type="button"
               onClick={() => setShowMore((prev) => !prev)}
-              className="flex w-full items-center justify-between px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800/50 transition-colors"
+              className="flex w-full items-center justify-between px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
             >
               <span>Más Herramientas ({secondaryItems.length})</span>
               <ChevronDown
                 className={cn(
                   'h-3.5 w-3.5 transition-transform duration-200 text-slate-400',
-                  expandedMore && 'rotate-180 text-emerald-400'
+                  expandedMore && 'rotate-180 text-emerald-600 dark:text-emerald-400'
                 )}
               />
             </button>
           )}
 
           {(expandedMore || collapsed) && (
-            <div className={cn('space-y-1', !collapsed && 'mt-1 pl-1 border-l border-slate-800/80 ml-2')}>
+            <div className={cn('space-y-1', !collapsed && 'mt-1 pl-1 border-l border-slate-200 dark:border-slate-800/80 ml-2')}>
               {secondaryItems.map((item) => (
                 <NavItem
                   key={item.key}
@@ -324,9 +323,9 @@ function SidebarContent({
         {isAdmin && adminItems.length > 0 && (
           <>
             {collapsed ? (
-              <Separator className="my-2 bg-slate-800" />
+              <Separator className="my-2 bg-slate-200 dark:bg-slate-800" />
             ) : (
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 px-3 mt-4 mb-1.5 font-bold">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 mt-4 mb-1.5 font-bold">
                 Admin
               </p>
             )}
@@ -344,19 +343,19 @@ function SidebarContent({
       </nav>
 
       {/* Bot Alertas Celular (WhatsApp & Telegram) */}
-      <div className={cn('px-3 py-2 border-t border-slate-800/80', collapsed ? 'px-2' : 'px-3')}>
+      <div className={cn('px-3 py-2 border-t border-slate-200 dark:border-slate-800/80', collapsed ? 'px-2' : 'px-3')}>
         <NotificationsDialog
           triggerButton={
             <Button
               variant="outline"
               size="sm"
               className={cn(
-                'w-full gap-2 border-emerald-500/30 hover:border-emerald-500 bg-emerald-950/30 hover:bg-emerald-950/50 text-emerald-300 font-bold text-xs transition-all shadow-xs',
+                'w-full gap-2 border-emerald-300 dark:border-emerald-500/30 hover:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 font-bold text-xs transition-all shadow-xs',
                 collapsed && 'px-0 justify-center'
               )}
               title="Configurar Bot de Notificaciones (WhatsApp & Telegram)"
             >
-              <Bell className="h-3.5 w-3.5 text-emerald-400 animate-bounce" />
+              <Bell className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 animate-bounce" />
               {!collapsed && <span>Alertas Celular</span>}
             </Button>
           }
@@ -393,7 +392,7 @@ export function Sidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 bg-[#0B1220] border-r border-slate-800/80 z-40 transition-all duration-200 shadow-xl',
+          'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 bg-white dark:bg-[#0B1220] border-r border-slate-200 dark:border-slate-800/80 z-40 transition-all duration-200 shadow-xl',
           collapsed ? 'lg:w-16' : 'lg:w-64'
         )}
       >
@@ -413,13 +412,13 @@ export function Sidebar({
           <Button
             variant="ghost"
             size="icon"
-            className="fixed top-3 left-3 z-50 lg:hidden bg-[#0B1220] border border-slate-800 text-white hover:bg-slate-800 shadow-xl h-10 w-10 rounded-xl"
+            className="fixed top-3 left-3 z-50 lg:hidden bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 shadow-xl h-10 w-10 rounded-xl"
           >
-            <Menu className="h-5 w-5 text-emerald-400" />
+            <Menu className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             <span className="sr-only">Menú</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-72 p-0 bg-[#0B1220] border-r border-slate-800 text-slate-100">
+        <SheetContent side="left" className="w-72 p-0 bg-white dark:bg-[#0B1220] border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
           <SheetTitle className="sr-only">Navegación</SheetTitle>
           <SidebarContent
             activeTab={activeTab}

@@ -31,7 +31,10 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronUp,
+  Scale,
+  BadgeDollarSign,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -185,6 +188,35 @@ const STATUS_LABELS: Record<string, { label: string; color: string; badgeClass: 
     step: 6,
   },
 };
+
+function parseShipmentLogistics(notes?: string) {
+  if (!notes) return { trackingUrl: null, weight: null, cost: null, modality: null, cleanSnippet: null };
+
+  const trackingMatch = notes.match(/https:\/\/whs\.shiper\.pe[^\s|]+/);
+  const trackingUrl = trackingMatch ? trackingMatch[0] : null;
+
+  const weightMatch = notes.match(/Peso:\s*([0-9.]+\s*kg)/i);
+  const weight = weightMatch ? weightMatch[1] : null;
+
+  const costMatch = notes.match(/Liquidaci[oó]n:\s*(\$[0-9.]+|S\/\s*[0-9.]+)/i);
+  const cost = costMatch ? costMatch[1] : null;
+
+  const modalityMatch = notes.match(/Modalidad:\s*([^|\n]+)/i);
+  const modality = modalityMatch ? modalityMatch[1].trim() : null;
+
+  let cleanSnippet = notes;
+  const confirmMatch = notes.match(/Shiper confirmó:\s*"?([^"|\n]+)"?/i);
+  if (confirmMatch) {
+    cleanSnippet = `ShiPer: "${confirmMatch[1].trim()}"`;
+  } else {
+    cleanSnippet = cleanSnippet.replace(/https:\/\/whs\.shiper\.pe[^\s|]+/g, '').replace(/Link Rastreo:\s*\|?/g, '').trim();
+    if (cleanSnippet.length > 85) {
+      cleanSnippet = cleanSnippet.slice(0, 85) + '...';
+    }
+  }
+
+  return { trackingUrl, weight, cost, modality, cleanSnippet };
+}
 
 export function ShipperTab() {
   // Top-level Navigation: Bitácora vs Preparar
@@ -1113,285 +1145,274 @@ Detallar correctamente los documentos que son usados y leer el origen en el form
               {filteredShipments.map((s) => {
                 const statusMeta = STATUS_LABELS[s.status] || STATUS_LABELS.ENVIADO;
                 const isFabio = s.importerProfile === 'fabio';
+                const { trackingUrl, weight, cost, modality, cleanSnippet } = parseShipmentLogistics(s.whatsappNotes);
 
                 return (
-                  <Card key={s.id} className="border-2 shadow-sm hover:shadow-md transition-shadow">
-                    {/* Header Bar */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 border-b bg-muted/20">
+                  <div
+                    key={s.id}
+                    className="bg-white dark:bg-[#0B1220] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3.5"
+                  >
+                    {/* 1. TOP ROW: Consignatario + Vuelo + Código + Estado */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-sm text-foreground bg-background px-2.5 py-1 rounded border shadow-xs">
-                          {s.code}
+                        {/* Profile Chip */}
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-colors',
+                            isFabio
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                              : 'bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60'
+                          )}
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>{isFabio ? 'Fabio Herrera' : 'Peggy Bonilla'}</span>
                         </span>
 
-                        <Badge
-                          variant="outline"
-                          className={
-                            isFabio
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold'
-                              : 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 font-bold'
-                          }
-                        >
-                          👤 {isFabio ? 'FABIO HERRERA' : 'PEGGY BONILLA'} (RUC: {s.consigneeRuc})
-                        </Badge>
+                        {/* Flight Day Chip */}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60">
+                          <Plane className="w-3.5 h-3.5 text-sky-500" />
+                          <span>{s.flightDayLabel}</span>
+                        </span>
 
-                        <Badge variant="outline" className="border-blue-500/40 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-medium text-xs">
-                          ✈️ {s.flightDayLabel}
-                        </Badge>
-
-                        <Badge variant="outline" className={statusMeta.badgeClass}>
-                          {statusMeta.label}
-                        </Badge>
-
-                        {s.status === 'EN_ADUANA' && (
-                          <Badge variant="destructive" className="bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs gap-1 shadow-xs animate-pulse">
-                            <AlertTriangle className="h-3 w-3" />
-                            Canal Rojo (Revisión SUNAT)
-                          </Badge>
-                        )}
+                        {/* Shipment Code */}
+                        <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                          #{s.code}
+                        </span>
                       </div>
 
-                      {/* Main FOB and Quick Action */}
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground font-medium">Total FOB Declarado</p>
-                          <p className="text-base font-black text-foreground">
-                            ${s.totalFobUsd.toFixed(2)} USD
-                            <span className="text-[11px] font-normal text-muted-foreground ml-1">
-                              ({s.totalItems} paquete{s.totalItems > 1 ? 's' : ''})
-                            </span>
-                          </p>
-                        </div>
-
-                        {s.status !== 'RECIBIDO' ? (
-                          <Button
-                            size="sm"
-                            onClick={() => handleMarkReceived(s.id, s.code)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs gap-1.5 shadow-sm"
-                          >
-                            <CheckCircle2 className="h-4 w-4" /> Marcar Recibido en Lima
-                          </Button>
+                      {/* Right: Status Pill & Quick Action */}
+                      <div className="flex items-center gap-2">
+                        {s.status === 'EN_ADUANA' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800 animate-pulse">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                            <span>Canal Rojo (Aduanas)</span>
+                          </span>
+                        ) : s.status === 'RECIBIDO' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Recibido en Lima (Stock)</span>
+                          </span>
                         ) : (
-                          <Badge variant="default" className="bg-emerald-600 text-white font-bold px-3 py-1 text-xs gap-1">
-                            <Check className="h-3.5 w-3.5" /> En Inventario Lima
-                          </Badge>
+                          <button
+                            onClick={() => handleMarkReceived(s.id, s.code)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all active:scale-95"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Marcar Recibido</span>
+                          </button>
                         )}
                       </div>
                     </div>
 
-                    <CardContent className="p-4 space-y-4">
-                      {/* Grid: AWB + WhatsApp Notes + Status Selector */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* 1. Guía AWB Shipper */}
-                        <div className="p-3 rounded-lg border bg-card space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <Truck className="h-4 w-4 text-primary" /> Guía AWB Courier
-                            </span>
-                            {s.awbNumber && editingAwbId !== s.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingAwbId(s.id);
-                                  setTempAwb(s.awbNumber);
-                                }}
-                                className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-                              >
-                                Editar
-                              </Button>
-                            )}
-                          </div>
-
-                          {editingAwbId === s.id || !s.awbNumber ? (
-                            <div className="space-y-1.5">
-                              <Input
-                                placeholder="Ej: SHP-89210-LIM"
-                                value={editingAwbId === s.id ? tempAwb : tempAwb || ''}
-                                onChange={(e) => {
-                                  setEditingAwbId(s.id);
-                                  setTempAwb(e.target.value);
-                                }}
-                                className="h-8 font-mono text-xs"
-                              />
-                              <div className="flex gap-1.5">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleUpdateShipment(s.id, { awbNumber: tempAwb })}
-                                  disabled={savingField === s.id || !tempAwb.trim()}
-                                  className="h-7 text-xs flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                                >
-                                  {savingField === s.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Guardar AWB'}
-                                </Button>
-                                {editingAwbId === s.id && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setEditingAwbId(null)}
-                                    className="h-7 text-xs"
-                                  >
-                                    Cancelar
-                                  </Button>
-                                )}
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">
-                                Ingresa la guía cuando Shipper te responda por WhatsApp.
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <p className="font-mono text-base font-black text-blue-600 dark:text-blue-400">
-                                {s.awbNumber}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                Asignada por Shipper para el vuelo a Lima.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 2. WhatsApp Notes / Courier Tracking */}
-                        <div className="p-3 rounded-lg border bg-card space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                              <MessageCircle className="h-4 w-4" /> Bitácora WhatsApp Shipper
-                            </span>
-                            {editingNotesId !== s.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingNotesId(s.id);
-                                  setTempNotes(s.whatsappNotes || '');
-                                }}
-                                className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-                              >
-                                {s.whatsappNotes ? 'Modificar' : '+ Agregar'}
-                              </Button>
-                            )}
-                          </div>
-
-                          {editingNotesId === s.id ? (
-                            <div className="space-y-1.5">
-                              <textarea
-                                value={tempNotes}
-                                onChange={(e) => setTempNotes(e.target.value)}
-                                placeholder="Escribe lo que respondió el courier por WhatsApp (retrasos, vuelo, llegada)..."
-                                className="w-full text-xs p-2 rounded-md border bg-background text-foreground min-h-[60px] focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
-                              />
-                              <div className="flex gap-1.5">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleUpdateShipment(s.id, { whatsappNotes: tempNotes })}
-                                  disabled={savingField === s.id}
-                                  className="h-7 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                                >
-                                  {savingField === s.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Guardar Nota'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setEditingNotesId(null)}
-                                  className="h-7 text-xs"
-                                >
-                                  Cancelar
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border min-h-[50px] space-y-2">
-                              {s.whatsappNotes ? (
-                                <>
-                                  <p className="text-foreground leading-relaxed italic">{s.whatsappNotes}</p>
-                                  {s.whatsappNotes.includes('https://whs.shiper.pe') && (
-                                    <div className="pt-1">
-                                      <a
-                                        href={s.whatsappNotes.match(/https:\/\/whs\.shiper\.pe[^\s|]+/)?.[0]}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 rounded border border-sky-300 dark:border-sky-800 transition-colors"
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                        Rastrear Guía en ShiPer
-                                      </a>
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <p className="text-muted-foreground/60 italic">Sin notas de WhatsApp aún. Registra aquí lo que te responda el courier.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 3. Status Selector & Pipeline */}
-                        <div className="p-3 rounded-lg border bg-card space-y-2">
-                          <span className="text-xs font-bold text-foreground block">
-                            Estado del Envío:
-                          </span>
-                          <select
-                            value={s.status}
-                            onChange={(e) => handleUpdateShipment(s.id, { status: e.target.value })}
-                            className="w-full h-8 text-xs rounded-md border bg-background px-2 font-semibold text-foreground"
+                    {/* 2. MIDDLE ROW: Logistics Essentials (Guía AWB, Peso, Liq, Modalidad, Tracking Link) */}
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                      {/* AWB Guía */}
+                      {editingAwbId === s.id ? (
+                        <div className="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 p-1 rounded-xl border border-blue-400">
+                          <Input
+                            placeholder="Guía AWB..."
+                            value={tempAwb}
+                            onChange={(e) => setTempAwb(e.target.value)}
+                            className="h-7 w-32 font-mono text-xs px-2"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateShipment(s.id, { awbNumber: tempAwb })}
+                            disabled={savingField === s.id || !tempAwb.trim()}
+                            className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
                           >
-                            <option value="ENVIADO">1. Correo Enviado a Shipper</option>
-                            <option value="CONFIRMADO_AWB">2. AWB Confirmado por Courier</option>
-                            <option value="EN_VUELO">3. En Vuelo Miami ✈️ Lima</option>
-                            <option value="EN_ADUANA">4. En Aduanas SUNAT</option>
-                            <option value="EN_LIMA">5. En Almacén Shipper Lima</option>
-                            <option value="RECIBIDO">6. ✅ Recibido en Taller (Stock)</option>
-                          </select>
+                            {savingField === s.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'OK'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingAwbId(null)}
+                            className="h-7 px-1.5 text-xs"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : s.awbNumber ? (
+                        <div className="inline-flex items-center gap-1.5 bg-blue-50/70 dark:bg-blue-950/40 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 text-xs">
+                          <Truck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">AWB:</span>
+                          <span className="font-mono font-black text-blue-700 dark:text-blue-300">{s.awbNumber}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(s.awbNumber);
+                              toast.success(`Guía ${s.awbNumber} copiada`);
+                            }}
+                            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 ml-0.5"
+                            title="Copiar guía"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingAwbId(s.id);
+                              setTempAwb(s.awbNumber);
+                            }}
+                            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline ml-1 font-semibold"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingAwbId(s.id);
+                            setTempAwb('');
+                          }}
+                          className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-semibold px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        >
+                          <Plus className="w-3 h-3" /> Asignar Guía AWB
+                        </button>
+                      )}
 
-                          <div className="pt-2 flex items-center justify-between border-t text-[11px] text-muted-foreground">
-                            <span>Inafecto SUNAT:</span>
-                            <Badge variant={s.isUnder200 ? 'default' : 'destructive'} className={s.isUnder200 ? 'bg-emerald-600 text-[10px]' : 'text-[10px]'}>
-                              {s.isUnder200 ? 'EXONERADO (≤$200)' : 'AFECTO IMPUESTOS'}
-                            </Badge>
-                          </div>
+                      {/* Parsed Weight */}
+                      {weight && (
+                        <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          <Scale className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{weight}</span>
+                        </span>
+                      )}
 
-                          <div className="flex justify-end pt-1">
+                      {/* Parsed Cost */}
+                      {cost && (
+                        <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          <BadgeDollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Liq: {cost}</span>
+                        </span>
+                      )}
+
+                      {/* Parsed Modality */}
+                      {modality && (
+                        <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{modality}</span>
+                        </span>
+                      )}
+
+                      {/* FOB Total */}
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium px-2 py-1">
+                        FOB: <strong className="text-slate-800 dark:text-slate-200">${s.totalFobUsd.toFixed(2)} USD</strong> ({s.totalItems} paq.)
+                      </span>
+
+                      {/* Direct Tracking Link to ShiPer */}
+                      {trackingUrl && (
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0081C9]/10 hover:bg-[#0081C9]/20 text-[#0081C9] dark:text-[#38BDF8] border border-[#0081C9]/30 transition-all hover:scale-[1.02] sm:ml-auto"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Rastrear en ShiPer</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 3. FOOTER ROW: WhatsApp Notes & Discreet Status Selector */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                      {/* WhatsApp Note Content */}
+                      {editingNotesId === s.id ? (
+                        <div className="flex-1 space-y-1.5">
+                          <textarea
+                            value={tempNotes}
+                            onChange={(e) => setTempNotes(e.target.value)}
+                            placeholder="Escribe lo que respondió el courier por WhatsApp (retrasos, vuelo, llegada)..."
+                            className="w-full text-xs p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white min-h-[50px] focus:outline-none"
+                          />
+                          <div className="flex gap-1.5">
                             <Button
-                              variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteShipment(s.id, s.code)}
-                              className="h-6 px-2 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              onClick={() => handleUpdateShipment(s.id, { whatsappNotes: tempNotes })}
+                              disabled={savingField === s.id}
+                              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
                             >
-                              <Trash2 className="h-3 w-3 mr-1" /> Deshacer Embarque
+                              {savingField === s.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Guardar Nota'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingNotesId(null)}
+                              className="h-7 text-xs"
+                            >
+                              Cancelar
                             </Button>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Products in this Shipment */}
-                      {s.products && s.products.length > 0 && (
-                        <div className="rounded-lg border bg-muted/10 overflow-hidden">
-                          <div className="bg-muted/40 px-3 py-1.5 border-b text-[11px] font-bold text-muted-foreground flex items-center justify-between">
-                            <span>📦 Dispositivos en este Embarque ({s.products.length})</span>
-                            <span>Valor FOB Total: ${s.totalFobUsd.toFixed(2)} USD</span>
-                          </div>
-                          <div className="divide-y text-xs">
-                            {s.products.map((prod) => (
-                              <div key={prod.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-muted/20">
-                                <div className="space-y-0.5">
-                                  <p className="font-semibold text-foreground">{prod.description}</p>
-                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground font-mono">
-                                    <span>Tracking USA: <strong className="text-foreground">{prod.trackingId || 'N/A'}</strong></span>
-                                    <span>• Courier: {prod.courier || 'UPS'}</span>
-                                    <span>• Orden: {prod.orderNumber || 'N/A'}</span>
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm font-mono">
-                                    ${prod.purchasePriceUsd?.toFixed(2)} USD
-                                  </span>
-                                  <p className="text-[10px] text-muted-foreground">S/ {(prod.purchasePriceUsd * 3.45).toFixed(2)} PEN (T.C. 3.45)</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                      ) : (
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span className="truncate text-slate-600 dark:text-slate-300 font-medium">
+                            {cleanSnippet || (
+                              <span className="text-slate-400 italic">Sin notas de WhatsApp aún</span>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setEditingNotesId(s.id);
+                              setTempNotes(s.whatsappNotes || '');
+                            }}
+                            className="text-[11px] text-slate-500 hover:text-slate-900 dark:hover:text-white font-semibold underline shrink-0 ml-1"
+                          >
+                            {s.whatsappNotes ? 'Editar' : '+ Nota'}
+                          </button>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+
+                      {/* Right: Clean Status Selector + Delete */}
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Estado:</span>
+                        <select
+                          value={s.status}
+                          onChange={(e) => handleUpdateShipment(s.id, { status: e.target.value })}
+                          className="h-7 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-2 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                        >
+                          <option value="ENVIADO">1. Correo Enviado</option>
+                          <option value="CONFIRMADO_AWB">2. AWB Confirmado</option>
+                          <option value="EN_VUELO">3. En Vuelo Miami ✈️</option>
+                          <option value="EN_ADUANA">4. En Aduanas SUNAT</option>
+                          <option value="EN_LIMA">5. En Almacén Lima</option>
+                          <option value="RECIBIDO">6. ✅ Recibido (Stock)</option>
+                        </select>
+
+                        <button
+                          onClick={() => handleDeleteShipment(s.id, s.code)}
+                          className="text-slate-400 hover:text-red-500 p-1 transition-colors"
+                          title="Deshacer embarque"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4. ATTACHED PRODUCTS (Compact, clean chips instead of giant table) */}
+                    {s.products && s.products.length > 0 && (
+                      <div className="pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold mr-1">
+                            📦 {s.products.length} equipo{s.products.length > 1 ? 's' : ''}:
+                          </span>
+                          {s.products.map((prod) => (
+                            <span
+                              key={prod.id}
+                              className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] text-slate-700 dark:text-slate-300"
+                              title={`${prod.description} • Tracking: ${prod.trackingId || 'N/A'}`}
+                            >
+                              <span className="truncate max-w-[180px] sm:max-w-[260px] font-semibold">{prod.description}</span>
+                              {prod.purchasePriceUsd ? (
+                                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold ml-1">
+                                  ${prod.purchasePriceUsd.toFixed(0)}
+                                </span>
+                              ) : null}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

@@ -6,6 +6,7 @@ import { Sidebar, type TabKey } from '@/components/dashboard/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/theme-provider';
 import {
   ShieldCheck,
   FileSpreadsheet,
@@ -14,6 +15,9 @@ import {
   Mic,
   TrendingUp,
   Menu,
+  Sun,
+  Moon,
+  Plane,
 } from 'lucide-react';
 
 // Lazy load all tab components for performance
@@ -63,7 +67,7 @@ const tabTitles: Record<TabKey, string> = {
   analitica: 'Analítica Utilidad',
   impuestos: 'Impuestos',
   nrus: 'NRUS / SUNAT',
-  shipper: 'Despacho Shipper',
+  shipper: 'Embarques & Vuelos (ShiPer)',
   calidad: 'Calidad',
   tracking: 'Tracking',
   admin: 'Super Admin',
@@ -74,18 +78,18 @@ function TabSkeleton() {
     <div className="space-y-6 animate-pulse">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <Skeleton className="h-8 w-48 bg-slate-800" />
-          <Skeleton className="h-4 w-64 bg-slate-800" />
+          <Skeleton className="h-8 w-48 bg-slate-200 dark:bg-slate-800" />
+          <Skeleton className="h-4 w-64 bg-slate-200 dark:bg-slate-800" />
         </div>
         <div className="flex gap-2">
-          <Skeleton className="h-10 w-36 bg-slate-800" />
-          <Skeleton className="h-10 w-36 bg-slate-800" />
+          <Skeleton className="h-10 w-36 bg-slate-200 dark:bg-slate-800" />
+          <Skeleton className="h-10 w-36 bg-slate-200 dark:bg-slate-800" />
         </div>
       </div>
-      <Skeleton className="h-16 w-full bg-slate-800" />
+      <Skeleton className="h-16 w-full bg-slate-200 dark:bg-slate-800" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-800/60" />
+          <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/60" />
         ))}
       </div>
     </div>
@@ -97,6 +101,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('logistica');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     try {
@@ -130,7 +135,7 @@ export default function DashboardPage() {
   const ActiveComponent = tabComponents[activeTab];
 
   return (
-    <div className="min-h-screen bg-[#070D19] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-[#070D19] dark:text-slate-100 flex flex-col transition-colors duration-150">
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -143,38 +148,46 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main
         className={cn(
-          'transition-all duration-200 overflow-x-hidden min-h-screen flex-1 pb-24 lg:pb-8 bg-[#070D19]',
+          'transition-all duration-200 overflow-x-hidden min-h-screen flex-1 pb-24 lg:pb-8 bg-slate-100 text-slate-900 dark:bg-[#070D19] dark:text-slate-100',
           isCollapsed ? 'lg:pl-16' : 'lg:pl-64'
         )}
       >
-        <div className={`w-full max-w-[1900px] mx-auto ${isMobile ? 'p-3 pt-14' : 'p-5 sm:p-7'}`}>
-          {/* Mobile Top App Bar */}
-          {isMobile && (
-            <div className="mb-3 flex items-center justify-between bg-[#0B1220]/90 backdrop-blur-md border border-slate-800/80 p-2.5 rounded-2xl shadow-lg">
-              <div className="flex items-center gap-2 min-w-0 pl-11">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h1 className="text-xs font-black text-white truncate">ImportHub</h1>
-                    <span className="text-[9px] font-black px-1 rounded bg-emerald-500/20 text-emerald-300">PERÚ</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-semibold truncate leading-none mt-0.5">
-                    {tabTitles[activeTab]}
-                  </p>
+        <div className="w-full max-w-[1900px] mx-auto p-3 pt-14 lg:p-7 lg:pt-5">
+          {/* Mobile Top App Bar (Always instant with CSS lg:hidden) */}
+          <div className="mb-3 flex lg:hidden items-center justify-between bg-white/95 dark:bg-[#0B1220]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl shadow-sm dark:shadow-md">
+            <div className="flex items-center gap-2 min-w-0 pl-11">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-xs font-black text-slate-900 dark:text-white truncate">ImportHub</h1>
+                  <span className="text-[9px] font-black px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">PERÚ</span>
                 </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold truncate leading-none mt-0.5">
+                  {tabTitles[activeTab]}
+                </p>
               </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={toggleTheme}
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
+              </button>
 
               <button
                 onClick={() => {
                   setActiveTab('logistica');
                   window.dispatchEvent(new CustomEvent('open-quick-sale-modal'));
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-950/40 shrink-0 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-950/20 active:scale-95 transition-all"
               >
                 <Mic className="h-3.5 w-3.5 text-slate-950" />
                 <span>Vender</span>
               </button>
             </div>
-          )}
+          </div>
 
           {/* Tab Content - Lazy Loaded */}
           <Suspense fallback={<TabSkeleton />}>
@@ -186,33 +199,33 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* MOBILE BOTTOM NAVIGATION BAR (100% Mobile First & Thumb-Friendly) */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B1220]/95 backdrop-blur-xl border-t border-slate-800/90 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B1220]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
         {/* 1. Logística / Finanzas */}
         <button
           onClick={() => setActiveTab('logistica')}
           className={cn(
             'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[10px] font-bold transition-all min-w-[56px]',
             activeTab === 'logistica'
-              ? 'text-emerald-400 font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400 font-black'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           )}
         >
-          <ShieldCheck className={cn('h-5 w-5 mb-0.5', activeTab === 'logistica' ? 'text-emerald-400' : 'text-slate-400')} />
+          <ShieldCheck className={cn('h-5 w-5 mb-0.5', activeTab === 'logistica' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')} />
           <span>Logística</span>
         </button>
 
-        {/* 2. Excel / Compras */}
+        {/* 2. Vuelos / Embarques */}
         <button
-          onClick={() => setActiveTab('compras')}
+          onClick={() => setActiveTab('shipper')}
           className={cn(
             'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[10px] font-bold transition-all min-w-[56px]',
-            activeTab === 'compras'
-              ? 'text-emerald-400 font-black'
-              : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'shipper'
+              ? 'text-emerald-600 dark:text-emerald-400 font-black'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           )}
         >
-          <FileSpreadsheet className={cn('h-5 w-5 mb-0.5', activeTab === 'compras' ? 'text-emerald-400' : 'text-slate-400')} />
-          <span>Excel</span>
+          <Plane className={cn('h-5 w-5 mb-0.5', activeTab === 'shipper' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')} />
+          <span>Vuelos</span>
         </button>
 
         {/* 3. Central Elevated Action: Venta Rápida (Voz / Texto) */}
@@ -221,7 +234,7 @@ export default function DashboardPage() {
             setActiveTab('logistica');
             window.dispatchEvent(new CustomEvent('open-quick-sale-modal'));
           }}
-          className="flex flex-col items-center justify-center -mt-6 bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 h-12 w-12 rounded-full shadow-lg shadow-emerald-500/40 active:scale-90 transition-transform border-4 border-[#070D19]"
+          className="flex flex-col items-center justify-center -mt-6 bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 h-12 w-12 rounded-full shadow-lg shadow-emerald-500/40 active:scale-90 transition-transform border-4 border-slate-100 dark:border-[#070D19]"
           title="Registrar Venta Rápida (Voz / Texto)"
         >
           <Mic className="h-5 w-5 text-slate-950" />
@@ -233,11 +246,11 @@ export default function DashboardPage() {
           className={cn(
             'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[10px] font-bold transition-all min-w-[56px]',
             activeTab === 'productos'
-              ? 'text-emerald-400 font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400 font-black'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           )}
         >
-          <Package className={cn('h-5 w-5 mb-0.5', activeTab === 'productos' ? 'text-emerald-400' : 'text-slate-400')} />
+          <Package className={cn('h-5 w-5 mb-0.5', activeTab === 'productos' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')} />
           <span>Stock</span>
         </button>
 
@@ -247,11 +260,11 @@ export default function DashboardPage() {
           className={cn(
             'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[10px] font-bold transition-all min-w-[56px]',
             activeTab === 'catalogo'
-              ? 'text-emerald-400 font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400 font-black'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           )}
         >
-          <Smartphone className={cn('h-5 w-5 mb-0.5', activeTab === 'catalogo' ? 'text-emerald-400' : 'text-slate-400')} />
+          <Smartphone className={cn('h-5 w-5 mb-0.5', activeTab === 'catalogo' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')} />
           <span>Catálogo</span>
         </button>
       </nav>

@@ -876,16 +876,16 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
   return (
     <div className="space-y-6">
       {/* Quick Switcher to Logistica Simple Mode */}
-      <div className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+      <div className="bg-linear-to-r from-emerald-50/90 via-teal-50/70 to-slate-50 border border-emerald-200 dark:from-emerald-950/90 dark:via-slate-900 dark:to-slate-950 dark:border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm dark:shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <h4 className="text-sm font-black text-white">
+            <h4 className="text-sm font-black text-slate-900 dark:text-white">
               ¿Mucha información o tablas confusas?
             </h4>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600 dark:text-slate-300">
               Activa la vista simple: solo tus 3 preguntas clave (cantidad de compras, embarques y si todo es correcto).
             </p>
           </div>
@@ -915,129 +915,143 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* View Toggle: Active / Archived */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            <button
-              onClick={() => setActiveView('active')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
-                activeView === 'active'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-card text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              <Package className="h-3.5 w-3.5" />
-              Activos
-              <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'active' ? 'bg-white/25' : 'bg-muted'}`}>
-                {counts.all}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveView('archived')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-l border-border transition-colors ${
-                activeView === 'archived'
-                  ? 'bg-slate-600 text-white'
-                  : 'bg-card text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              <Archive className="h-3.5 w-3.5" />
-              Archivados
-              {counts.archived > 0 && (
-                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'archived' ? 'bg-white/25' : 'bg-amber-100 text-amber-800'}`}>
-                  {counts.archived}
-                </span>
+          {/* Actions Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
+            {/* Left: View selectors */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+              {/* Active / Archived Toggle */}
+              <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-100 dark:bg-slate-900/60 p-0.5 shrink-0">
+                <button
+                  onClick={() => setActiveView('active')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    activeView === 'active'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Package className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Activos</span>
+                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-black' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                    {counts.all}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveView('archived')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    activeView === 'archived'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  <span>Archivados</span>
+                  {counts.archived > 0 && (
+                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeView === 'archived' ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                      {counts.archived}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* View Mode Toggle: Compacta / Tarjetas */}
+              <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-100 dark:bg-slate-900/60 p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode('compact')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    displayMode === 'compact'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                  title="Vista de tabla compacta"
+                >
+                  <ListFilter className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="hidden xs:inline">Compacta</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode('cards')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    displayMode === 'cards'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                  title="Vista extendida en tarjetas"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5 text-slate-500" />
+                  <span className="hidden xs:inline">Tarjetas</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <Button
+                onClick={() => handleRefreshStatus(false)}
+                disabled={refreshingStatus || loading}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-emerald-300 dark:border-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 text-emerald-800 text-xs font-bold h-9"
+                title="Sincronizar eBay"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 ${refreshingStatus ? 'animate-spin' : ''}`} />
+                <span>{refreshingStatus ? 'Sincronizando...' : 'Sincronizar'}</span>
+              </Button>
+
+              <Button
+                onClick={() => setEmbarqueDialogOpen(true)}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold h-9"
+                title="Generar Hoja de Embarque SUNAT"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Embarque & Traducción</span>
+                <span className="sm:hidden">Embarque</span>
+                {selectedIds.length > 0 && (
+                  <Badge className="bg-emerald-600 text-white ml-0.5 px-1.5 py-0 text-[10px] font-bold">
+                    {selectedIds.length}
+                  </Badge>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleAutoDetectModels}
+                disabled={autoDetecting || loading}
+                variant="outline"
+                size="sm"
+                className="hidden md:inline-flex gap-1.5 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-300 bg-blue-50/60 hover:bg-blue-100 dark:bg-blue-950/40 text-xs font-semibold h-9"
+                title="Detectar modelos técnicos SUNAT"
+              >
+                <Zap className={`h-3.5 w-3.5 text-blue-600 ${autoDetecting ? 'animate-spin' : ''}`} />
+                <span>Modelos</span>
+              </Button>
+
+              {onNavigate && (
+                <Button
+                  onClick={() => onNavigate('catalogo')}
+                  variant="outline"
+                  size="sm"
+                  className="hidden lg:inline-flex gap-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-xs font-semibold h-9"
+                >
+                  <Smartphone className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Catálogo</span>
+                </Button>
               )}
-            </button>
+
+              <Button
+                onClick={() => {
+                  setEditProduct(null);
+                  setDialogOpen(true);
+                }}
+                size="sm"
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 shadow-xs"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Nuevo</span>
+              </Button>
+            </div>
           </div>
-
-          {/* View Mode Toggle: Compacta / Tarjetas */}
-          <div className="flex rounded-lg border border-border overflow-hidden bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={() => setDisplayMode('compact')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                displayMode === 'compact'
-                  ? 'bg-background text-foreground shadow-2xs font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Vista de tabla compacta de alta densidad (recomendada)"
-            >
-              <ListFilter className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Compacta</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDisplayMode('cards')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                displayMode === 'cards'
-                  ? 'bg-background text-foreground shadow-2xs font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Vista extendida en tarjetas"
-            >
-              <LayoutGrid className="h-3.5 w-3.5 text-slate-600" />
-              <span>Tarjetas</span>
-            </button>
-          </div>
-
-          <Button
-            onClick={handleAutoDetectModels}
-            disabled={autoDetecting || loading}
-            variant="outline"
-            className="gap-1.5 border-blue-300 text-blue-800 bg-blue-50/70 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-300 min-h-[40px] font-semibold text-xs shadow-xs"
-            title="Detecta automáticamente modelos técnicos oficiales SUNAT (A1701, A2141, Latitude, etc.) desde la descripción"
-          >
-            <Zap className={`h-4 w-4 text-blue-600 ${autoDetecting ? 'animate-spin' : ''}`} />
-            <span>{autoDetecting ? 'Detectando...' : 'Auto-Detectar Modelos'}</span>
-          </Button>
-
-          <Button
-            onClick={() => handleRefreshStatus(false)}
-            disabled={refreshingStatus || loading}
-            variant="outline"
-            className="gap-2 border-emerald-400 text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 min-h-[40px] font-bold shadow-xs text-xs"
-            title="Sincroniza en 1 clic tus compras nuevas de eBay, estados en Miami y Excel de Google Drive (también corre automático cada 5 min)"
-          >
-            <RefreshCw className={`h-4 w-4 text-emerald-600 ${refreshingStatus ? 'animate-spin' : ''}`} />
-            <span>{refreshingStatus ? 'Sincronizando eBay...' : 'Sincronizar eBay'}</span>
-          </Button>
-
-          {onNavigate && (
-            <Button
-              onClick={() => onNavigate('catalogo')}
-              variant="outline"
-              className="gap-2 border-emerald-500/60 text-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 min-h-[40px] font-bold shadow-xs text-xs"
-              title="Abrir Catálogo Oficial para TikTok Live y WhatsApp Business con fotos referenciales y fichas de venta"
-            >
-              <Smartphone className="h-4 w-4 text-emerald-600" />
-              <span>Catálogo TikTok & WA</span>
-            </Button>
-          )}
-
-          <Button
-            onClick={() => setEmbarqueDialogOpen(true)}
-            variant="outline"
-            className="gap-2 border-slate-300 text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 min-h-[40px] font-semibold text-xs"
-            title="Generar Hoja de Embarque y Hoja de Traducción SUNAT"
-          >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-            <span>Embarque & Traducción</span>
-            {selectedIds.length > 0 && (
-              <Badge className="bg-emerald-600 text-white ml-0.5 px-1.5 py-0 text-[10px] font-bold">
-                {selectedIds.length}
-              </Badge>
-            )}
-          </Button>
-
-          <Button
-            onClick={() => {
-              setEditProduct(null);
-              setDialogOpen(true);
-            }}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white min-h-[40px] font-semibold text-xs"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo
-          </Button>
         </div>
       </div>
 
@@ -1080,17 +1094,17 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
       {/* ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {/* Card 1: ALERTA CRÍTICA - PAQUETES SIN CONFIRMAR EN MIAMI */}
-        <Card className={`border shadow-sm transition-all ${
+        <Card className={`border shadow-xs transition-all ${
           unconfirmedInMiami.length > 0
-            ? 'border-amber-400 bg-amber-50/75 dark:bg-amber-950/30'
-            : 'border-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20'
+            ? 'border-amber-300 dark:border-amber-800/80 bg-white dark:bg-[#0B1220]'
+            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B1220]'
         }`}>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg ${
+                <div className={`p-2 rounded-xl ${
                   unconfirmedInMiami.length > 0
-                    ? 'bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-300'
+                    ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-300'
                     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
                 }`}>
                   {unconfirmedInMiami.length > 0 ? (
@@ -1100,10 +1114,10 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                   )}
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Almacén Miami • Shiper
                   </h4>
-                  <p className="text-sm font-bold text-foreground">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
                     {unconfirmedInMiami.length > 0
                       ? `🚨 ${unconfirmedInMiami.length} sin confirmar por Shiper`
                       : '✅ 100% Verificado al Día'}
@@ -1112,8 +1126,8 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
               </div>
               <Badge variant="outline" className={`text-[10px] font-bold ${
                 unconfirmedInMiami.length > 0
-                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                  ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                  : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
               }`}>
                 {unconfirmedInMiami.length} alerta{unconfirmedInMiami.length !== 1 ? 's' : ''}
               </Badge>
@@ -1121,26 +1135,26 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
 
             {unconfirmedInMiami.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Entregados según courier, pero Shiper aún no los escanea en su sistema:
                 </p>
                 <div className="space-y-1.5 max-h-[115px] overflow-y-auto pr-1">
                   {unconfirmedInMiami.map((p) => {
                     const imp = getImporterInfo(p);
                     return (
-                      <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-md bg-background/90 border text-[11px] shadow-2xs">
+                      <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] shadow-2xs">
                         <div className="min-w-0">
-                          <span className="font-semibold text-foreground truncate block">
+                          <span className="font-semibold text-slate-900 dark:text-white truncate block">
                             {p.courier || 'Courier'} • {p.trackingNumber || p.orderNumber}
                           </span>
-                          <span className="text-[10px] text-muted-foreground truncate block">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block">
                             {imp.name} — {p.description.slice(0, 32)}...
                           </span>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-6 px-2 text-[10px] gap-1 border-emerald-400 text-emerald-700 hover:bg-emerald-50 shrink-0 font-bold"
+                          className="h-6 px-2 text-[10px] gap-1 border-emerald-400 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 shrink-0 font-bold"
                           onClick={() => handleToggleShipperConfirmed(p)}
                           title="Confirmar recepción en Miami con 1 clic"
                         >
@@ -1160,7 +1174,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
                 </Button>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
                 Todos los paquetes entregados en Miami están confirmados físicamente por Shiper. No hay ningún paquete extraviado ni pendiente de escaneo.
               </p>
             )}
@@ -1168,35 +1182,35 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
         </Card>
 
         {/* Card 2: LISTOS PARA PRÓXIMO EMBARQUE */}
-        <Card className="border border-border/80 bg-card shadow-sm">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B1220] shadow-xs">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                   <Package className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Próximo Embarque
                   </h4>
-                  <p className="text-sm font-bold text-foreground">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
                     📦 {readyToShip.length} paquetes listos en Miami
                   </p>
                 </div>
               </div>
-              <Badge variant="outline" className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border-emerald-300">
+              <Badge variant="outline" className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800">
                 ${readyToShipFob.toFixed(2)} USD
               </Badge>
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>Total FOB acumulado:</span>
-                <span className="font-bold text-foreground">${readyToShipFob.toFixed(2)} USD ({formatPEN(readyToShipFob * 3.4)})</span>
+                <span className="font-bold text-slate-900 dark:text-white">${readyToShipFob.toFixed(2)} USD ({formatPEN(readyToShipFob * 3.45)})</span>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>En camino a Miami:</span>
-                <span className="font-semibold text-sky-600">{inTransitToMiami.length} paquete{inTransitToMiami.length !== 1 ? 's' : ''} en tránsito</span>
+                <span className="font-semibold text-sky-600 dark:text-sky-400">{inTransitToMiami.length} paquete{inTransitToMiami.length !== 1 ? 's' : ''} en tránsito</span>
               </div>
             </div>
 
@@ -1213,7 +1227,7 @@ export function ProductosTab({ onNavigate }: { onNavigate?: (tab: string) => voi
         </Card>
 
         {/* Card 3: TERMÓMETRO NRUS SUNAT MENSUAL */}
-        <Card className="border border-border/80 bg-card shadow-sm">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B1220] shadow-xs">
           <CardContent className="p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">

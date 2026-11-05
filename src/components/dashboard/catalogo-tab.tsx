@@ -433,20 +433,20 @@ export function CatalogoTab() {
       </div>
 
       {/* SCREEN TOP BAR */}
-      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-white shadow-xl border border-emerald-900/40">
+      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-linear-to-r from-emerald-50/90 via-teal-50/70 to-indigo-50/80 border border-emerald-200 dark:from-emerald-950 dark:via-slate-900 dark:to-indigo-950 dark:border-emerald-900/40 text-slate-900 dark:text-white shadow-sm dark:shadow-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
               <Smartphone className="h-5 w-5" />
             </span>
-            <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
               Catálogo TikTok Live & WhatsApp Business
             </h2>
-            <Badge className="bg-emerald-500 text-slate-950 font-bold text-xs uppercase hover:bg-emerald-400">
+            <Badge className="bg-emerald-600 text-white font-bold text-xs uppercase hover:bg-emerald-500">
               {counts.all} Equipos
             </Badge>
           </div>
-          <p className="text-xs text-emerald-200/80 max-w-2xl">
+          <p className="text-xs text-slate-600 dark:text-emerald-200/80 max-w-2xl">
             Fotos de catálogo reales con 3 vistas por modelo (Frontal abierta con pantalla y Touch Bar encendidos, Ángulo y Teclado). Fichas listas para responder prospectos por WhatsApp en 1 clic.
           </p>
         </div>
@@ -458,7 +458,7 @@ export function CatalogoTab() {
             variant="outline"
             onClick={fetchProducts}
             disabled={loading}
-            className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs h-9"
+            className="border-slate-200 bg-white hover:bg-slate-100 text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 text-xs h-9 shadow-xs"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
@@ -468,7 +468,7 @@ export function CatalogoTab() {
             size="sm"
             variant="outline"
             onClick={handlePrint}
-            className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs h-9 gap-1.5 font-semibold"
+            className="border-slate-200 bg-white hover:bg-slate-100 text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 text-xs h-9 gap-1.5 font-semibold shadow-xs"
           >
             <Printer className="h-3.5 w-3.5" />
             Imprimir / Guardar PDF
@@ -477,7 +477,7 @@ export function CatalogoTab() {
           <a href="/api/catalog/export-whatsapp" download="catalogo_whatsapp_business.csv">
             <Button
               size="sm"
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs h-9 gap-1.5 shadow-md"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 gap-1.5 shadow-md"
             >
               <Download className="h-3.5 w-3.5" />
               Exportar CSV WhatsApp Business
@@ -487,7 +487,7 @@ export function CatalogoTab() {
       </div>
 
       {/* SANITY CMS LIVE INTEGRATION BANNER */}
-      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 text-white shadow-sm">
+      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-emerald-300 dark:border-emerald-500/30 text-slate-900 dark:text-white shadow-xs">
         <div className="flex items-center gap-3">
           <div className="relative flex h-3 w-3 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -495,14 +495,14 @@ export function CatalogoTab() {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-white tracking-wide">
+              <span className="text-xs font-bold text-slate-900 dark:text-white tracking-wide">
                 🌐 Conectado en Tiempo Real con www.itechperu.shop
               </span>
-              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
+              <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30 font-semibold">
                 Sanity CMS • Dataset: production
               </Badge>
             </div>
-            <p className="text-[11px] text-slate-300">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
               11 productos sincronizados y publicados con imágenes Sanity CDN de alta resolución y precios oficiales.
             </p>
           </div>

@@ -33,6 +33,8 @@ import {
   X,
   CreditCard,
   User,
+  Scale,
+  MessageCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +51,35 @@ import {
 import { fetchProducts } from '@/lib/api';
 import type { Product } from '@/lib/types';
 import { toast } from 'sonner';
+
+function parseShipmentLogistics(notes?: string) {
+  if (!notes) return { trackingUrl: null, weight: null, cost: null, modality: null, cleanSnippet: null };
+
+  const trackingMatch = notes.match(/https:\/\/whs\.shiper\.pe[^\s|]+/);
+  const trackingUrl = trackingMatch ? trackingMatch[0] : null;
+
+  const weightMatch = notes.match(/Peso:\s*([0-9.]+\s*kg)/i);
+  const weight = weightMatch ? weightMatch[1] : null;
+
+  const costMatch = notes.match(/Liquidaci[oó]n:\s*(\$[0-9.]+|S\/\s*[0-9.]+)/i);
+  const cost = costMatch ? costMatch[1] : null;
+
+  const modalityMatch = notes.match(/Modalidad:\s*([^|\n]+)/i);
+  const modality = modalityMatch ? modalityMatch[1].trim() : null;
+
+  let cleanSnippet = notes;
+  const confirmMatch = notes.match(/Shiper confirmó:\s*"?([^"|\n]+)"?/i);
+  if (confirmMatch) {
+    cleanSnippet = `ShiPer: "${confirmMatch[1].trim()}"`;
+  } else {
+    cleanSnippet = cleanSnippet.replace(/https:\/\/whs\.shiper\.pe[^\s|]+/g, '').replace(/Link Rastreo:\s*\|?/g, '').trim();
+    if (cleanSnippet.length > 85) {
+      cleanSnippet = cleanSnippet.slice(0, 85) + '...';
+    }
+  }
+
+  return { trackingUrl, weight, cost, modality, cleanSnippet };
+}
 
 interface FinancialSummary {
   daily: {
@@ -109,7 +140,11 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
   const [financialLoading, setFinancialLoading] = useState(true);
   const [financialData, setFinancialData] = useState<FinancialSummary | null>(null);
 
-  const [activeSection, setActiveSection] = useState<'finanzas' | 'inventario'>('finanzas');
+  const [activeSection, setActiveSection] = useState<'finanzas' | 'embarques' | 'inventario'>('finanzas');
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [loadingShipments, setLoadingShipments] = useState(false);
+  const [shipmentSearch, setShipmentSearch] = useState('');
+  const [shipmentFilter, setShipmentFilter] = useState<'todos' | 'aduanas' | 'lima' | 'fabio' | 'peggy'>('todos');
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
   const [copiedBatch, setCopiedBatch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,6 +188,21 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
     }
   };
 
+  const loadShipments = async () => {
+    setLoadingShipments(true);
+    try {
+      const res = await fetch('/api/shipments');
+      const data = await res.json();
+      if (data.shipments) {
+        setShipments(data.shipments);
+      }
+    } catch (err: any) {
+      console.error('Error loading shipments:', err);
+    } finally {
+      setLoadingShipments(false);
+    }
+  };
+
   const loadFinancialSummary = async () => {
     setFinancialLoading(true);
     try {
@@ -171,6 +221,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
   useEffect(() => {
     loadData();
     loadFinancialSummary();
+    loadShipments();
 
     const handleQuickSaleEvent = () => {
       setSelectedProductForSale(null);
@@ -529,20 +580,20 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 1. TOP HEADER & VIEW SWITCHER (FINANZAS vs INVENTARIO) */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-linear-to-r from-emerald-50/90 via-teal-50/70 to-slate-50 border border-emerald-200 dark:from-emerald-950/90 dark:via-slate-900 dark:to-slate-950 dark:border-emerald-500/30 rounded-2xl p-5 sm:p-6 shadow-md dark:shadow-xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 CONTROL TOTAL • UTILIDADES & LOGÍSTICA
               </span>
-              <span className="text-xs text-slate-400">Todo automático y sin errores</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Todo automático y sin errores</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Control Financiero & Inventario eBay en Vivo
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl mt-1">
               Conoce cuánto vendes diario, semanal y mensual, tus costos reales y tu ganancia neta.
             </p>
           </div>
@@ -558,7 +609,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 setSaleModalOpen(true);
               }}
               size="sm"
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs gap-1.5 rounded-xl shadow-lg shadow-emerald-950/40 hover:scale-[1.02] active:scale-95 transition-all"
+              className="bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs gap-1.5 rounded-xl shadow-lg shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
             >
               <Mic className="w-4 h-4" />
               <span>🎙️ Registrar Venta (Voz / Texto)</span>
@@ -568,9 +619,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
               onClick={() => onNavigate?.('compras')}
               variant="outline"
               size="sm"
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border-slate-700 font-bold text-xs gap-1.5 rounded-xl"
+              className="bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 font-bold text-xs gap-1.5 rounded-xl shadow-xs"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Ver Módulo Excel</span>
             </Button>
 
@@ -589,11 +640,12 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
               onClick={() => {
                 loadData();
                 loadFinancialSummary();
+                loadShipments();
               }}
               disabled={loading || financialLoading}
               variant="secondary"
               size="sm"
-              className="font-bold text-xs gap-1.5 rounded-xl"
+              className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs gap-1.5 rounded-xl shadow-xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || financialLoading ? 'animate-spin' : ''}`} />
               <span>Actualizar</span>
@@ -602,32 +654,334 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
         </div>
 
         {/* Section Tabs: Finanzas vs Inventario */}
-        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-slate-800/80">
+        <div className="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80">
           <button
             onClick={() => setActiveSection('finanzas')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
               activeSection === 'finanzas'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                : 'bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-700 dark:text-white/90 border border-slate-200 dark:border-white/20'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>📊 Finanzas & Ganancias (Diario / Semanal / Mensual)</span>
+            <span>📊 Finanzas & Ganancias</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection('embarques')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+              activeSection === 'embarques'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-400/50'
+                : 'bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-700 dark:text-white/90 border border-slate-200 dark:border-white/20'
+            }`}
+          >
+            <Plane className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+            <span>✈️ Embarques WhatsApp / ShiPer ({shipments.length}{shipments.filter(s => s.status === 'EN_ADUANA').length > 0 ? ' • 🔴 1 en Aduana' : ''})</span>
           </button>
 
           <button
             onClick={() => setActiveSection('inventario')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
               activeSection === 'inventario'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                : 'bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-700 dark:text-white/90 border border-slate-200 dark:border-white/20'
             }`}
           >
             <Boxes className="w-4 h-4" />
-            <span>📦 Control de Importaciones & Vuelos ({products.length})</span>
+            <span>📦 Inventario de Equipos ({products.length})</span>
           </button>
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 2.5. EMBARQUES & HISTORIAL WHATSAPP SECTION                     */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {activeSection === 'embarques' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Canal Rojo Alert Banner */}
+          <div className="p-4 rounded-2xl border border-red-500/40 bg-red-500/10 dark:bg-red-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-red-800 dark:text-red-200 shadow-md">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0 border border-red-500/30">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-black text-sm uppercase tracking-wide text-red-700 dark:text-red-300">
+                    🔴 Aduanas SUNAT: Peggy Bonilla (Vuelo 28/10)
+                  </span>
+                  <Badge variant="destructive" className="bg-red-600 text-white font-bold text-[10px] px-2 py-0.5">
+                    Canal Rojo (Aforo Físico)
+                  </Badge>
+                </div>
+                <p className="text-xs text-red-700/90 dark:text-red-300/90 mt-0.5">
+                  Confirmado por ShiPer el 04/11: el paquete continúa en revisión física en el almacén aduanero del Callao / Lima. Pendiente de levante por ShiPer.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => onNavigate?.('shipper')}
+              size="sm"
+              variant="outline"
+              className="border-red-400 dark:border-red-600/50 text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/30 text-xs font-bold rounded-xl shrink-0"
+            >
+              Ver Bitácora Detallada
+            </Button>
+          </div>
+
+          {/* Llegó a Lima Banner */}
+          <div className="p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-emerald-900 dark:text-emerald-200 shadow-md">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-black text-sm uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                    🟢 Carga en Lima: Fabio Herrera (Vuelo 28/10)
+                  </span>
+                  <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
+                    En Almacén Lima
+                  </Badge>
+                </div>
+                <p className="text-xs text-emerald-800/90 dark:text-emerald-300/90 mt-0.5">
+                  Embarque CC261027111654 • 1.7 kg • Liquidación estimada: $25.00 ($17 flete + $8 desaduanaje) • Modalidad: Recojo Surco.
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://whs.shiper.pe/tracking/guias/dzdq2fmz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold shadow-md transition-all shrink-0"
+            >
+              <span>Rastrear Guía ShiPer</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {/* Filter and Search Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#0B1220] p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder="Buscar vuelo (ej. 28/10, 26/10), código CC, AWB, o consignatario..."
+                value={shipmentSearch}
+                onChange={(e) => setShipmentSearch(e.target.value)}
+                className="pl-9 h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <button
+                onClick={() => setShipmentFilter('todos')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  shipmentFilter === 'todos'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Todos ({shipments.length})
+              </button>
+              <button
+                onClick={() => setShipmentFilter('aduanas')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  shipmentFilter === 'aduanas'
+                    ? 'bg-red-600 text-white shadow-xs'
+                    : 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
+                }`}
+              >
+                🔴 En Aduana (1)
+              </button>
+              <button
+                onClick={() => setShipmentFilter('lima')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  shipmentFilter === 'lima'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400'
+                }`}
+              >
+                🟢 En Lima (1)
+              </button>
+              <button
+                onClick={() => setShipmentFilter('fabio')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  shipmentFilter === 'fabio'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400'
+                }`}
+              >
+                👤 Fabio
+              </button>
+              <button
+                onClick={() => setShipmentFilter('peggy')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  shipmentFilter === 'peggy'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400'
+                }`}
+              >
+                👤 Peggy
+              </button>
+            </div>
+          </div>
+
+          {/* Shipments Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {shipments
+              .filter((s) => {
+                const q = shipmentSearch.toLowerCase().trim();
+                const matchQ =
+                  !q ||
+                  s.flightDayLabel?.toLowerCase().includes(q) ||
+                  s.code?.toLowerCase().includes(q) ||
+                  s.awbNumber?.toLowerCase().includes(q) ||
+                  s.consigneeName?.toLowerCase().includes(q) ||
+                  s.notes?.toLowerCase().includes(q) ||
+                  s.whatsappNotes?.toLowerCase().includes(q);
+
+                if (!matchQ) return false;
+                if (shipmentFilter === 'aduanas') return s.status === 'EN_ADUANA';
+                if (shipmentFilter === 'lima') return s.status === 'EN_LIMA';
+                if (shipmentFilter === 'fabio') return s.importerProfile === 'fabio';
+                if (shipmentFilter === 'peggy') return s.importerProfile === 'peggy';
+                return true;
+              })
+              .map((s) => {
+                const isCustoms = s.status === 'EN_ADUANA';
+                const isLima = s.status === 'EN_LIMA';
+                const isReceived = s.status === 'RECIBIDO';
+                const isFabio = s.importerProfile === 'fabio';
+                const { trackingUrl, weight, cost, modality, cleanSnippet } = parseShipmentLogistics(s.whatsappNotes);
+
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all space-y-3"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-1">
+                          <Plane className="w-3.5 h-3.5 text-sky-500" />
+                          {s.flightDayLabel}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            isFabio
+                              ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
+                              : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60'
+                          }`}
+                        >
+                          {isFabio ? '👤 Fabio' : '👤 Peggy'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                          {s.code}
+                        </span>
+                      </div>
+
+                      {isCustoms ? (
+                        <Badge variant="destructive" className="bg-red-600 text-white font-bold text-[10px]">
+                          🔴 Canal Rojo
+                        </Badge>
+                      ) : isLima ? (
+                        <Badge className="bg-emerald-600 text-white font-bold text-[10px]">
+                          🟢 En Lima
+                        </Badge>
+                      ) : isReceived ? (
+                        <Badge variant="outline" className="text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 text-[10px]">
+                          ✅ Recibido
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-600 text-white font-bold text-[10px]">
+                          ✈️ En Vuelo
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Guia AWB & Logistics essentials chips */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">AWB:</span>
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-white truncate">
+                            {s.awbNumber || 'Sin guía asignada'}
+                          </span>
+                        </div>
+                        {s.awbNumber && (
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(s.awbNumber || '');
+                              toast.success(`Guía ${s.awbNumber} copiada`);
+                            }}
+                            className="text-slate-400 hover:text-emerald-500 transition-colors p-1"
+                            title="Copiar guía AWB"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Micro-chips: Weight, Cost, Modality */}
+                      {(weight || cost || modality) && (
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                          {weight && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-mono font-semibold">
+                              <Scale className="w-3 h-3 text-slate-500" />
+                              {weight}
+                            </span>
+                          )}
+                          {cost && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                              <BadgeDollarSign className="w-3 h-3 text-emerald-600" />
+                              {cost}
+                            </span>
+                          )}
+                          {modality && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 text-[10px]">
+                              📍 {modality}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* WhatsApp Note Snippet */}
+                      {cleanSnippet && (
+                        <div className="bg-emerald-50/60 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-start gap-1.5">
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="line-clamp-2 leading-snug">{cleanSnippet}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom actions */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                      {trackingUrl ? (
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                        >
+                          <span>🔗 Rastrear en ShiPer</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">ShiPer Miami ✈️ Lima</span>
+                      )}
+
+                      <button
+                        onClick={() => onNavigate?.('shipper')}
+                        className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-semibold transition-colors"
+                      >
+                        Ver en Bitácora →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 2. FINANCIAL DASHBOARD SECTION (DIARIO, SEMANAL, MENSUAL) */}
@@ -637,7 +991,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
           {/* Main 4 Metric Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Hoy (Diario) */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-xl relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -649,29 +1003,29 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     <Wallet className="w-4 h-4 text-emerald-400" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-white mt-1">
+                <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
                   S/ {(financialData?.daily.gananciaHoy || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                 </CardTitle>
-                <CardDescription className="text-xs text-emerald-300 font-bold">
+                <CardDescription className="text-xs text-emerald-700 dark:text-emerald-300 font-bold">
                   Utilidad Neta Limpia ({financialData?.daily.margenHoy || 0}% margen)
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-800/80">
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Ventas hoy:</span>
-                  <span className="font-bold text-white">
+              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-200 dark:border-slate-800/80">
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Ventas hoy:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
                     S/ {(financialData?.daily.ventasHoy || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Costo de lo vendido:</span>
-                  <span className="font-medium text-slate-400">
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Costo de lo vendido:</span>
+                  <span className="font-medium text-slate-600 dark:text-slate-400">
                     S/ {(financialData?.daily.costosHoy || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300 pt-1 border-t border-slate-800">
-                  <span className="text-slate-400">Compras eBay hoy:</span>
+                <div className="flex justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Compras eBay hoy:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.daily.comprasHoyUsd || 0).toFixed(2)} USD
                     <span className="text-[10px] text-slate-400 font-normal ml-1">
@@ -683,7 +1037,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             </Card>
 
             {/* Card 2: Esta Semana */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-xl relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -695,29 +1049,29 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     <TrendingUp className="w-4 h-4 text-sky-400" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-white mt-1">
+                <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
                   S/ {(financialData?.weekly.gananciaSemana || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                 </CardTitle>
-                <CardDescription className="text-xs text-sky-300 font-bold">
+                <CardDescription className="text-xs text-sky-700 dark:text-sky-300 font-bold">
                   Utilidad Neta de la Semana ({financialData?.weekly.margenSemana || 0}% margen)
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-800/80">
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Ventas semana:</span>
-                  <span className="font-bold text-white">
+              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-200 dark:border-slate-800/80">
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Ventas semana:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
                     S/ {(financialData?.weekly.ventasSemana || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Equipos vendidos:</span>
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Equipos vendidos:</span>
                   <span className="font-bold text-emerald-400">
                     {financialData?.weekly.itemsVendidosSemana || 0} unidades
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300 pt-1 border-t border-slate-800">
-                  <span className="text-slate-400">Compras eBay semana:</span>
+                <div className="flex justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Compras eBay semana:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.weekly.comprasSemanaUsd || 0).toFixed(2)} USD
                     <span className="text-[10px] text-slate-400 font-normal ml-1">
@@ -729,7 +1083,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             </Card>
 
             {/* Card 3: Este Mes */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-xl relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -741,29 +1095,29 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     <BadgeDollarSign className="w-4 h-4 text-purple-400" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-white mt-1">
+                <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
                   S/ {(financialData?.monthly.gananciaMes || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                 </CardTitle>
-                <CardDescription className="text-xs text-purple-300 font-bold">
+                <CardDescription className="text-xs text-purple-700 dark:text-purple-300 font-bold">
                   Utilidad Neta del Mes ({financialData?.monthly.margenMes || 0}% margen)
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-800/80">
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Ventas totales:</span>
-                  <span className="font-bold text-white">
+              <CardContent className="pt-2 text-xs space-y-1.5 border-t border-slate-200 dark:border-slate-800/80">
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Ventas totales:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
                     S/ {(financialData?.monthly.ventasMes || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300">
-                  <span className="text-slate-400">Costo de lo vendido:</span>
-                  <span className="font-medium text-slate-400">
+                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                  <span className="text-slate-500 dark:text-slate-400">Costo de lo vendido:</span>
+                  <span className="font-medium text-slate-600 dark:text-slate-400">
                     S/ {(financialData?.monthly.costosMes || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-300 pt-1 border-t border-slate-800">
-                  <span className="text-slate-400">Compras eBay mes:</span>
+                <div className="flex justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Compras eBay mes:</span>
                   <span className="font-bold text-sky-400">
                     ${(financialData?.monthly.comprasMesUsd || 0).toFixed(2)} USD
                     <span className="text-[10px] text-slate-400 font-normal ml-1">
@@ -775,16 +1129,16 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             </Card>
 
             {/* Card 4: Acceso Rápido a Venta Asistida */}
-            <Card className="bg-gradient-to-br from-[#062427] via-[#0B1525] to-[#0A101D] border-teal-500/40 shadow-xl flex flex-col justify-between p-5">
+            <Card className="bg-linear-to-br from-teal-50 via-emerald-50/50 to-slate-50 dark:from-[#062427] dark:via-[#0B1525] dark:to-[#0A101D] border-teal-200 dark:border-teal-500/40 shadow-sm dark:shadow-xl flex flex-col justify-between p-5">
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-1.5 text-xs font-black text-teal-300 bg-teal-950/80 border border-teal-800/80 px-2.5 py-1 rounded-full">
-                  <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                <div className="inline-flex items-center gap-1.5 text-xs font-black text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/80 border border-teal-300 dark:border-teal-800/80 px-2.5 py-1 rounded-full">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   VENTA POR VOZ & CHAT IA
                 </div>
-                <h3 className="text-lg font-black text-white leading-snug">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-snug">
                   ¿Acabas de vender un equipo?
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   Solo dicta o escribe: <em>"Vendí iPad Pro 10.5 a 1200 por Yape"</em> y el sistema actualiza tu Excel y la web en 2 segundos.
                 </p>
               </div>
@@ -797,7 +1151,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   setLastSaleResult(null);
                   setSaleModalOpen(true);
                 }}
-                className="w-full mt-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs gap-2 rounded-xl shadow-lg shadow-emerald-950/50"
+                className="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-slate-950 font-black text-xs gap-2 rounded-xl shadow-md dark:shadow-lg shadow-emerald-950/20"
               >
                 <Mic className="w-4 h-4" />
                 <span>Dictar Venta Ahora</span>
@@ -806,15 +1160,15 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
           </div>
 
           {/* Historical Month-by-Month Financial Summary */}
-          <Card className="bg-[#0B1220] border-slate-800 shadow-xl">
+          <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl">
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <CardTitle className="text-lg font-black text-white flex items-center gap-2">
+                  <CardTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-emerald-400" />
                     Historial de Utilidades Mes a Mes (Ventas, Costos & Compras eBay)
                   </CardTitle>
-                  <CardDescription className="text-xs text-slate-400">
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
                     Cálculo real de ventas, costo de mercadería vendida, compras eBay en USD/Soles y flujo de caja neto.
                   </CardDescription>
                 </div>
@@ -823,110 +1177,188 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
 
             <CardContent className="space-y-4">
               {financialLoading ? (
-                <div className="py-8 text-center text-xs text-slate-400">Cargando métricas financieras...</div>
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">Cargando métricas financieras...</div>
               ) : (financialData?.historicalMonths || []).length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">No hay datos históricos aún.</div>
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">No hay datos históricos aún.</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-                      <tr>
-                        <th className="py-3 px-3">Período / Mes</th>
-                        <th className="py-3 px-3 text-right">Ventas Totales</th>
-                        <th className="py-3 px-3 text-right">Costo de lo Vendido</th>
-                        <th className="py-3 px-3 text-right font-bold text-emerald-400">Utilidad Neta</th>
-                        <th className="py-3 px-3 text-center">Margen Real</th>
-                        <th className="py-3 px-3 text-right">Compras eBay ($ USD / S/)</th>
-                        <th className="py-3 px-3 text-right">Flujo de Caja</th>
-                        <th className="py-3 px-3 text-center">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/80">
-                      {financialData?.historicalMonths.map((m) => (
-                        <tr key={m.monthKey} className="hover:bg-slate-900/50 transition-colors">
-                          <td className="py-3 px-3 font-bold text-white">
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                              <span>{m.label}</span>
-                            </div>
-                            {m.totalItemsPurchased > 0 && (
-                              <span className="text-[10px] text-slate-500 font-normal pl-4 block">
-                                {m.totalItemsPurchased} equipos comprados
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <div className="font-bold text-white">
+                <>
+                  {/* ── MOBILE CARDS VIEW (100% Mobile First & Super Legible) ── */}
+                  <div className="block lg:hidden space-y-3">
+                    {financialData?.historicalMonths.map((m) => (
+                      <div
+                        key={m.monthKey}
+                        className="bg-white dark:bg-[#0B1220] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="font-black text-sm text-slate-900 dark:text-white">{m.label}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            m.esDeclaradoSunat 
+                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/60'
+                              : m.ventasPen > 0
+                              ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800/60'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
+                          }`}>
+                            {m.esDeclaradoSunat ? 'SUNAT Oficial' : m.ventasPen > 0 ? 'Ventas en vivo' : 'Stock comprado'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">Ventas Totales</span>
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">
                               S/ {m.ventasPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                            </div>
-                            {m.totalItemsSold > 0 && (
-                              <div className="text-[10px] text-slate-400 font-normal">
-                                {m.totalItemsSold} ventas
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-3 text-right text-slate-300">
-                            S/ {m.costosPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-3 text-right font-black text-emerald-400 text-sm">
-                            {m.gananciaPen >= 0 ? '+' : ''} S/ {m.gananciaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-950 text-emerald-300 border border-emerald-800">
-                              {m.margen}%
                             </span>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <div className="text-sky-400 font-mono font-bold">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                              {m.totalItemsSold > 0 ? `${m.totalItemsSold} ventas` : 'Sin ventas'}
+                            </span>
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">Utilidad Neta</span>
+                            <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                              {m.gananciaPen >= 0 ? '+' : ''} S/ {m.gananciaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 block mt-0.5">
+                              {m.margen}% margen
+                            </span>
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">Costo de lo Vendido</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                              S/ {m.costosPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">Compras eBay</span>
+                            <span className="font-bold text-sky-600 dark:text-sky-400 font-mono">
                               ${m.comprasUsd.toFixed(2)} USD
-                            </div>
-                            <div className="text-[10.5px] text-slate-400 font-medium">
-                              S/ {(m.comprasPen || Math.round(m.comprasUsd * 3.45)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-right font-medium">
-                            <span className={m.flujoCajaPen >= 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                              {m.flujoCajaPen >= 0 ? '+' : ''} S/ {m.flujoCajaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </span>
-                            <span className="block text-[9.5px] text-slate-500 font-normal">
-                              {m.flujoCajaPen >= 0 ? 'Superávit neto' : 'Reinversión stock'}
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                              {m.totalItemsPurchased} equipos
                             </span>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              m.esDeclaradoSunat 
-                                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                                : m.ventasPen > 0
-                                ? 'bg-sky-950/80 text-sky-300 border border-sky-800/60'
-                                : 'bg-slate-900 text-slate-400 border border-slate-800'
-                            }`}>
-                              {m.esDeclaradoSunat ? 'SUNAT Oficial' : m.ventasPen > 0 ? 'Ventas en vivo' : 'Stock comprado'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 text-xs">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Flujo de Caja:</span>
+                          <span className={`font-bold ${m.flujoCajaPen >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                            {m.flujoCajaPen >= 0 ? '+' : ''} S/ {m.flujoCajaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-normal ml-1">
+                              ({m.flujoCajaPen >= 0 ? 'Superávit' : 'Reinversión'})
                             </span>
-                          </td>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── DESKTOP & TABLET TABLE VIEW ── */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-xs text-left">
+                      <thead className="bg-slate-100 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="py-3 px-3">Período / Mes</th>
+                          <th className="py-3 px-3 text-right">Ventas Totales</th>
+                          <th className="py-3 px-3 text-right">Costo de lo Vendido</th>
+                          <th className="py-3 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">Utilidad Neta</th>
+                          <th className="py-3 px-3 text-center">Margen Real</th>
+                          <th className="py-3 px-3 text-right">Compras eBay ($ USD / S/)</th>
+                          <th className="py-3 px-3 text-right">Flujo de Caja</th>
+                          <th className="py-3 px-3 text-center">Estado</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
+                        {financialData?.historicalMonths.map((m) => (
+                          <tr key={m.monthKey} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                            <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                <span>{m.label}</span>
+                              </div>
+                              {m.totalItemsPurchased > 0 && (
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal pl-4 block">
+                                  {m.totalItemsPurchased} equipos comprados
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="font-bold text-slate-900 dark:text-white">
+                                S/ {m.ventasPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              </div>
+                              {m.totalItemsSold > 0 && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                                  {m.totalItemsSold} ventas
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-right font-medium text-slate-700 dark:text-slate-300">
+                              S/ {m.costosPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-3 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                              {m.gananciaPen >= 0 ? '+' : ''} S/ {m.gananciaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                {m.margen}%
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="text-sky-600 dark:text-sky-400 font-mono font-bold">
+                                ${m.comprasUsd.toFixed(2)} USD
+                              </div>
+                              <div className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+                                S/ {(m.comprasPen || Math.round(m.comprasUsd * 3.45)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right font-medium">
+                              <span className={m.flujoCajaPen >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
+                                {m.flujoCajaPen >= 0 ? '+' : ''} S/ {m.flujoCajaPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className="block text-[9.5px] text-slate-500 dark:text-slate-400 font-normal">
+                                {m.flujoCajaPen >= 0 ? 'Superávit neto' : 'Reinversión stock'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                m.esDeclaradoSunat 
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/60'
+                                  : m.ventasPen > 0
+                                  ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800/60'
+                                  : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-800'
+                              }`}>
+                                {m.esDeclaradoSunat ? 'SUNAT Oficial' : m.ventasPen > 0 ? 'Ventas en vivo' : 'Stock comprado'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
 
               {/* Educational Clarification Card */}
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-emerald-400">
+              <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
                   <Info className="w-4 h-4 shrink-0" />
                   <span>¿Cómo se calculan exactamente tus Ganancias y tus Compras en eBay?</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[11.5px] text-slate-400">
-                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
-                    <span className="text-white font-bold block mb-0.5">1. Costo de lo Vendido (COGS)</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[11.5px] text-slate-600 dark:text-slate-400">
+                  <div className="bg-white dark:bg-slate-950/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-slate-900 dark:text-white font-bold block mb-0.5">1. Costo de lo Vendido (COGS)</span>
                     Es lo que costó adquirir en eBay únicamente los equipos que salieron vendidos ese mes. Tu margen de ganancia neta es <strong>Ventas menos Costo de lo Vendido</strong> (~61.8% de rentabilidad según tu histórico).
                   </div>
-                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
-                    <span className="text-white font-bold block mb-0.5">2. Compras eBay (Inversión en Stock)</span>
+                  <div className="bg-white dark:bg-slate-950/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-slate-900 dark:text-white font-bold block mb-0.5">2. Compras eBay (Inversión en Stock)</span>
                     Es todo el dinero pagado en eBay en USD y convertido a Soles (TC ~3.45) para adquirir inventario. Por ejemplo, en Septiembre compraste 44 equipos por $5,504.19 USD (S/ 19,666.14).
                   </div>
-                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
-                    <span className="text-white font-bold block mb-0.5">3. Flujo de Caja (Caja Neta)</span>
+                  <div className="bg-white dark:bg-slate-950/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-slate-900 dark:text-white font-bold block mb-0.5">3. Flujo de Caja (Caja Neta)</span>
                     Ventas del mes menos Compras eBay del mes. Si es negativo (como en Septiembre: -S/ 9,696), significa que reinvertiste fuerte comprando 44 laptops e iPads que ahora son stock disponible para vender.
                   </div>
                 </div>
@@ -944,93 +1376,93 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
           {/* Top 3 Logistics KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {/* KPI 1: Cantidad de Importaciones */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-lg relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-lg relative overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     1. ¿Cuántas Importaciones?
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <Package className="w-4 h-4 text-emerald-400" />
+                    <Package className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                   </div>
                 </div>
-                <CardTitle className="text-3xl sm:text-4xl font-black text-white mt-1">
-                  {products.length} <span className="text-sm font-semibold text-slate-400">paquetes activos</span>
+                <CardTitle className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-1">
+                  {products.length} <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">paquetes activos</span>
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400 font-medium">
-                  Inversión Total: <strong className="text-emerald-400 font-bold">${totalCostUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong>
+                <CardDescription className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                  Inversión Total: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${totalCostUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong>
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="pt-2 space-y-2">
-                <div className="grid grid-cols-3 gap-1.5 text-center pt-2 border-t border-slate-800">
+                <div className="grid grid-cols-3 gap-1.5 text-center pt-2 border-t border-slate-200 dark:border-slate-800">
                   <button
                     onClick={() => setSelectedLocation(selectedLocation === 'miami' ? 'todos' : 'miami')}
                     className={`p-2 rounded-xl border transition-all text-left ${
                       selectedLocation === 'miami'
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-500 shadow-md'
-                        : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 border-slate-800'
+                        ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500 shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <span className="text-[10px] text-slate-400 block font-medium">🏢 En Miami</span>
-                    <span className="text-base font-black text-emerald-400">{inShiperMiami.length}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">🏢 En Miami</span>
+                    <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{inShiperMiami.length}</span>
                   </button>
 
                   <button
                     onClick={() => setSelectedLocation(selectedLocation === 'transito' ? 'todos' : 'transito')}
                     className={`p-2 rounded-xl border transition-all text-left ${
                       selectedLocation === 'transito'
-                        ? 'bg-sky-950 text-sky-300 border-sky-500 shadow-md'
-                        : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 border-slate-800'
+                        ? 'bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border-sky-400 dark:border-sky-500 shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <span className="text-[10px] text-slate-400 block font-medium">🚚 En Tránsito</span>
-                    <span className="text-base font-black text-sky-400">{inTransitoUsa.length}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">🚚 En Tránsito</span>
+                    <span className="text-base font-black text-sky-600 dark:text-sky-400">{inTransitoUsa.length}</span>
                   </button>
 
                   <button
                     onClick={() => setSelectedLocation(selectedLocation === 'usa' ? 'todos' : 'usa')}
                     className={`p-2 rounded-xl border transition-all text-left ${
                       selectedLocation === 'usa'
-                        ? 'bg-amber-950 text-amber-300 border-amber-500 shadow-md'
-                        : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 border-slate-800'
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-400 dark:border-amber-500 shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <span className="text-[10px] text-slate-400 block font-medium">📦 Casillero</span>
-                    <span className="text-base font-black text-amber-400">{inCasilleroPending.length}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">📦 Casillero</span>
+                    <span className="text-base font-black text-amber-600 dark:text-amber-400">{inCasilleroPending.length}</span>
                   </button>
                 </div>
               </CardContent>
             </Card>
 
             {/* KPI 2: Embarques */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-lg relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-lg relative overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     2. ¿Embarques / Vuelos?
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                    <Plane className="w-4 h-4 text-sky-400" />
+                    <Plane className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                   </div>
                 </div>
-                <CardTitle className="text-3xl sm:text-4xl font-black text-white mt-1">
-                  {inShiperMiami.length} <span className="text-sm font-semibold text-slate-400">en lote de vuelo</span>
+                <CardTitle className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-1">
+                  {inShiperMiami.length} <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">en lote de vuelo</span>
                 </CardTitle>
-                <CardDescription className="text-xs text-sky-300 font-medium">
+                <CardDescription className="text-xs text-sky-700 dark:text-sky-300 font-medium">
                   Listos en almacén Shiper Miami para vuelo a Lima
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="pt-2 space-y-2.5">
-                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1">
+                <div className="bg-slate-50 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Desglose del lote:</span>
-                    <span className="text-white font-bold">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Desglose del lote:</span>
+                    <span className="text-slate-900 dark:text-white font-bold">
                       {categorized.macbook.length} Laptops • {categorized.ipad_pro.length + categorized.ipad_air.length + categorized.ipad_9.length} iPads
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     12 consignados a Peggy • 9 consignados a Fabio
                   </p>
                 </div>
@@ -1039,46 +1471,46 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   onClick={handleCopyAllMiamiTrackings}
                   variant="outline"
                   size="sm"
-                  className="w-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border-emerald-500/40 gap-1.5"
+                  className="w-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-emerald-700 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-emerald-300 dark:border-emerald-500/40 gap-1.5"
                 >
-                  {copiedBatch ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedBatch ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedBatch ? '¡Copiados para Shiper!' : 'Copiar 20 Trackings para Shiper'}</span>
                 </Button>
               </CardContent>
             </Card>
 
             {/* KPI 3: Semáforo de Verificación */}
-            <Card className="bg-[#0B1220] border-slate-800 shadow-lg relative overflow-hidden">
+            <Card className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-lg relative overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     3. ¿Todo es Correcto?
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                   </div>
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-black text-emerald-400 mt-1 flex items-center gap-2">
+                <CardTitle className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                   100% REGISTRADO
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-300 font-medium">
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-300 font-medium">
                   Tus 41 compras de eBay están mapeadas y respaldadas
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="pt-2 space-y-2">
-                <div className="bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded-xl text-[11.5px] space-y-1 text-emerald-200">
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 p-2.5 rounded-xl text-[11.5px] space-y-1 text-emerald-800 dark:text-emerald-200">
                   <div className="flex items-center gap-1.5 font-bold">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>¿Están en sistema? SÍ ({products.length} de {products.length})</span>
                   </div>
                   <div className="flex items-center gap-1.5 font-bold">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>¿En Stock o Vendidos? 100% Disponibles</span>
                   </div>
                   <div className="flex items-center gap-1.5 font-bold">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>¿Web protegida? Con badge "FUERA DE STOCK"</span>
                   </div>
                 </div>
@@ -1087,14 +1519,14 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
           </div>
 
           {/* Category Filter Pills & Search */}
-          <div className="space-y-3 bg-[#0B1220] p-4 sm:p-5 rounded-2xl border border-slate-800">
+          <div className="space-y-3 bg-white dark:bg-[#0B1220] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-md">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Boxes className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <Boxes className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Tus Productos Activos por Categoría
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Selecciona una categoría o pulsa <strong>"⚡ Vender"</strong> en cualquier equipo para registrar su venta inmediata:
                 </p>
               </div>
@@ -1107,7 +1539,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar por modelo, orden o tracking..."
-                  className="bg-slate-900 border-slate-700 text-xs pl-8 h-8 text-white placeholder-slate-500 rounded-lg"
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs pl-8 h-8 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg"
                 />
               </div>
             </div>
@@ -1119,7 +1551,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('todos')}
                 variant={selectedCategory === 'todos' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'todos' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'todos'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 Todos ({products.length})
@@ -1130,7 +1564,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('macbook')}
                 variant={selectedCategory === 'macbook' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'macbook' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'macbook'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 💻 MacBooks ({categorized.macbook.length})
@@ -1141,7 +1577,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('ipad_pro')}
                 variant={selectedCategory === 'ipad_pro' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'ipad_pro' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'ipad_pro'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 📱 iPads Pro ({categorized.ipad_pro.length})
@@ -1152,7 +1590,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('ipad_air')}
                 variant={selectedCategory === 'ipad_air' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'ipad_air' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'ipad_air'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 📱 iPads Air 3 ({categorized.ipad_air.length})
@@ -1163,7 +1603,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('ipad_9')}
                 variant={selectedCategory === 'ipad_9' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'ipad_9' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'ipad_9'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 📱 iPads 9na Gen ({categorized.ipad_9.length})
@@ -1174,7 +1616,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('dell')}
                 variant={selectedCategory === 'dell' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'dell' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'dell'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 💻 Dell Latitude ({categorized.dell.length})
@@ -1185,7 +1629,9 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 onClick={() => setSelectedCategory('otros')}
                 variant={selectedCategory === 'otros' ? 'default' : 'outline'}
                 className={`text-xs font-bold rounded-xl h-8 px-3 shrink-0 ${
-                  selectedCategory === 'otros' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-300 border-slate-800'
+                  selectedCategory === 'otros'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                 }`}
               >
                 🔌 Accesorios / Partes ({categorized.otros.length})
@@ -1201,7 +1647,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             </div>
 
             {filteredProducts.length === 0 ? (
-              <div className="bg-[#0B1220] p-12 text-center rounded-2xl border border-slate-800 space-y-2">
+              <div className="bg-white dark:bg-[#0B1220] p-12 text-center rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <p className="text-slate-400 text-sm font-bold">No se encontraron productos con los filtros seleccionados.</p>
                 <Button
                   onClick={() => {
@@ -1232,24 +1678,24 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   return (
                     <div
                       key={p.id}
-                      className="bg-[#0B1220] hover:bg-[#0E172A] border border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl shadow-md transition-all flex flex-col justify-between space-y-3 group"
+                      className="bg-white dark:bg-[#0B1220] hover:bg-slate-50 dark:hover:bg-[#0E172A] border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl shadow-sm dark:shadow-md transition-all flex flex-col justify-between space-y-3 group"
                     >
                       <div className="space-y-2">
                         {/* Top Row: Location Badge & Consignee */}
                         <div className="flex items-center justify-between gap-1.5">
                           {isMiami ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               🏢 En Miami Shiper OK
                             </span>
                           ) : isTransito ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2.5 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800">
-                              <Truck className="w-3 h-3 text-sky-400" />
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                              <Truck className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                               🚚 En Tránsito a Miami
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800">
-                              <Clock className="w-3 h-3 text-amber-400" />
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                              <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                               📦 Casillero USA
                             </span>
                           )}
@@ -1257,8 +1703,8 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                           <span
                             className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
                               (p.importerProfile || '').toLowerCase() === 'fabio'
-                                ? 'bg-blue-950/80 text-blue-300 border border-blue-800/60'
-                                : 'bg-purple-950/80 text-purple-300 border border-purple-800/60'
+                                ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60'
+                                : 'bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800/60'
                             }`}
                           >
                             {p.importerProfile?.toUpperCase() || 'FABIO'}
@@ -1266,30 +1712,30 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                         </div>
 
                         {/* Commercial Description */}
-                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-2 leading-snug">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors line-clamp-2 leading-snug">
                           {p.description}
                         </h4>
 
                         {/* Order & Tracking Pill */}
-                        <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800/80 space-y-1 text-xs">
+                        <div className="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border border-slate-200 dark:border-slate-800/80 space-y-1 text-xs">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-slate-400 font-medium">Orden eBay:</span>
-                            <span className="text-slate-200 font-mono font-bold">{p.orderNumber}</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Orden eBay:</span>
+                            <span className="text-slate-800 dark:text-slate-200 font-mono font-bold">{p.orderNumber}</span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800">
-                            <span className="text-slate-400 font-medium">Courier:</span>
+                          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Courier:</span>
                             <div className="flex items-center gap-1.5 font-mono">
-                              <span className="font-bold text-emerald-400">{p.courier || 'PENDIENTE'}</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{p.courier || 'PENDIENTE'}</span>
                               {p.trackingNumber && (
                                 <>
                                   <button
                                     onClick={() => handleCopyTracking(p.trackingNumber)}
-                                    className="text-slate-400 hover:text-white"
+                                    className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                                     title="Copiar tracking"
                                   >
                                     {copiedTracking === p.trackingNumber ? (
-                                      <Check className="w-3 h-3 text-emerald-400" />
+                                      <Check className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
                                     ) : (
                                       <Copy className="w-3 h-3" />
                                     )}
@@ -1299,7 +1745,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                                       href={trackingUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-sky-400"
+                                      className="text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400"
                                       title="Rastrear en courier oficial"
                                     >
                                       <ExternalLink className="w-3 h-3" />
@@ -1313,10 +1759,10 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                       </div>
 
                       {/* Bottom: Pricing & Quick Vender Button */}
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
                         <div>
                           <span className="text-[10px] text-slate-400 block font-medium">Costo Compra:</span>
-                          <span className="text-sm font-black text-white">
+                          <span className="text-sm font-black text-slate-900 dark:text-white">
                             ${p.purchasePriceUSD.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">USD</span>
                           </span>
                         </div>
@@ -1346,7 +1792,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                             }}
                             size="sm"
                             variant="outline"
-                            className="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 font-bold text-xs px-2.5 h-8 rounded-xl gap-1"
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800/90 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 font-bold text-xs px-2.5 h-8 rounded-xl gap-1"
                             title="Editar datos, precio o estado"
                           >
                             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -1376,7 +1822,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
       {/* 4. MODAL: REGISTRAR VENTA ASISTIDA POR VOZ / TEXTO (IA) */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <Dialog open={saleModalOpen} onOpenChange={setSaleModalOpen}>
-        <DialogContent className="bg-[#0B1220] border-slate-800 text-white max-w-lg p-6 rounded-2xl shadow-2xl">
+        <DialogContent className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-w-lg p-6 rounded-2xl shadow-2xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -1384,20 +1830,20 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                 VENTA ASISTIDA POR VOZ O TEXTO (IA)
               </div>
             </div>
-            <DialogTitle className="text-xl font-black text-white mt-2">
+            <DialogTitle className="text-xl font-black text-slate-900 dark:text-white mt-2">
               Registrar Venta Inmediata
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Dicta o escribe libremente lo vendido. El sistema calcula tu ganancia neta, descuenta el stock de la web y lo guarda en tu Excel.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             {/* Voice Dictation Card with Mic Button */}
-            <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-xl space-y-2.5">
+            <div className="bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Mic className="w-3.5 h-3.5 text-emerald-400" /> Dictar nota de voz o escribir:
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Mic className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Dictar nota de voz o escribir:
                 </span>
                 <Button
                   type="button"
@@ -1422,13 +1868,13 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   parseVoiceText(e.target.value);
                 }}
                 placeholder="Ejemplo: Vendí iPad Pro 10.5 de 512gb a 1200 soles por Yape a Carlos"
-                className="w-full bg-[#070B14] border border-slate-800 focus:border-emerald-500 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none resize-none h-20"
+                className="w-full bg-white dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none resize-none h-20"
               />
             </div>
 
             {/* Product Selector Dropdown */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-400">Equipo vendido del inventario:</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-400">Equipo vendido del inventario:</label>
               <select
                 value={selectedProductForSale?.id || ''}
                 onChange={(e) => {
@@ -1438,7 +1884,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     setSalePriceInput(String(p.salePricePEN || 1000));
                   }
                 }}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">-- Seleccionar producto o dictar arriba --</option>
                 {products.map((p) => (
@@ -1452,7 +1898,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             {/* Price and Payment Method in 2 Columns */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-400">Precio de Venta (S/ PEN):</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-400">Precio de Venta (S/ PEN):</label>
                 <div className="relative">
                   <span className="text-xs font-bold text-slate-500 absolute left-3 top-1/2 -translate-y-1/2">S/</span>
                   <Input
@@ -1460,17 +1906,17 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     value={salePriceInput}
                     onChange={(e) => setSalePriceInput(e.target.value)}
                     placeholder="1200"
-                    className="bg-slate-900 border-slate-800 text-xs pl-8 text-white font-bold h-9 rounded-xl"
+                    className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs pl-8 text-slate-900 dark:text-white font-bold h-9 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-400">Método de Pago:</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-400">Método de Pago:</label>
                 <select
                   value={paymentMethodInput}
                   onChange={(e) => setPaymentMethodInput(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 h-9 font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 h-9 font-bold"
                 >
                   <option value="Yape">Yape</option>
                   <option value="Plin">Plin</option>
@@ -1485,30 +1931,30 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
 
             {/* Client Name Input (Optional) */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-400">Nombre del Cliente (Opcional):</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-400">Nombre del Cliente (Opcional):</label>
               <Input
                 type="text"
                 value={clientNameInput}
                 onChange={(e) => setClientNameInput(e.target.value)}
                 placeholder="Ej. Carlos Gómez o Cliente Mostrador"
-                className="bg-slate-900 border-slate-800 text-xs text-white h-9 rounded-xl placeholder-slate-600"
+                className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white h-9 rounded-xl placeholder-slate-400"
               />
             </div>
 
             {/* Live Profit Preview Box */}
             {selectedProductForSale && (
-              <div className="bg-emerald-950/40 border border-emerald-800/60 p-3.5 rounded-xl text-xs space-y-1.5">
-                <div className="flex justify-between items-center text-slate-300">
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3.5 rounded-xl text-xs space-y-1.5">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
                   <span>Costo Adquisición (Producto + Flete):</span>
-                  <span className="font-mono text-slate-400">S/ {estimatedCostPen.toFixed(2)}</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-400">S/ {estimatedCostPen.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-300">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
                   <span>Precio de Venta:</span>
-                  <span className="font-bold text-white">S/ {parseFloat(salePriceInput || '0').toFixed(2)}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">S/ {parseFloat(salePriceInput || '0').toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center pt-1.5 border-t border-emerald-800/50">
-                  <span className="font-black text-emerald-300">Ganancia Neta (Tu Utilidad Limpia):</span>
-                  <span className="text-sm font-black text-emerald-400">
+                <div className="flex justify-between items-center pt-1.5 border-t border-emerald-200 dark:border-emerald-800/50">
+                  <span className="font-black text-emerald-800 dark:text-emerald-300">Ganancia Neta (Tu Utilidad Limpia):</span>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                     + S/ {estimatedProfitPen.toFixed(2)} ({estimatedMargin}%)
                   </span>
                 </div>
@@ -1517,7 +1963,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
 
             {/* Success Result Confirmation */}
             {lastSaleResult && (
-              <div className="bg-emerald-500/20 border border-emerald-500 p-3 rounded-xl text-xs text-emerald-200 text-center font-bold">
+              <div className="bg-emerald-500/20 border border-emerald-500 p-3 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 text-center font-bold">
                 🎉 {lastSaleResult.message}
               </div>
             )}
@@ -1528,7 +1974,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
               type="button"
               variant="outline"
               onClick={() => setSaleModalOpen(false)}
-              className="text-xs font-bold bg-slate-900 border-slate-800 text-slate-300 rounded-xl"
+              className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 rounded-xl"
             >
               Cancelar
             </Button>
@@ -1549,6 +1995,160 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                   <Zap className="w-3.5 h-3.5" />
                   <span>Confirmar Venta y Guardar en Excel</span>
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Quick Product Edit Modal ── */}
+      <Dialog open={editProductModalOpen} onOpenChange={setEditProductModalOpen}>
+        <DialogContent className="bg-white dark:bg-[#0B1220] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white max-w-lg p-6 rounded-2xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <span>✏️ Edición Rápida de Equipo</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Modifica los datos del equipo y actualiza automáticamente los costos y el catálogo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Descripción / Título:
+              </label>
+              <Input
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Modelo:
+                </label>
+                <Input
+                  value={editModel}
+                  onChange={(e) => setEditModel(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Consignatario:
+                </label>
+                <select
+                  value={editImporterProfile}
+                  onChange={(e) => setEditImporterProfile(e.target.value as 'fabio' | 'peggy')}
+                  className="w-full h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3"
+                >
+                  <option value="fabio">Fabio Herrera (10762026835)</option>
+                  <option value="peggy">Peggy Bonilla (10091870911)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Precio de Venta (S/. PEN):
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editSalePricePen}
+                  onChange={(e) => setEditSalePricePen(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl font-bold"
+                  placeholder="Ej: 1450.00"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Costo de Compra ($ USD):
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editPurchasePriceUsd}
+                  onChange={(e) => setEditPurchasePriceUsd(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl font-bold"
+                  placeholder="Ej: 280.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Courier USA:
+                </label>
+                <Input
+                  value={editCourier}
+                  onChange={(e) => setEditCourier(e.target.value)}
+                  placeholder="FedEx, UPS, USPS..."
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Número de Tracking:
+                </label>
+                <Input
+                  value={editTracking}
+                  onChange={(e) => setEditTracking(e.target.value)}
+                  placeholder="Ej: 1ZY839R..."
+                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs rounded-xl font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Estado Logístico:
+              </label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className="w-full h-9 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3"
+              >
+                <option value="En Tránsito">En Tránsito (Courier hacia Miami)</option>
+                <option value="Miami">En Miami Shiper (Almacén USA)</option>
+                <option value="USA">Casillero USA (Registrado)</option>
+                <option value="Llegó a Lima">Llegó a Lima (Disponible para venta)</option>
+                <option value="Entregado">Entregado a Cliente</option>
+                <option value="Vendido">Vendido</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditProductModalOpen(false)}
+              className="text-xs font-bold bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveProductEdit}
+              disabled={savingProduct}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl shadow-md"
+            >
+              {savingProduct ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <span>Guardar Cambios</span>
               )}
             </Button>
           </DialogFooter>

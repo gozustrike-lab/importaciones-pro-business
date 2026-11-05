@@ -48,22 +48,61 @@ export const metadata: Metadata = {
     "iPads",
     "MacBook",
     "iPhone",
+    "laptops",
     "SUNAT",
-    "NRUS",
-    "IGV",
-    "ad-valorem",
-    "gestión de importaciones",
+    "aduanas",
+    "tracking",
     "inventario",
+    "ventas",
     "SaaS",
     "multi-tenant",
   ],
-  authors: [{ name: "ImportHub Perú", url: siteUrl }],
-  creator: "Fabio Herrera Bonilla",
+  authors: [{ name: "ImportHub Perú Team" }],
+  creator: "ImportHub Perú",
   publisher: "ImportHub Perú SAC",
-  metadataBase: new URL(siteUrl),
-  alternates: {
-    canonical: "/",
+
+  // ── OpenGraph (Facebook, WhatsApp, LinkedIn) ──────────
+  openGraph: {
+    type: "website",
+    locale: "es_PE",
+    url: siteUrl,
+    siteName: "ImportHub Perú",
+    title: "ImportHub Perú — ERP de Importaciones Inteligente",
+    description:
+      "Control de inventario, ventas, tracking en vivo y cálculo automático de impuestos de importación para tu negocio.",
+    images: [
+      {
+        url: `${siteUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "ImportHub Perú — Plataforma de Gestión de Importaciones",
+      },
+    ],
   },
+
+  // ── Twitter Card ──────────────────────────────────────
+  twitter: {
+    card: "summary_large_image",
+    title: "ImportHub Perú — ERP de Importaciones Inteligente",
+    description:
+      "Control de inventario, ventas, tracking en vivo y cálculo de impuestos para importaciones de eBay.",
+    images: [`${siteUrl}/og-image.png`],
+    creator: "@importhubpe",
+  },
+
+  // ── Icons / Favicon ───────────────────────────────────
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+
+  // ── Robots ────────────────────────────────────────────
   robots: {
     index: true,
     follow: true,
@@ -76,56 +115,18 @@ export const metadata: Metadata = {
     },
   },
 
-  // ── Icons ─────────────────────────────────────────────
-  icons: {
-    icon: [
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    shortcut: '/favicon.ico',
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
+  // ── Verification ──────────────────────────────────────
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
   },
 
-  // ── Open Graph (Facebook, LinkedIn, WhatsApp, Discord) ─
-  openGraph: {
-    type: "website",
-    locale: "es_PE",
-    url: siteUrl,
-    siteName: "ImportHub Perú",
-    title: "ImportHub Perú — ERP de Importaciones Inteligente",
-    description:
-      "Gestiona tus importaciones de eBay a Perú. Inventario, ventas, impuestos, tracking y analítica en tiempo real.",
-    images: [
-      {
-        url: "/og-image-landscape.png",
-        width: 1344,
-        height: 768,
-        alt: "ImportHub Perú — Tu ERP de Importaciones",
-        type: "image/png",
-      },
-    ],
+  // ── Alternates ────────────────────────────────────────
+  alternates: {
+    canonical: siteUrl,
   },
 
-  // ── Twitter / X ───────────────────────────────────────
-  twitter: {
-    card: "summary_large_image",
-    title: "ImportHub Perú — ERP de Importaciones Inteligente",
-    description:
-      "Gestiona tus importaciones de eBay a Perú. Inventario, ventas, impuestos, tracking y analítica en tiempo real.",
-    images: ["/og-image-landscape.png"],
-    creator: "@importhubpe",
-  },
-
-  // ── Other Platforms ───────────────────────────────────
-  other: {
-    "og:country-name": "Perú",
-    "og:email": "admin@importhub.pe",
-    "og:phone_number": "",
-    "og:type": "product",
-    "product:brand": "ImportHub Perú",
-  },
+  // ── Category ──────────────────────────────────────────
+  category: "technology",
 };
 
 export default function RootLayout({
@@ -134,8 +135,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark" style={{ colorScheme: "dark" }} suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');document.documentElement.style.colorScheme='light';}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}}catch(e){document.documentElement.classList.add('dark');}})();`,
+          }}
+        />
         {/* Structured Data (JSON-LD) */}
         <script
           type="application/ld+json"
@@ -179,7 +185,7 @@ export default function RootLayout({
         <meta property="og:image:type" content="image/png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#070D19] text-slate-100 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-slate-100 text-slate-900 dark:bg-[#070D19] dark:text-slate-100 transition-colors duration-150`}
       >
         <ThemeProvider>
           <AuthProvider>
