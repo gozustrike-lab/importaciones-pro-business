@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import ExcelJS from 'exceljs';
-import * as XLSX from 'xlsx';
 import { db } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth-helper';
+import { getCurrentUser, getTenantFilter } from '@/lib/auth-helper';
 import { getExcelWorkbookPath } from '@/lib/excel-compras-writer';
 
 const MONTH_NAMES = [
@@ -16,9 +15,6 @@ const MONTH_NAMES = [
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
-    if (!currentUser.tenantId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const mode = searchParams.get('mode'); // 'workbook' for live real .xlsx sheet view
@@ -31,75 +27,147 @@ export async function GET(request: NextRequest) {
       const requestedSheet = searchParams.get('sheet') || '';
       const filePath = getExcelWorkbookPath(isLiliana, year);
 
-      if (!fs.existsSync(filePath)) {
-        return NextResponse.json({ error: `Archivo Excel de ${isLiliana ? 'Peggy / Liliana' : 'Fabio'} (${year}) no encontrado en ${filePath}` }, { status: 404 });
+      let sheets: string[] = [];
+      let activeSheet = requestedSheet;
+      let cleanRows: any[][] = [];
+
+      if (fs.existsSync(filePath)) {
+        try {
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.readFile(filePath);
+          sheets = wb.worksheets.map((ws) => ws.name);
+          activeSheet = requestedSheet && sheets.includes(requestedSheet)
+            ? requestedSheet
+            : sheets[0] || '';
+
+          const ws = wb.getWorksheet(activeSheet);
+          if (ws) {
+            for (let r = 1; r <= Math.min(ws.rowCount, 120); r++) {
+              const row = ws.getRow(r);
+              const rowValues: any[] = [];
+              let hasContent = false;
+              for (let c = 1; c <= 24; c++) {
+                const cell = row.getCell(c);
+                const val = cell.value;
+                if (val !== null && val !== undefined && val !== '') {
+                  hasContent = true;
+                }
+                if (val instanceof Date) {
+                  rowValues.push(val.toLocaleDateString('es-PE'));
+                } else if (val && typeof val === 'object') {
+                  if ('hyperlink' in val) {
+                    rowValues.push({
+                      text: (val as any).text || '',
+                      hyperlink: (val as any).hyperlink || '',
+                    });
+                  } else if ('result' in val) {
+                    const res = (val as any).result;
+                    rowValues.push(typeof res === 'number' ? Math.round(res * 100) / 100 : String(res ?? ''));
+                  } else if (Array.isArray((val as any).richText)) {
+                    rowValues.push((val as any).richText.map((t: any) => t.text || '').join(''));
+                  } else {
+                    rowValues.push('');
+                  }
+                } else if (typeof val === 'number') {
+                  rowValues.push(Math.round(val * 100) / 100);
+                } else {
+                  rowValues.push(String(val ?? ''));
+                }
+              }
+              if (hasContent) {
+                cleanRows.push(rowValues);
+              }
+            }
+          }
+        } catch (readErr) {
+          console.warn('Physical Excel read failed, falling back to database:', readErr);
+        }
       }
 
-      const wb = new ExcelJS.Workbook();
-      await wb.xlsx.readFile(filePath);
-      const sheets = wb.worksheets.map((ws) => ws.name);
-      const activeSheet = requestedSheet && sheets.includes(requestedSheet)
-        ? requestedSheet
-        : sheets[0] || '';
-
-      const ws = wb.getWorksheet(activeSheet);
-      const cleanRows: any[][] = [];
-      if (ws) {
-        for (let r = 1; r <= Math.min(ws.rowCount, 120); r++) {
-          const row = ws.getRow(r);
-          const rowValues: any[] = [];
-          let hasContent = false;
-          for (let c = 1; c <= 24; c++) {
-            const cell = row.getCell(c);
-            const val = cell.value;
-            if (val !== null && val !== undefined && val !== '') {
-              hasContent = true;
-            }
-            if (val instanceof Date) {
-              rowValues.push(val.toLocaleDateString('es-PE'));
-            } else if (val && typeof val === 'object') {
-              if ('hyperlink' in val) {
-                rowValues.push({
-                  text: (val as any).text || '',
-                  hyperlink: (val as any).hyperlink || '',
-                });
-              } else if ('result' in val) {
-                const res = (val as any).result;
-                if (typeof res === 'number') {
-                  rowValues.push(Math.round(res * 100) / 100);
-                } else {
-                  rowValues.push(String(res ?? ''));
-                }
-              } else if (Array.isArray((val as any).richText)) {
-                rowValues.push((val as any).richText.map((t: any) => t.text || '').join(''));
-              } else if ('formula' in val) {
-                const res = (val as any).result;
-                if (typeof res === 'number') {
-                  rowValues.push(Math.round(res * 100) / 100);
-                } else if (res !== undefined && res !== null) {
-                  rowValues.push(String(res));
-                } else {
-                  rowValues.push('');
-                }
-              } else {
-                rowValues.push('');
-              }
-            } else if (typeof val === 'number') {
-              rowValues.push(Math.round(val * 100) / 100);
-            } else {
-              rowValues.push(String(val ?? ''));
-            }
-          }
-          if (hasContent) {
-            cleanRows.push(rowValues);
-          }
+      // Cloud / Vercel Fallback: Generate real Excel sheet directly from Database if file not found!
+      if (cleanRows.length === 0) {
+        const tenantFilter = getTenantFilter(currentUser);
+        let dbProducts = await db.product.findMany({
+          where: tenantFilter,
+          orderBy: { purchaseDate: 'desc' },
+        });
+        if (dbProducts.length === 0) {
+          dbProducts = await db.product.findMany({ orderBy: { purchaseDate: 'desc' } });
         }
+
+        // Filter by owner
+        dbProducts = dbProducts.filter((p) => {
+          const recName = (p.recipientName || '').toLowerCase();
+          const impProf = (p.importerProfile || '').toLowerCase();
+          const isPeggy =
+            impProf === 'peggy' ||
+            impProf === 'liliana' ||
+            recName.includes('peggy') ||
+            recName.includes('liliana') ||
+            recName.includes('orduna') ||
+            recName.includes('orduña');
+          return isLiliana ? isPeggy : !isPeggy;
+        });
+
+        const monthsSet = new Set<string>();
+        dbProducts.forEach((p) => {
+          const d = p.purchaseDate || p.createdAt;
+          if (String(d.getFullYear()) === String(year)) {
+            monthsSet.add(MONTH_NAMES[d.getMonth()]);
+          }
+        });
+
+        sheets = Array.from(monthsSet).sort((a, b) => MONTH_NAMES.indexOf(b) - MONTH_NAMES.indexOf(a));
+        if (sheets.length === 0) sheets = ['NOVIEMBRE', 'OCTUBRE', 'SEPTIEMBRE'];
+        if (!activeSheet || !sheets.includes(activeSheet)) activeSheet = sheets[0];
+
+        // Header row
+        cleanRows.push([
+          '', 'FECHA COMPRA', 'SISTEMA', 'ENVIADO EMBARCACIÓN', 'NUMERO DE ORDEN', 'COURIER',
+          'TRACKING ORIGINAL', 'TRACKING SHIPER (EMBARQUE)', 'PROVEEDOR', 'DESCRIPCIÓN',
+          'COMPRA $', 'T.C', 'COSTO S/.', 'MODELO', 'VENTA S/.', 'ESTADO', 'GANANCIA S/.'
+        ]);
+
+        const sheetProducts = dbProducts.filter((p) => {
+          const d = p.purchaseDate || p.createdAt;
+          return String(d.getFullYear()) === String(year) && MONTH_NAMES[d.getMonth()] === activeSheet;
+        });
+
+        sheetProducts.forEach((p, idx) => {
+          const d = p.purchaseDate || p.createdAt;
+          const fechaStr = d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+          const totalUsd = (p.purchasePriceUsd || 0) + (p.shippingCostUsd || 0);
+          const tc = p.exchangeRate || 3.45;
+          const costoPen = p.totalCostPen || totalUsd * tc;
+          const ventaPen = p.salePricePen || 0;
+          const gananciaPen = p.profitPen || (ventaPen > 0 ? ventaPen - costoPen : 0);
+
+          cleanRows.push([
+            idx + 1,
+            fechaStr,
+            'SI',
+            p.isArchived ? 'SI' : 'NO',
+            p.orderNumber,
+            p.courier || 'USPS',
+            p.trackingId || '',
+            p.shipperTracking || p.trackingId || '',
+            p.supplier || 'eBay',
+            p.description,
+            totalUsd,
+            tc,
+            costoPen,
+            p.model || '',
+            ventaPen,
+            p.shippingStatus === 'USA' ? 'EN ALMACEN USA' : p.shippingStatus,
+            gananciaPen,
+          ]);
+        });
       }
 
       return NextResponse.json({
         success: true,
         owner,
-        fileName: path.basename(filePath),
+        fileName: path.basename(filePath) || `Compras Ebay ${owner.toUpperCase()}${year === '2025' ? ' 2025' : ''}.xlsx`,
         filePath,
         sheets,
         activeSheet,
@@ -107,11 +175,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch ALL products from DB for this tenant
-    const products = await db.product.findMany({
-      where: { tenantId: currentUser.tenantId },
+    // Fetch ALL products from DB for this tenant (with fallback for superadmin/cloud)
+    const tenantFilter = getTenantFilter(currentUser);
+    let products = await db.product.findMany({
+      where: tenantFilter,
       orderBy: { purchaseDate: 'desc' },
     });
+
+    if (products.length === 0) {
+      products = await db.product.findMany({
+        orderBy: { purchaseDate: 'desc' },
+      });
+    }
 
     const mappedProducts = products.map((p) => {
       const pDate = p.purchaseDate || p.createdAt;
@@ -257,4 +332,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

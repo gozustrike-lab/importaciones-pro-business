@@ -25,6 +25,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/logo") ||
     pathname.startsWith("/robots") ||
     pathname.startsWith("/sitemap") ||
+    pathname === "/manifest.json" ||
+    pathname.startsWith("/manifest") ||
+    pathname.endsWith(".webmanifest") ||
+    pathname.endsWith(".ico") ||
+    pathname.endsWith(".json") ||
     pathname.endsWith(".png") ||
     pathname.endsWith(".jpg") ||
     pathname.endsWith(".jpeg") ||
