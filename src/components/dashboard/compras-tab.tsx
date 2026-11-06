@@ -197,9 +197,9 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   ) => {
     try {
       setLoadingExcel(true);
-      const q = new URLSearchParams({ mode: 'workbook', owner, year });
+      const q = new URLSearchParams({ mode: 'workbook', owner, year, t: String(Date.now()) });
       if (sheet) q.set('sheet', sheet);
-      const res = await fetch(`/api/compras/excel?${q.toString()}`);
+      const res = await fetch(`/api/compras/excel?${q.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al leer archivo Excel');
       setExcelSheets(data.sheets || []);
@@ -220,7 +220,7 @@ export function ComprasTab({ onNavigate, isStandalone = false }: ComprasTabProps
   const loadData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/compras/excel');
+      const res = await fetch(`/api/compras/excel?t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar compras');
 

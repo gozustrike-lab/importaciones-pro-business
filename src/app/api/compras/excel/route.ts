@@ -6,6 +6,9 @@ import { db } from '@/lib/db';
 import { getCurrentUser, getTenantFilter } from '@/lib/auth-helper';
 import { getExcelWorkbookPath } from '@/lib/excel-compras-writer';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const MONTH_NAMES = [
   'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
   'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
