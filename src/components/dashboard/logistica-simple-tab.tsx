@@ -728,36 +728,57 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
             </Button>
           </div>
 
-          {/* Llegó a Lima Banner */}
-          <div className="p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-emerald-900 dark:text-emerald-200 shadow-md">
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-black text-sm uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
-                    🟢 Carga en Lima: Fabio Herrera (Vuelo 28/10)
-                  </span>
-                  <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
-                    En Almacén Lima
-                  </Badge>
+          {/* Llegó a Lima Banners (Dinámico para todas las cargas en Lima) */}
+          {shipments
+            .filter((s) => s.status === 'EN_LIMA')
+            .map((s) => {
+              const isFabio = s.importerProfile === 'fabio';
+              const { trackingUrl, weight, cost, modality } = parseShipmentLogistics(s.whatsappNotes);
+              return (
+                <div
+                  key={s.id}
+                  className="p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-emerald-900 dark:text-emerald-200 shadow-md"
+                >
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-sm uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                          🟢 Carga en Lima: {isFabio ? 'Fabio Herrera' : 'Peggy Bonilla'} ({s.flightDayLabel})
+                        </span>
+                        <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
+                          En Almacén Lima
+                        </Badge>
+                        {s.awbNumber && (
+                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 border-emerald-400 font-mono text-[10px] px-1.5 py-0">
+                            AWB: {s.awbNumber}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-emerald-800/90 dark:text-emerald-300/90 mt-0.5">
+                        Embarque #{s.code} • {s.totalItems} {s.totalItems === 1 ? 'bulto' : 'bultos'}
+                        {weight ? ` • Peso: ${weight}` : ''}
+                        {cost ? ` • Liquidación: ${cost}` : ''}
+                        {modality ? ` • Modalidad: ${modality}` : ' • Modalidad: Recojo Surco'}.
+                      </p>
+                    </div>
+                  </div>
+                  {trackingUrl && (
+                    <a
+                      href={trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold shadow-md transition-all shrink-0"
+                    >
+                      <span>Rastrear Guía ShiPer</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
-                <p className="text-xs text-emerald-800/90 dark:text-emerald-300/90 mt-0.5">
-                  Embarque CC261027111654 • 1.7 kg • Liquidación estimada: $25.00 ($17 flete + $8 desaduanaje) • Modalidad: Recojo Surco.
-                </p>
-              </div>
-            </div>
-            <a
-              href="https://whs.shiper.pe/tracking/guias/dzdq2fmz"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold shadow-md transition-all shrink-0"
-            >
-              <span>Rastrear Guía ShiPer</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </div>
+              );
+            })}
 
           {/* Filter and Search Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#0B1220] p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -790,7 +811,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     : 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
                 }`}
               >
-                🔴 En Aduana (1)
+                🔴 En Aduana ({shipments.filter((s) => s.status === 'EN_ADUANA').length})
               </button>
               <button
                 onClick={() => setShipmentFilter('lima')}
@@ -800,7 +821,7 @@ export function LogisticaSimpleTab({ onNavigate }: LogisticaSimpleTabProps) {
                     : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400'
                 }`}
               >
-                🟢 En Lima (1)
+                🟢 En Lima ({shipments.filter((s) => s.status === 'EN_LIMA').length})
               </button>
               <button
                 onClick={() => setShipmentFilter('fabio')}
