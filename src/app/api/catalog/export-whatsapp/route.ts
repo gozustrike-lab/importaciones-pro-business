@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { getCurrentUser, getTenantFilter } from "@/lib/auth-helper";
 import { getProductCatalogInfo } from "@/lib/catalog-helper";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // GET /api/catalog/export-whatsapp - Export active inventory to WhatsApp Business / Meta Catalog CSV format
 export async function GET(request: NextRequest) {
   try {
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": 'attachment; filename="catalogo_whatsapp_business.csv"',
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=60, s-maxage=300",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
   } catch (error: unknown) {

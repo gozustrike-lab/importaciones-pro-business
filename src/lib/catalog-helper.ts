@@ -177,7 +177,7 @@ export function getProductCatalogInfo(product: {
       ramSpecs: '4 GB RAM',
       storageSpecs: '256 GB Almacenamiento',
       conditionLabel: 'Seminuevo Grado A • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos',
-      salePricePen: product.salePricePen || 1200,
+      salePricePen: product.salePricePen || 1100,
       regularPricePen: 1400,
     };
   }
@@ -200,7 +200,7 @@ export function getProductCatalogInfo(product: {
       ramSpecs: '3 GB RAM',
       storageSpecs: is64Gb ? '64 GB Almacenamiento' : '256 GB Almacenamiento',
       conditionLabel: 'Seminuevo Grado A (Libre para cualquier operador con chip 4G LTE) • 🎁 PACK REGALO: Lápiz Óptico + Soporte Vertical/Horizontal + Cable Nuevos',
-      salePricePen: is64Gb ? (product.salePricePen || 699) : 1100,
+      salePricePen: is64Gb ? (product.salePricePen || 699) : (product.salePricePen || 1100),
       regularPricePen: is64Gb ? 849 : 1300,
     };
   }
@@ -236,13 +236,13 @@ export function getProductCatalogInfo(product: {
     // Pricing rule as specified by user:
     // 256GB WiFi: 950 (regular 1150)
     // 256GB Chip: 1050 (regular 1250)
-    // 512GB WiFi: 1200 (regular 1500)
-    // 512GB Chip: 1300 (regular 1550)
+    // 512GB WiFi: 1200 (regular 1450)
+    // 512GB Chip: 1200 (regular 1450)
     let finalSalePrice = 950;
     let finalRegPrice = 1150;
     if (is512Gb) {
-      finalSalePrice = isCellular ? 1300 : 1200;
-      finalRegPrice = isCellular ? 1550 : 1500;
+      finalSalePrice = 1200;
+      finalRegPrice = 1450;
     } else {
       finalSalePrice = isCellular ? 1050 : 950;
       finalRegPrice = isCellular ? 1250 : 1150;
